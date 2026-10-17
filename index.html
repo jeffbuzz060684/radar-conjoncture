@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#020617">
+<title>Radar Conjoncture</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --bg: #020617; --card: #0f1c33; --card2: #16263f; --line: #29405f;
+    --txt: #e2e8f0; --mut: #94a3b8; --acc: #38bdf8; --good: #34d399; --mid: #fbbf24; --bad: #fb7185;
+  }
+  body { background: var(--bg); color: var(--txt); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 15px; padding-bottom: 74px; }
+  header { position: sticky; top: 0; z-index: 5; background: linear-gradient(180deg, #020617 75%, rgba(2,6,23,0)); padding: 14px 16px 10px; }
+  .hrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  h1 { font-size: 19px; letter-spacing: 0.3px; }
+  h1 span { color: var(--acc); }
+  .badge { font-size: 11px; color: var(--mut); border: 1px solid var(--line); padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+  .badge b { color: var(--txt); font-weight: 600; }
+  main { max-width: 520px; margin: 0 auto; padding: 4px 12px 20px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+  .card h2 { font-size: 14px; color: var(--acc); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.6px; }
+  .mut { color: var(--mut); font-size: 12.5px; line-height: 1.45; }
+  .chip { display: inline-block; font-size: 12px; padding: 2px 10px; border-radius: 99px; border: 1px solid var(--line); background: var(--card2); }
+  .chip.warn { border-color: var(--mid); color: var(--mid); }
+  .chip.ok { border-color: var(--good); color: var(--good); }
+  .chip.bad { border-color: var(--bad); color: var(--bad); }
+
+  /* Régime */
+  .regime-label { font-size: 17px; font-weight: 700; margin: 2px 0 6px; }
+
+  /* Classement actifs */
+  .asset { border: 1px solid var(--line); background: var(--card2); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+  .asset.top { border-color: var(--good); }
+  .arow { display: flex; align-items: center; gap: 10px; }
+  .rank { font-size: 13px; color: var(--mut); width: 20px; text-align: center; font-weight: 700; }
+  .arow .ico { font-size: 21px; }
+  .aname { flex: 1; min-width: 0; }
+  .aname .n { font-weight: 650; font-size: 14.5px; }
+  .aname .b { font-size: 11.5px; margin-top: 1px; }
+  .b.good { color: var(--good); } .b.mid { color: var(--mid); } .b.bad { color: var(--bad); }
+  .score { font-variant-numeric: tabular-nums; font-weight: 750; font-size: 16px; width: 56px; text-align: right; }
+  .bar { height: 7px; border-radius: 99px; background: #0b1830; margin-top: 8px; overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 99px; background: var(--acc); transition: width .4s; }
+  .bar i.good { background: var(--good); } .bar i.mid { background: var(--mid); } .bar i.bad { background: var(--bad); }
+  details.why { margin-top: 8px; }
+  details.why summary { cursor: pointer; font-size: 12px; color: var(--acc); list-style: none; user-select: none; }
+  details.why summary::before { content: "▸ "; }
+  details.why[open] summary::before { content: "▾ "; }
+  .parts { margin-top: 6px; }
+  .part { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; padding: 3px 0; border-bottom: 1px dashed rgba(148,163,184,.18); }
+  .part:last-child { border-bottom: none; }
+  .part .l { color: var(--mut); }
+  .part .v { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .pt-pos { color: var(--good); } .pt-neg { color: var(--bad); } .pt-zero { color: var(--mut); }
+
+  /* Paliers */
+  .palrow { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px dashed rgba(148,163,184,.18); font-size: 13.5px; }
+  .palrow:last-child { border-bottom: none; }
+  .palrow .st { width: 70px; font-weight: 650; }
+  .palrow .th { flex: 1; color: var(--mut); font-variant-numeric: tabular-nums; }
+  .palrow .fl { font-size: 12px; white-space: nowrap; }
+  .ddnow { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .ddnow b { font-size: 21px; font-variant-numeric: tabular-nums; }
+  .verdict { background: rgba(56,189,248,.08); border: 1px solid rgba(56,189,248,.35); border-radius: 10px; padding: 10px 12px; font-size: 13.5px; line-height: 1.5; }
+  .verdict ul { margin: 8px 0 0 16px; }
+  .verdict li { margin-bottom: 4px; }
+  .warnbox { background: rgba(251,191,36,.08); border: 1px solid rgba(251,191,36,.4); border-radius: 10px; padding: 9px 12px; font-size: 12.5px; color: #fde68a; margin-top: 10px; line-height: 1.45; }
+  .btn { display: inline-block; border: 1px solid var(--acc); color: var(--acc); background: transparent; padding: 9px 14px; border-radius: 10px; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+  .btn:active { background: rgba(56,189,248,.15); }
+  .btn.ghost { border-color: var(--line); color: var(--mut); }
+  .btn.danger { border-color: var(--bad); color: var(--bad); }
+  .btnrow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
+  /* Formulaire */
+  .fgroup { font-size: 12px; color: var(--acc); text-transform: uppercase; letter-spacing: 0.5px; margin: 14px 0 6px; }
+  .frow { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px dashed rgba(148,163,184,.14); }
+  .frow label { flex: 1; font-size: 13.5px; }
+  .frow label small { display: block; color: var(--mut); font-size: 11px; margin-top: 1px; }
+  .frow input, .frow select { background: var(--card2); border: 1px solid var(--line); color: var(--txt); border-radius: 9px; padding: 7px 9px; font-size: 14px; width: 118px; text-align: right; font-variant-numeric: tabular-nums; }
+  .frow select { width: 130px; text-align: center; }
+  .frow input:focus, .frow select:focus { outline: none; border-color: var(--acc); }
+
+  /* Suivi */
+  table.hist { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.hist th { color: var(--mut); font-weight: 600; text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); font-size: 11.5px; }
+  table.hist td { padding: 5px 6px; border-bottom: 1px dashed rgba(148,163,184,.14); font-variant-numeric: tabular-nums; }
+  .empty { text-align: center; color: var(--mut); padding: 18px 6px; font-size: 13px; }
+
+  nav { position: fixed; bottom: 0; left: 0; right: 0; display: flex; background: rgba(2,6,23,.96); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); backdrop-filter: blur(8px); }
+  nav button { flex: 1; background: none; border: none; color: var(--mut); font-size: 11px; padding: 9px 0 8px; cursor: pointer; }
+  nav button .ni { display: block; font-size: 19px; margin-bottom: 2px; }
+  nav button.on { color: var(--acc); }
+  section { display: none; } section.on { display: block; }
+  .src { font-size: 11.5px; color: var(--mut); line-height: 1.55; }
+  .src li { margin-bottom: 5px; margin-left: 16px; }
+  .footnote { font-size: 11px; color: var(--mut); text-align: center; margin: 14px 8px 4px; line-height: 1.5; }
+  .toast { position: fixed; left: 50%; bottom: 88px; transform: translateX(-50%); background: #1e3a5f; border: 1px solid var(--acc); color: var(--txt); font-size: 13px; padding: 9px 16px; border-radius: 99px; z-index: 20; opacity: 0; pointer-events: none; transition: opacity .3s; max-width: 86vw; text-align: center; }
+  .toast.show { opacity: 1; }
+  .toggle { background: var(--card2); border: 1px solid var(--line); color: var(--mut); border-radius: 99px; font-size: 11.5px; padding: 3px 10px; cursor: pointer; }
+  .toggle.on { border-color: var(--good); color: var(--good); }
+</style>
+</head>
+<body>
+<header>
+  <div class="hrow">
+    <h1>📡 Radar <span>Conjoncture</span></h1>
+    <span class="badge">💾 Sauvegarde auto · <b>v1</b></span>
+  </div>
+  <div class="hrow" style="margin-top:6px">
+    <span class="chip" id="dataChip">—</span>
+    <span class="chip" id="staleChip">—</span>
+  </div>
+</header>
+
+<main>
+  <!-- ============ RADAR ============ -->
+  <section id="view-radar" class="on">
+    <div class="card" id="regimeCard">
+      <h2>Contexte économique</h2>
+      <div class="regime-label" id="regimeLabel">—</div>
+      <div class="mut" id="regimeDesc">—</div>
+    </div>
+
+    <div class="card">
+      <h2>Classement des actifs</h2>
+      <div class="mut" style="margin-bottom:10px">Score d'opportunité 0–100 : plus le score est haut, plus l'actif est intéressant à acheter aujourd'hui. Touche « pourquoi ce score » pour le détail.</div>
+      <div id="assetList"></div>
+    </div>
+
+    <div class="card">
+      <h2>Ta stratégie PEA — paliers tactiques</h2>
+      <div class="ddnow"><span class="mut">Drawdown MSCI World<br><span id="ddSub" style="font-size:11px"></span></span><b id="ddVal">—</b></div>
+      <div class="bar" style="margin-bottom:10px"><i id="ddBar" style="width:0%"></i></div>
+      <div id="palList"></div>
+      <div id="stratVerdict"></div>
+    </div>
+    <div class="footnote">Outil indicatif — pas un conseil en investissement. Ta stratégie reste maîtresse : socle 800 €/mois DCAM, réserve au monétaire, paliers −5/−10/−15/−20 % (25 % de la réserve chacun, une fois par épisode), jamais vendre sur baisse.</div>
+  </section>
+
+  <!-- ============ DONNÉES ============ -->
+  <section id="view-donnees">
+    <div class="card">
+      <h2>Mettre à jour les données</h2>
+      <div class="mut" style="margin-bottom:4px">Mets à jour en ~1 minute par semaine (idéal avec le brief PEA du lundi). « Or & BTC en direct » interroge CoinGecko depuis ton téléphone (courant + plus haut/bas 52 semaines automatiques) ; le reste se trouve sur les sites des sources ci-dessous.</div>
+      <div class="btnrow">
+        <button class="btn" id="btnGecko">🔄 Or & BTC en direct</button>
+        <button class="btn ghost" id="btnReset">↩️ Valeurs du 17/10/2026</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Saisie</h2>
+      <form id="dataForm" autocomplete="off"></form>
+      <div class="btnrow">
+        <button class="btn" id="btnSave" type="button">💾 Enregistrer & recalculer</button>
+        <button class="btn ghost" id="btnExport" type="button">📤 Exporter</button>
+        <button class="btn ghost" id="btnImport" type="button">📥 Importer</button>
+        <input type="file" id="importFile" accept="application/json,.json" style="display:none">
+      </div>
+    </div>
+    <div class="card">
+      <h2>Sources des valeurs pré-chargées</h2>
+      <ul class="src" id="srcList"></ul>
+    </div>
+  </section>
+
+  <!-- ============ SUIVI ============ -->
+  <section id="view-suivi">
+    <div class="card">
+      <h2>Évolution du drawdown MSCI World</h2>
+      <div id="sparkWrap"></div>
+    </div>
+    <div class="card">
+      <h2>Historique des snapshots</h2>
+      <div class="mut" style="margin-bottom:8px">Chaque enregistrement de données crée une photo datée : actif n°1 du jour, score, drawdown.</div>
+      <table class="hist" id="histTable"></table>
+      <div class="btnrow"><button class="btn danger" id="btnClearHist" type="button">🗑️ Vider l'historique</button></div>
+    </div>
+  </section>
+</main>
+
+<nav>
+  <button data-v="radar" class="on"><span class="ni">📡</span>Radar</button>
+  <button data-v="donnees"><span class="ni">✏️</span>Données</button>
+  <button data-v="suivi"><span class="ni">📈</span>Suivi</button>
+</nav>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===LOGIC_START=== */
+"use strict";
+
+// ---------- Valeurs du jour, vérifiées le 17/10/2026 (sources cf. onglet Données) ----------
+var DEFAULT_DATA = {
+  dateData: "2026-10-17",
+  msci: 146.73, msciHigh52: 161.35, msciLow52: 123.17,   // IWDA en $, clôture 16/10/2026
+  cape: 40.4, vix: 16.46,
+  inflZE: 3.8, inflUS: 3.7,
+  bceDepot: 2.5, bceDir: "hausse",                       // relevé de 25 pb le 10/09/2026, effectif 16/09/2026
+  bund10: 3.4, oat10: 4.74, pmiZE: 53.1,
+  orEUR: 3705.85, orHigh52: 4592, orLow52: 3387.45,      // €/once
+  btcEUR: 72539, btcHigh52: null,                        // 52 sem BTC : bouton « en direct » ou saisie
+  imoRendement: 5.0,
+  reserve: 0,
+  paliersDone: { p5: false, p10: false, p15: false, p20: false }
+};
+
+var FIELDS = [
+  { g: "Marchés actions" },
+  { k: "dateData", l: "Date des données", t: "date", h: "date du relevé" },
+  { k: "msci", l: "Cours MSCI World (IWDA, $)", t: "num", h: "clôture, en dollars" },
+  { k: "msciHigh52", l: "Plus haut 52 sem. MSCI ($)", t: "num", h: "sommet 52 semaines" },
+  { k: "msciLow52", l: "Plus bas 52 sem. MSCI ($)", t: "num", h: "optionnel, jauge de position" },
+  { k: "cape", l: "CAPE Shiller (S&P 500)", t: "num", h: "valorisation actions US" },
+  { k: "vix", l: "VIX", t: "num", h: "volatilité implicite US" },
+  { g: "Macro zone euro & US" },
+  { k: "inflZE", l: "Inflation zone euro (%)", t: "num", h: "dernier mois, annualisé" },
+  { k: "inflUS", l: "Inflation US (%)", t: "num", h: "dernier mois, annualisé" },
+  { k: "bceDepot", l: "Taux de dépôt BCE (%)", t: "num", h: "taux directeur" },
+  { k: "bceDir", l: "Direction BCE", t: "sel", o: ["hausse", "stable", "baisse"], h: "dernière décision" },
+  { k: "bund10", l: "Rendement Bund 10 ans (%)", t: "num", h: "obligations souveraines ZE" },
+  { k: "oat10", l: "Rendement OAT 10 ans (%)", t: "num", h: "dette française" },
+  { k: "pmiZE", l: "PMI composite zone euro", t: "num", h: "activité : >50 = croissance" },
+  { g: "Or, BTC, immobilier" },
+  { k: "orEUR", l: "Or (€ / once)", t: "num", h: "cours spot" },
+  { k: "orHigh52", l: "Plus haut 52 sem. or (€)", t: "num", h: "sommet 52 semaines" },
+  { k: "orLow52", l: "Plus bas 52 sem. or (€)", t: "num", h: "optionnel" },
+  { k: "btcEUR", l: "Bitcoin (€)", t: "num", h: "cours" },
+  { k: "btcHigh52", l: "Plus haut 52 sem. BTC (€)", t: "num", h: "optionnel — auto via bouton en direct" },
+  { k: "imoRendement", l: "Rendement locatif immo (%)", t: "num", h: "proxy SCPI (hors frais)" },
+  { g: "Ta stratégie (PEA)" },
+  { k: "reserve", l: "Réserve tactique actuelle (€)", t: "num", h: "montant disponible sur le monétaire PEA" }
+];
+
+var PALIERS = [5, 10, 15, 20];
+
+function num(x) { var v = parseFloat(x); return (typeof v === "number" && isFinite(v)) ? v : null; }
+function r1(x) { return Math.round(x * 10) / 10; }
+function r2(x) { return Math.round(x * 100) / 100; }
+function pctDD(cur, high) { if (num(cur) === null || num(high) === null || high <= 0) return null; return (cur / high - 1) * 100; }
+function clampScore(s) { return Math.max(0, Math.min(100, Math.round(s))); }
+function fmtPts(p) { return (p > 0 ? "+" + r1(p) : p < 0 ? r1(p) : "0"); }
+
+// paliers croissants : [[borne sup, points], ...] ; renvoie les points de la 1re borne ≥ v (sinon dernière)
+function stepScore(v, brackets) {
+  if (num(v) === null) return 0;
+  for (var i = 0; i < brackets.length; i++) { if (v < brackets[i][0]) return brackets[i][1]; }
+  return brackets[brackets.length - 1][1];
+}
+
+function computeDerived(d) {
+  var der = {};
+  der.ddMsci = pctDD(d.msci, d.msciHigh52);
+  der.ddOr = pctDD(d.orEUR, d.orHigh52);
+  der.ddBtc = pctDD(d.btcEUR, d.btcHigh52);
+  der.tauxReelZE = (num(d.bceDepot) !== null && num(d.inflZE) !== null) ? d.bceDepot - d.inflZE : null;   // dépôt BCE − inflation ZE
+  der.bundReal = (num(d.bund10) !== null && num(d.inflZE) !== null) ? d.bund10 - d.inflZE : null;         // rendement réel Bund
+  der.spreadOat = (num(d.oat10) !== null && num(d.bund10) !== null) ? (d.oat10 - d.bund10) * 100 : null;  // points de base
+  der.imoMarge = (num(d.imoRendement) !== null && num(d.oat10) !== null) ? d.imoRendement - d.oat10 : null; // rendement immo − coût crédit
+  if (num(d.orEUR) !== null && num(d.orHigh52) !== null && num(d.orLow52) !== null && d.orHigh52 > d.orLow52) {
+    der.posOr = (d.orEUR - d.orLow52) / (d.orHigh52 - d.orLow52) * 100;
+  } else der.posOr = null;
+  return der;
+}
+
+// ---------- Scores par actif (base 50, sous-scores cumulés, bornés 0-100) ----------
+function mkPart(label, pts, detail) { return { label: label, pts: pts, detail: detail || "" }; }
+
+function scoreActions(d, der) {
+  var parts = [];
+  parts.push(mkPart("Valorisation (CAPE " + (num(d.cape) !== null ? r1(d.cape) : "?") + ")",
+    stepScore(d.cape, [[20, 20], [25, 10], [30, 0], [35, -10], [40, -18], [Infinity, -24]]),
+    d.cape >= 30 ? "CAPE élevé : rendements long terme attendus faibles" : "CAPE raisonnable"));
+  var dd = der.ddMsci;
+  parts.push(mkPart("Opportunité de prix (drawdown)",
+    dd === null ? 0 : stepScore(-dd, [[3, -4], [5, 4], [10, 10], [15, 18], [20, 24], [Infinity, 30]]),
+    dd === null ? "données manquantes" : "cours à " + r1(dd) + " % du sommet 52 sem."));
+  parts.push(mkPart("Volatilité (VIX " + (num(d.vix) !== null ? r1(d.vix) : "?") + ")",
+    stepScore(d.vix, [[13, -6], [20, 0], [27, 8], [Infinity, 12]]),
+    d.vix >= 27 ? "peur sur les marchés = acheter à rabais" : (d.vix < 13 ? "complaisance" : "normal")));
+  var dirPts = d.bceDir === "baisse" ? 8 : d.bceDir === "hausse" ? -8 : 0;
+  parts.push(mkPart("Politique monétaire BCE (" + d.bceDir + ")", dirPts,
+    d.bceDir === "baisse" ? "des taux qui baissent soutiennent les actions" : "des taux qui montent pèsent sur les valorisations"));
+  parts.push(mkPart("Croissance (PMI " + (num(d.pmiZE) !== null ? r1(d.pmiZE) : "?") + ")",
+    stepScore(d.pmiZE, [[47, -8], [50, -3], [53, 3], [Infinity, 6]]),
+    d.pmiZE >= 50 ? "l'économie européenne grandit" : "l'économie ralentit"));
+  return { id: "actions", icon: "🌍", name: "Actions monde (MSCI World)", score: clampScore(50 + parts.reduce(function (s, p) { return s + p.pts; }, 0)), parts: parts };
+}
+
+function scoreObligations(d, der) {
+  var parts = [];
+  parts.push(mkPart("Rendement Bund 10 ans (" + (num(d.bund10) !== null ? r1(d.bund10) : "?") + " %)",
+    stepScore(d.bund10, [[1, -15], [2, -5], [3, 5], [4, 10], [Infinity, 14]]),
+    "plus le rendement d'entrée est haut, mieux c'est"));
+  parts.push(mkPart("Rendement réel (Bund − inflation)",
+    der.bundReal === null ? 0 : stepScore(der.bundReal, [[-2, -12], [-1, -8], [0, -4], [1, 4], [Infinity, 8]]),
+    der.bundReal === null ? "données manquantes" : (r1(der.bundReal) + " % réel : l'inflation " + (der.bundReal < 0 ? "ronge" : "respecte") + " le coupon")));
+  var dirPts = d.bceDir === "baisse" ? 12 : d.bceDir === "hausse" ? -10 : 0;
+  parts.push(mkPart("Direction des taux BCE (" + d.bceDir + ")", dirPts,
+    d.bceDir === "hausse" ? "les taux qui montent font baisser les obligations existantes" : "des taux qui baissent font monter les cours"));
+  parts.push(mkPart("Risque dette française (spread " + (der.spreadOat !== null ? Math.round(der.spreadOat) + " pb" : "?") + ")",
+    (der.spreadOat !== null && der.spreadOat >= 120) ? -5 : 0,
+    "prime de risque sur la zone euro si le spread OAT-Bund dépasse 120 pb"));
+  return { id: "obligations", icon: "📜", name: "Obligations zone euro (Bund 10 ans)", score: clampScore(50 + parts.reduce(function (s, p) { return s + p.pts; }, 0)), parts: parts };
+}
+
+function scoreOr(d, der) {
+  var parts = [];
+  parts.push(mkPart("Inflation (" + (num(d.inflZE) !== null ? r1(d.inflZE) : "?") + " %)",
+    stepScore(d.inflZE, [[2, 0], [3, 6], [Infinity, 12]]),
+    d.inflZE >= 3 ? "l'or est la couverture classique de l'inflation" : "peu de besoin de couverture"));
+  parts.push(mkPart("Taux réels courts (" + (der.tauxReelZE !== null ? r1(der.tauxReelZE) : "?") + " %)",
+    der.tauxReelZE === null ? 0 : stepScore(der.tauxReelZE, [[0, 8], [1, 3], [Infinity, 0]]),
+    der.tauxReelZE !== null && der.tauxReelZE < 0 ? "taux réels négatifs = historiquement favorable à l'or" : "taux réels positifs = coût de portage pour l'or"));
+  var dd = der.ddOr;
+  parts.push(mkPart("Prix vs sommet 52 sem.",
+    dd === null ? 0 : stepScore(-dd, [[5, -4], [12, 6], [20, 10], [Infinity, 12]]),
+    dd === null ? "données manquantes" : (r1(dd) + " % sous le sommet" + (dd <= -12 ? " : corrigé, meilleur point d'entrée qu'au pic" : ""))));
+  parts.push(mkPart("Position dans la fourchette 52 sem.",
+    der.posOr === null ? 0 : stepScore(der.posOr, [[30, -4], [70, 0], [Infinity, -6]]),
+    der.posOr === null ? "données manquantes" : Math.round(der.posOr) + " % de la fourchette annuelle"));
+  return { id: "or", icon: "🥇", name: "Or (physique / ETF or)", score: clampScore(50 + parts.reduce(function (s, p) { return s + p.pts; }, 0)), parts: parts };
+}
+
+function scoreMonetaire(d, der) {
+  var parts = [];
+  parts.push(mkPart("Taux de dépôt BCE (" + (num(d.bceDepot) !== null ? r1(d.bceDepot) : "?") + " %)",
+    stepScore(d.bceDepot, [[1, -15], [2, -5], [3, 8], [4, 14], [Infinity, 18]]),
+    "rendement sans risque du monétaire"));
+  parts.push(mkPart("Rendement réel (" + (der.tauxReelZE !== null ? r1(der.tauxReelZE) : "?") + " %)",
+    der.tauxReelZE === null ? 0 : stepScore(der.tauxReelZE, [[0, -6], [1, 2], [Infinity, 6]]),
+    der.tauxReelZE !== null && der.tauxReelZE < 0 ? "l'inflation dépasse le taux : le monétaire perd du pouvoir d'achat" : "préserve le pouvoir d'achat"));
+  var refuge = ((num(d.vix) !== null && d.vix >= 25) || (der.ddMsci !== null && der.ddMsci <= -15)) ? 6 : 0;
+  parts.push(mkPart("Rôle de refuge", refuge, refuge ? "marchés stressés : le monétaire protège" : "marchés calmes : peu d'avantage refuge"));
+  return { id: "monetaire", icon: "🛡️", name: "Monétaire zone euro", score: clampScore(50 + parts.reduce(function (s, p) { return s + p.pts; }, 0)), parts: parts };
+}
+
+function scoreImmo(d, der) {
+  var parts = [];
+  parts.push(mkPart("Rendement − coût du crédit (" + (der.imoMarge !== null ? r1(der.imoMarge) : "?") + " pts)",
+    der.imoMarge === null ? 0 : stepScore(der.imoMarge, [[0, -15], [0.5, -5], [1.5, 5], [Infinity, 10]]),
+    der.imoMarge === null ? "données manquantes" : "rendement locatif " + (der.imoMarge > 0 ? "au-dessus" : "sous") + " du taux OAT 10 ans"));
+  var dirPts = d.bceDir === "baisse" ? 8 : d.bceDir === "hausse" ? -8 : 0;
+  parts.push(mkPart("Direction des taux (" + d.bceDir + ")", dirPts,
+    d.bceDir === "hausse" ? "le crédit se renchérit : pression sur les prix et les SCPI" : "des taux qui baissent soutiennent l'immobilier"));
+  parts.push(mkPart("Indexation des loyers (inflation " + (num(d.inflZE) !== null ? r1(d.inflZE) : "?") + " %)",
+    stepScore(d.inflZE, [[2, 0], [3, 3], [Infinity, 6]]),
+    "loyers indexés sur l'inflation : actif réel"));
+  return { id: "immo", icon: "🏠", name: "Immobilier (SCPI / ETF immo)", score: clampScore(50 + parts.reduce(function (s, p) { return s + p.pts; }, 0)), parts: parts };
+}
+
+function scoreCrypto(d, der) {
+  var parts = [];
+  var dd = der.ddBtc;
+  parts.push(mkPart("Prix vs sommet 52 sem.",
+    dd === null ? 0 : stepScore(-dd, [[10, -6], [30, 4], [50, 10], [Infinity, 14]]),
+    dd === null ? "donnée manquante : « Or & BTC en direct » ou saisie du sommet 52 sem." : (r1(dd) + " % sous le sommet 52 sem.")));
+  var dirPts = d.bceDir === "baisse" ? 10 : d.bceDir === "hausse" ? -10 : 0;
+  parts.push(mkPart("Liquidité mondiale (BCE " + d.bceDir + ")", dirPts,
+    d.bceDir === "hausse" ? "le resserrement monétaire prive les actifs spéculatifs de liquidité" : "la baisse des taux ravive l'appétit pour le risque"));
+  parts.push(mkPart("Inflation (" + (num(d.inflZE) !== null ? r1(d.inflZE) : "?") + " %)",
+    stepScore(d.inflZE, [[2, 0], [Infinity, 4]]),
+    d.inflZE >= 3 ? "thèse « réserve de valeur hors monnaie fiat » relancée" : "peu d'attrait spécifique"));
+  var panique = (num(d.vix) !== null && d.vix >= 30) ? -8 : 0;
+  parts.push(mkPart("Stress marché (VIX)", panique, panique ? "panique généralisée : le BTC tombe avec le marché" : "pas de stress marqué"));
+  return { id: "crypto", icon: "₿", name: "Crypto (BTC)", score: clampScore(50 + parts.reduce(function (s, p) { return s + p.pts; }, 0)), parts: parts, partial: dd === null };
+}
+
+function badgeOf(score) {
+  if (score >= 65) return { cls: "good", icon: "🟢", label: "À privilégier" };
+  if (score >= 45) return { cls: "mid", icon: "🟡", label: "Neutre" };
+  return { cls: "bad", icon: "🔴", label: "Défavorable" };
+}
+
+function radarAll(d) {
+  var der = computeDerived(d);
+  var list = [scoreOr(d, der), scoreMonetaire(d, der), scoreActions(d, der), scoreObligations(d, der), scoreImmo(d, der), scoreCrypto(d, der)];
+  list.forEach(function (a) { a.badge = badgeOf(a.score); });
+  list.sort(function (a, b) { return b.score - a.score; });
+  return { der: der, list: list };
+}
+
+function regimeOf(d) {
+  var growth = d.pmiZE >= 53 ? "Expansion" : d.pmiZE >= 50 ? "Croissance modérée" : d.pmiZE >= 47 ? "Ralentissement" : "Contraction";
+  var infl = d.inflZE >= 3 ? "élevée" : d.inflZE >= 2 ? "au-dessus de la cible" : "sous contrôle";
+  var dirTxt = d.bceDir === "hausse" ? "en relèvement de taux" : d.bceDir === "baisse" ? "en assouplissement" : "en pause";
+  var label = growth + " · inflation " + infl + " · BCE " + dirTxt;
+  var recs = [];
+  if (d.inflZE >= 3) recs.push("l'inflation > 3 % favorise l'or et les actifs réels (immo indexé)");
+  if (d.bceDir === "hausse") recs.push("le resserrement monétaire pèse sur les obligations et les valorisations élevées");
+  if (d.pmiZE >= 52) recs.push("la croissance soutenue soutient les bénéfices des entreprises");
+  if (d.cape >= 35) recs.push("CAPE ≥ 35 : les actions vivent au-dessus de leurs valorisations historiques — rendements long terme attendus modestes");
+  var desc = "PMI " + r1(d.pmiZE) + " · inflation ZE " + r1(d.inflZE) + " % (US " + r1(d.inflUS) + " %) · dépôt BCE " + r1(d.bceDepot) + " % · Bund " + r1(d.bund10) + " % · VIX " + r1(d.vix) + ". Historiquement dans ce régime : " + (recs.length ? recs.join(" ; ") + "." : "pas de biais marqué.");
+  return { label: label, desc: desc };
+}
+
+function paliersOf(d, der) {
+  if (num(d.msciHigh52) === null) return [];
+  return PALIERS.map(function (p) {
+    return { p: p, seuil: r2(d.msciHigh52 * (1 - p / 100)), atteint: der.ddMsci !== null && der.ddMsci <= -p };
+  });
+}
+
+function strategyOf(d, der, paliers, top) {
+  var lines = [];
+  lines.push("Socle inchangé : 800 €/mois DCAM (Amundi PEA Monde) — la conjoncture ne change pas le socle, et on ne vend jamais sur baisse.");
+  var next = null, i;
+  for (i = 0; i < paliers.length; i++) {
+    if (paliers[i].atteint && !d.paliersDone["p" + paliers[i].p]) { next = paliers[i]; break; }
+  }
+  var reserve = num(d.reserve);
+  if (next) {
+    var montant = (reserve !== null && reserve > 0) ? Math.round(reserve * 0.25) : null;
+    lines.push("Palier −" + next.p + " % FRANCHI (cours " + num(d.msci) + " $, seuil " + next.seuil + " $)" + (montant !== null ? " → déployer 25 % de la réserve ≈ " + montant + " € sur DCAM, une seule fois cet épisode." : " → déployer 25 % de la réserve sur DCAM, une seule fois cet épisode."));
+    lines.push("Après déploiement, marque le palier comme « déployé » ci-dessus pour l'ignorer jusqu'au prochain épisode.");
+  } else {
+    var pending = paliers.filter(function (p) { return p.atteint; });
+    if (pending.length) {
+      lines.push("Tous les paliers franchis sont marqués déployés — plus rien à faire jusqu'au palier suivant.");
+    }
+    var nxt = null;
+    for (i = 0; i < paliers.length; i++) { if (!paliers[i].atteint) { nxt = paliers[i]; break; } }
+    if (nxt && der.ddMsci !== null) {
+      var dist = nxt.seuil / d.msci - 1;
+      lines.push("Prochain palier : −" + nxt.p + " % à " + nxt.seuil + " $, soit " + (dist <= 0 ? "déjà franchi" : r1(Math.abs(dist) * 100 / 100 * 100) + " % sous le cours actuel") + ".");
+    }
+  }
+  if (num(d.cape) !== null && d.cape >= 30) lines.push("Anti-accumulation : CAPE à " + r1(d.cape) + " (≥ 30) — hors paliers, la réserve reste au monétaire, pas de déploiement « par ennui ».");
+  if (top) lines.push("Radar du jour : l'actif le plus favorable est " + top.name + " (" + top.score + "/100) — information, la stratégie PEA reste la règle.");
+  var warns = [];
+  if (reserve !== null && reserve > 3000) warns.push("Réserve > 3 000 € : règle anti-accumulation — vérifie le CAPE avant tout déploiement hors palier (actuellement " + (num(d.cape) !== null ? r1(d.cape) : "?") + ").");
+  return { lines: lines, warns: warns };
+}
+
+function parseGecko(json) {
+  try {
+    var prices = json && json.prices;
+    if (!prices || !prices.length) return null;
+    var high = -Infinity, low = Infinity, cur = prices[prices.length - 1][1];
+    for (var i = 0; i < prices.length; i++) {
+      var v = prices[i][1];
+      if (typeof v !== "number" || !isFinite(v)) return null;
+      if (v > high) high = v;
+      if (v < low) low = v;
+    }
+    if (typeof cur !== "number" || !isFinite(cur)) return null;
+    return { cur: r2(cur), high: r2(high), low: r2(low) };
+  } catch (e) { return null; }
+}
+
+function staleDays(dateStr, nowMs) {
+  var t = Date.parse(dateStr + "T12:00:00Z");
+  if (isNaN(t)) return null;
+  return Math.floor((nowMs - t) / 86400000);
+}
+
+function normalizeData(d) {
+  var out = {};
+  FIELDS.forEach(function (f) {
+    if (!f.k) return;
+    if (f.t === "num") { out[f.k] = num(d[f.k]) !== null ? num(d[f.k]) : num(DEFAULT_DATA[f.k]); }
+    else if (f.t === "sel") { out[f.k] = ["hausse", "stable", "baisse"].indexOf(d[f.k]) >= 0 ? d[f.k] : DEFAULT_DATA[f.k]; }
+    else { out[f.k] = (typeof d[f.k] === "string" && d[f.k]) ? d[f.k] : DEFAULT_DATA[f.k]; }
+  });
+  out.paliersDone = { p5: false, p10: false, p15: false, p20: false };
+  if (d.paliersDone) PALIERS.forEach(function (p) { out.paliersDone["p" + p] = !!d.paliersDone["p" + p]; });
+  return out;
+}
+
+function snapshotOf(d, radar) {
+  return {
+    date: d.dateData,
+    top: radar.list[0].name,
+    topScore: radar.list[0].score,
+    scores: radar.list.reduce(function (m, a) { m[a.id] = a.score; return m; }, {}),
+    ddMsci: radar.der.ddMsci
+  };
+}
+
+var SOURCES = [
+  ["MSCI World (IWDA) : 146,73 $, clôture du 16/10/2026 ; plus haut 52 sem. 161,35 $ (26/02/2026) ; plus bas 123,17 $ (20/11/2025)", "Traders Union — historique IWDA, https://tradersunion.com/fr/etfs/iwda/price-history/"],
+  ["CAPE Shiller : 40,4 (01/10/2026) — 98,9e percentile historique, seule la bulle 1999-2000 a été plus haute", "GuruFocus (40,38), corroboré par MacroRadar et thetrading.tools (40,7)"],
+  ["VIX : 16,46 (15/10/2026)", "données de marché CBOE"],
+  ["Inflation zone euro : 3,8 % en septembre 2026 (flash, en hausse depuis 3 mois ; énergie +18,9 %)", "Eurostat, communiqué du 02/10/2026"],
+  ["Inflation US : 3,7 % en septembre 2026 (core 2,6 %) ; essence +34,2 % sur un an", "BLS via Trading Economics / CNBC (14/10/2026)"],
+  ["BCE : taux de dépôt porté à 2,50 % (+25 pb, décision du 10/09/2026, effectif 16/09/2026)", "Communiqué BCE, ecb.europa.eu"],
+  ["Bund 10 ans : 3,4 % ; OAT 10 ans : 4,74 % ; spread ≈ 134-135 pb (15/10/2026)", "Trading Economics / suivi spread OAT-Bund"],
+  ["PMI composite zone euro : 53,1 en septembre 2026 (plus haut depuis 3,5 ans)", "S&P Global via Trading Economics"],
+  ["Or : 3 705,85 €/once (16/10/2026) ; fourchette 52 sem. 3 387–4 592 €", "données de marché (spot XAU/EUR)"],
+  ["Bitcoin : 72 539 € (17/10/2026)", "données de marché (BTC/EUR) ; plus haut 52 sem. via bouton « en direct » (CoinGecko)"]
+];
+/* ===LOGIC_END=== */
+
+// ================== Couche UI ==================
+var KEY = "radar-conjoncture-v1";
+var state = { data: null, history: [] };
+
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+
+function load() {
+  var raw = null;
+  try { raw = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) {}
+  if (raw && raw.data) {
+    state.data = normalizeData(raw.data);
+    state.data.reserve = num(raw.data.reserve) !== null ? num(raw.data.reserve) : 0;
+    if (raw.data.paliersDone) state.data.paliersDone = { p5: !!raw.data.paliersDone.p5, p10: !!raw.data.paliersDone.p10, p15: !!raw.data.paliersDone.p15, p20: !!raw.data.paliersDone.p20 };
+    state.history = Array.isArray(raw.history) ? raw.history : [];
+  } else {
+    state.data = normalizeData(DEFAULT_DATA);
+    state.history = [];
+  }
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify({ data: state.data, history: state.history })); } catch (e) {}
+  if (navigator.storage && navigator.storage.persist) { try { navigator.storage.persist(); } catch (e) {} }
+}
+
+function toast(msg) {
+  var t = $("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(toast._h);
+  toast._h = setTimeout(function () { t.classList.remove("show"); }, 2600);
+}
+
+// ---- Onglets ----
+Array.prototype.forEach.call(document.querySelectorAll("nav button"), function (b) {
+  b.addEventListener("click", function () {
+    Array.prototype.forEach.call(document.querySelectorAll("nav button"), function (x) { x.classList.remove("on"); });
+    Array.prototype.forEach.call(document.querySelectorAll("section"), function (x) { x.classList.remove("on"); });
+    b.classList.add("on");
+    $("view-" + b.dataset.v).classList.add("on");
+    if (b.dataset.v === "suivi") renderSuivi();
+  });
+});
+
+// ---- Formulaire ----
+function buildForm() {
+  var f = $("dataForm");
+  f.innerHTML = "";
+  FIELDS.forEach(function (fd) {
+    if (fd.g) { var g = document.createElement("div"); g.className = "fgroup"; g.textContent = fd.g; f.appendChild(g); return; }
+    var row = document.createElement("div"); row.className = "frow";
+    var lab = document.createElement("label");
+    lab.innerHTML = esc(fd.l) + (fd.h ? "<small>" + esc(fd.h) + "</small>" : "");
+    var inp;
+    if (fd.t === "sel") {
+      inp = document.createElement("select");
+      fd.o.forEach(function (o) { var op = document.createElement("option"); op.value = o; op.textContent = o; inp.appendChild(op); });
+      inp.value = state.data[fd.k];
+    } else {
+      inp = document.createElement("input");
+      inp.type = fd.t === "date" ? "date" : "number";
+      inp.step = "any";
+      inp.inputMode = fd.t === "num" ? "decimal" : "";
+      var v = state.data[fd.k];
+      inp.value = (v === null || v === undefined) ? "" : v;
+    }
+    inp.dataset.k = fd.k;
+    row.appendChild(lab); row.appendChild(inp); f.appendChild(row);
+  });
+}
+
+function readForm() {
+  var d = JSON.parse(JSON.stringify(state.data));
+  Array.prototype.forEach.call($("dataForm").querySelectorAll("[data-k]"), function (inp) {
+    var k = inp.dataset.k;
+    if (inp.tagName === "SELECT") { d[k] = inp.value; return; }
+    if (inp.type === "date") { d[k] = inp.value || d[k]; return; }
+    d[k] = inp.value === "" ? null : parseFloat(inp.value);
+  });
+  return normalizeData(d);
+}
+
+$("btnSave").addEventListener("click", function () {
+  state.data = readForm();
+  commitSnapshot(true);
+  save();
+  toast("Enregistré — radar recalculé");
+  renderRadar();
+  buildForm();
+});
+
+// ---- Snapshot & historique ----
+function commitSnapshot(toastIf) {
+  var radar = radarAll(state.data);
+  var snap = snapshotOf(state.data, radar);
+  state.history = state.history.filter(function (h) { return h.date !== snap.date; });
+  state.history.push(snap);
+  state.history.sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+  if (state.history.length > 120) state.history = state.history.slice(-120);
+}
+
+// ---- Rendu Radar ----
+function renderRadar() {
+  var d = state.data;
+  var radar = radarAll(d);
+  var regime = regimeOf(d);
+
+  $("regimeLabel").textContent = regime.label;
+  $("regimeDesc").textContent = regime.desc;
+
+  var listEl = $("assetList");
+  listEl.innerHTML = "";
+  radar.list.forEach(function (a, i) {
+    var el = document.createElement("div");
+    el.className = "asset" + (i === 0 ? " top" : "");
+    var partsHtml = a.parts.map(function (p) {
+      var cls = p.pts > 0 ? "pt-pos" : p.pts < 0 ? "pt-neg" : "pt-zero";
+      return '<div class="part"><span class="l">' + esc(p.label) + (p.detail ? ' <em style="color:#64748b;font-style:normal">— ' + esc(p.detail) + '</em>' : "") + '</span><span class="v ' + cls + '">' + fmtPts(p.pts) + "</span></div>";
+    }).join("");
+    el.innerHTML =
+      '<div class="arow">' +
+      '<span class="rank">' + (i + 1) + '</span>' +
+      '<span class="ico">' + a.icon + '</span>' +
+      '<span class="aname"><span class="n">' + esc(a.name) + (a.partial ? ' <span class="mut" style="font-size:10px">(score partiel)</span>' : "") + '</span><span class="b ' + a.badge.cls + '">' + a.badge.icon + " " + a.badge.label + "</span></span>" +
+      '<span class="score">' + a.score + "</span></div>" +
+      '<div class="bar"><i class="' + a.badge.cls + '" style="width:' + a.score + '%"></i></div>' +
+      '<details class="why"><summary>Pourquoi ce score ?</summary><div class="parts">' + partsHtml + "</div></details>";
+    listEl.appendChild(el);
+  });
+
+  // Paliers & stratégie
+  var der = radar.der;
+  var pal = paliersOf(d, der);
+  $("ddVal").textContent = der.ddMsci !== null ? r1(der.ddMsci) + " %" : "—";
+  $("ddSub").textContent = "cours " + (num(d.msci) !== null ? d.msci + " $" : "?") + " vs sommet 52 sem. " + (num(d.msciHigh52) !== null ? d.msciHigh52 + " $" : "?");
+  $("ddBar").style.width = der.ddMsci !== null ? Math.min(100, Math.abs(der.ddMsci) / 25 * 100) + "%" : "0%";
+  $("ddBar").className = der.ddMsci <= -15 ? "bad" : der.ddMsci <= -10 ? "mid" : "good";
+
+  var palEl = $("palList");
+  palEl.innerHTML = "";
+  pal.forEach(function (p) {
+    var done = d.paliersDone["p" + p.p];
+    var row = document.createElement("div");
+    row.className = "palrow";
+    var flag = p.atteint
+      ? (done ? '<span class="fl" style="color:var(--good)">✅ franchi · déployé</span>' : '<span class="fl" style="color:var(--mid)">⚡ franchi · à déployer</span>')
+      : '<span class="fl" style="color:var(--mut)">— non atteint</span>';
+    var btn = '<button class="toggle' + (done ? " on" : "") + '" data-p="' + p.p + '">' + (done ? "déployé ✓" : "marquer déployé") + "</button>";
+    row.innerHTML = '<span class="st">Palier −' + p.p + ' %</span><span class="th">seuil ' + p.seuil + " $ · " + (num(d.reserve) > 0 ? Math.round(d.reserve * 0.25) + " €" : "25 % réserve") + "</span>" + flag + btn;
+    palEl.appendChild(row);
+  });
+  Array.prototype.forEach.call(palEl.querySelectorAll(".toggle"), function (b) {
+    b.addEventListener("click", function () {
+      var key = "p" + b.dataset.p;
+      state.data.paliersDone[key] = !state.data.paliersDone[key];
+      save(); renderRadar();
+    });
+  });
+
+  var strat = strategyOf(d, der, pal, radar.list[0]);
+  $("stratVerdict").innerHTML =
+    '<div class="verdict"><ul>' + strat.lines.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") + "</ul></div>" +
+    strat.warns.map(function (w) { return '<div class="warnbox">⚠️ ' + esc(w) + "</div>"; }).join("");
+
+  // Chips en-tête
+  $("dataChip").innerHTML = "📅 Données du <b>" + esc(d.dateData) + "</b>";
+  var sd = staleDays(d.dateData, Date.now());
+  var sc = $("staleChip");
+  if (sd === null) { sc.className = "chip warn"; sc.textContent = "date invalide"; }
+  else if (sd <= 7) { sc.className = "chip ok"; sc.textContent = "fraîches (" + sd + " j)"; }
+  else if (sd <= 30) { sc.className = "chip warn"; sc.textContent = sd + " jours — pense à actualiser"; }
+  else { sc.className = "chip bad"; sc.textContent = "périmées : " + sd + " jours !"; }
+}
+
+// ---- Rendu Suivi ----
+function renderSuivi() {
+  var hist = state.history;
+  var t = $("histTable");
+  if (!hist.length) { t.innerHTML = '<tr><td colspan="5" class="empty">Aucun snapshot pour l\'instant — les enregistrements de l\'onglet Données s\'accumulent ici.</td></tr>'; }
+  else {
+    var rows = hist.slice().reverse().map(function (h) {
+      return "<tr><td>" + esc(h.date) + "</td><td>" + esc(h.top) + "</td><td><b>" + h.topScore + "</b></td><td>" + (h.scores.actions !== undefined ? h.scores.actions : "—") + "</td><td>" + (h.ddMsci !== null ? r1(h.ddMsci) + " %" : "—") + "</td></tr>";
+    }).join("");
+    t.innerHTML = "<tr><th>Date</th><th>N°1 du jour</th><th>Score</th><th>Actions</th><th>DD MSCI</th></tr>" + rows;
+  }
+  var sw = $("sparkWrap");
+  var pts = hist.filter(function (h) { return h.ddMsci !== null; });
+  if (pts.length < 2) { sw.innerHTML = '<div class="empty">Le tracé apparaîtra dès 2 snapshots avec drawdown connu.</div>'; return; }
+  var W = 440, H = 120, P = 6;
+  var vals = pts.map(function (h) { return h.ddMsci; });
+  var vmin = Math.min(0, Math.min.apply(null, vals)), vmax = 0;
+  var xs = pts.map(function (h, i) { return P + (W - 2 * P) * i / (pts.length - 1); });
+  var ys = pts.map(function (h) { return H - P - (H - 2 * P) * (h.ddMsci - vmin) / (vmax - vmin || 1); });
+  var poly = xs.map(function (x, i) { return x.toFixed(1) + "," + ys[i].toFixed(1); }).join(" ");
+  var zero = H - P - (H - 2 * P) * (0 - vmin) / (vmax - vmin || 1);
+  sw.innerHTML = '<svg viewBox="0 0 ' + W + " " + H + '" style="width:100%;height:auto">' +
+    '<line x1="' + P + '" y1="' + zero + '" x2="' + (W - P) + '" y2="' + zero + '" stroke="#29405f" stroke-dasharray="4,3"/>' +
+    '<polyline points="' + poly + '" fill="none" stroke="#38bdf8" stroke-width="2.5"/>' +
+    pts.map(function (h, i) { return '<circle cx="' + xs[i].toFixed(1) + '" cy="' + ys[i].toFixed(1) + '" r="3" fill="' + (h.ddMsci <= -10 ? "#fbbf24" : "#38bdf8") + '"/>'; }).join("") +
+    "</svg><div class='mut' style='margin-top:6px'>Ligne pointillée = 0 % (au sommet 52 sem.). Points orange = palier −10 % franchi.</div>";
+}
+
+// ---- Boutons données ----
+$("btnReset").addEventListener("click", function () {
+  if (!confirm("Restaurer toutes les valeurs du 17/10/2026 ? (La réserve et les paliers déployés sont conservés.)")) return;
+  var keep = { reserve: state.data.reserve, paliersDone: state.data.paliersDone };
+  state.data = normalizeData(DEFAULT_DATA);
+  state.data.reserve = keep.reserve;
+  state.data.paliersDone = keep.paliersDone;
+  save(); buildForm(); renderRadar();
+  toast("Valeurs du 17/10/2026 restaurées");
+});
+
+$("btnGecko").addEventListener("click", function () {
+  var b = $("btnGecko");
+  b.textContent = "⏳ Interrogation CoinGecko…"; b.disabled = true;
+  var GOLD = "https://api.coingecko.com/api/v3/coins/pax-gold/market_chart?vs_currency=eur&days=365";
+  var BTC = "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=eur&days=365";
+  var p = Promise.all([
+    fetch(GOLD).then(function (r) { if (!r.ok) throw new Error("or " + r.status); return r.json(); }),
+    fetch(BTC).then(function (r) { if (!r.ok) throw new Error("btc " + r.status); return r.json(); })
+  ]).then(function (res) {
+    var g = parseGecko(res[0]), c = parseGecko(res[1]);
+    if (!g || !c) throw new Error("réponse inattendue");
+    state.data.orEUR = g.cur; state.data.orHigh52 = g.high; state.data.orLow52 = g.low;
+    state.data.btcEUR = c.cur; state.data.btcHigh52 = c.high;
+    state.data.dateData = new Date().toISOString().slice(0, 10);
+    save(); buildForm(); renderRadar();
+    toast("Or " + g.cur + " € (52 sem. " + g.low + "–" + g.high + ") · BTC " + c.cur + " € mis à jour");
+  }).catch(function (e) {
+    toast("Échec CoinGecko (" + e.message + ") — saisie manuelle possible. Note : or via PAXG ≈ spot, léger premium possible.");
+  });
+  p.finally(function () { b.textContent = "🔄 Or & BTC en direct"; b.disabled = false; });
+});
+
+$("btnExport").addEventListener("click", function () {
+  var blob = new Blob([JSON.stringify({ data: state.data, history: state.history }, null, 2)], { type: "application/json" });
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "radar-conjoncture-" + new Date().toISOString().slice(0, 10) + ".json";
+  document.documentElement.appendChild(a); a.click(); a.remove();
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+});
+
+$("btnImport").addEventListener("click", function () { $("importFile").click(); });
+$("importFile").addEventListener("change", function (ev) {
+  var f = ev.target.files && ev.target.files[0];
+  if (!f) return;
+  var fr = new FileReader();
+  fr.onload = function () {
+    try {
+      var parsed = JSON.parse(fr.result);
+      if (!parsed || !parsed.data) throw new Error("format");
+      state.data = normalizeData(parsed.data);
+      if (parsed.data.reserve !== undefined) state.data.reserve = num(parsed.data.reserve) || 0;
+      if (parsed.data.paliersDone) state.data.paliersDone = parsed.data.paliersDone;
+      state.history = Array.isArray(parsed.history) ? parsed.history : [];
+      save(); buildForm(); renderRadar();
+      toast("Import réussi");
+    } catch (e) { toast("Import impossible : fichier invalide"); }
+  };
+  fr.readAsText(f);
+  ev.target.value = "";
+});
+
+$("btnClearHist").addEventListener("click", function () {
+  if (!confirm("Vider tout l'historique des snapshots ?")) return;
+  state.history = []; save(); renderSuivi();
+  toast("Historique vidé");
+});
+
+// ---- Sources ----
+(function () {
+  var ul = $("srcList");
+  ul.innerHTML = SOURCES.map(function (s) {
+    return "<li><b style='color:#cbd5e1'>" + esc(s[0]) + "</b><br>↳ " + esc(s[1]) + "</li>";
+  }).join("") +
+  "<li style='margin-top:6px'><b style='color:#cbd5e1'>Rafraîchissement auto :</b> le bouton « Or & BTC en direct » interroge l'API publique CoinGecko (or via PAXG = 1 once, ± léger premium). Les autres données se vérifient sur les sites ci-dessus (≈ 2 min).</li>";
+})();
+
+// ---- Init ----
+load();
+buildForm();
+renderRadar();
+if (!state.history.length) { commitSnapshot(false); save(); }
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("./sw.js").catch(function () {});
+  });
+}
+</script>
+</body>
+</html>
