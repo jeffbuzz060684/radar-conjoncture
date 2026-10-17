@@ -109,7 +109,7 @@
 <header>
   <div class="hrow">
     <h1>📡 Radar <span>Conjoncture</span></h1>
-    <span class="badge">🔄 Maj auto hebdo · <b>v3</b></span>
+    <span class="badge">🔄 Maj auto quotidienne · <b>v4</b></span>
   </div>
   <div class="hrow" style="margin-top:6px">
     <span class="chip" id="dataChip">—</span>
@@ -134,6 +134,7 @@
 
     <div class="card">
       <h2>Ta stratégie PEA — paliers tactiques</h2>
+      <div id="refAlert"></div>
       <div class="ddnow"><span class="mut">Drawdown MSCI World<br><span id="ddSub" style="font-size:11px"></span></span><b id="ddVal">—</b></div>
       <div class="bar" style="margin-bottom:10px"><i id="ddBar" style="width:0%"></i></div>
       <div id="palList"></div>
@@ -175,6 +176,16 @@
       <div id="sparkWrap"></div>
     </div>
     <div class="card">
+      <h2>Évolution des scores par actif</h2>
+      <div class="mut" style="margin-bottom:8px">Rotation du classement semaine après semaine : chaque ligne = le score d'un actif à chaque snapshot.</div>
+      <div id="scoresWrap"></div>
+    </div>
+    <div class="card">
+      <h2>Épisodes de paliers</h2>
+      <div class="mut" style="margin-bottom:8px">Un nouveau plus haut 52 sem. clôt l'épisode de baisse et réinitialise les paliers déployés.</div>
+      <table class="hist" id="episodesTable"></table>
+    </div>
+    <div class="card">
       <h2>Historique des snapshots</h2>
       <div class="mut" style="margin-bottom:8px">Chaque enregistrement de données crée une photo datée : actif n°1 du jour, score, drawdown.</div>
       <table class="hist" id="histTable"></table>
@@ -198,13 +209,13 @@
 // ---------- Valeurs du jour, vérifiées le 17/10/2026 (sources cf. onglet Données) ----------
 var DEFAULT_DATA = {
   dateData: "2026-10-17",
-  msci: 146.73, msciHigh52: 161.35, msciLow52: 123.17,   // IWDA en $, clôture 16/10/2026
-  cape: 40.4, vix: 16.46,
+  msci: 146.81, msciHigh52: 149.81, msciHigh52Date: "", msciLow52: 123.20,   // IWDA en $ (LSE, USD) ; sommet 52 sem. d'après Investing.com
+  cape: 40.38, vix: 19.99, vix5: 16.76,                                      // VIX clôture 16/10 ; moyenne 5 séances Yahoo
   inflZE: 3.8, inflUS: 3.7,
-  bceDepot: 2.5, bceDir: "hausse",                       // relevé de 25 pb le 10/09/2026, effectif 16/09/2026
-  bund10: 3.4, oat10: 4.74, pmiZE: 53.1,
-  orEUR: 3705.85, orHigh52: 4592, orLow52: 3387.45,      // €/once
-  btcEUR: 72539, btcHigh52: null,                        // 52 sem BTC : bouton « en direct » ou saisie
+  bceDepot: 2.5, bceDir: "hausse",                       // +25 pb le 10/09/2026, effectif 16/09/2026
+  bund10: 3.42, oat10: 4.79, pmiZE: 53.1,
+  orEUR: 3729.84, orHigh52: 4592, orLow52: 3387.45,       // €/once
+  btcEUR: 72598, btcHigh52: null,                        // 52 sem BTC : bouton « en direct » ou saisie
   imoRendement: 5.0,
   reserve: 0,
   paliersDone: { p5: false, p10: false, p15: false, p20: false }
@@ -215,9 +226,11 @@ var FIELDS = [
   { k: "dateData", l: "Date des données", t: "date", h: "date du relevé" },
   { k: "msci", l: "Cours MSCI World (IWDA, $)", t: "num", h: "clôture, en dollars" },
   { k: "msciHigh52", l: "Plus haut 52 sem. MSCI ($)", t: "num", h: "sommet 52 semaines" },
+  { k: "msciHigh52Date", l: "Date du sommet 52 sem.", t: "date", h: "optionnel — trace la référence des paliers" },
   { k: "msciLow52", l: "Plus bas 52 sem. MSCI ($)", t: "num", h: "optionnel, jauge de position" },
   { k: "cape", l: "CAPE Shiller (S&P 500)", t: "num", h: "valorisation actions US" },
   { k: "vix", l: "VIX", t: "num", h: "volatilité implicite US" },
+  { k: "vix5", l: "VIX lissé 5 j", t: "num", h: "optionnel — moyenne 5 séances, lisse les spikes" },
   { g: "Macro zone euro & US" },
   { k: "inflZE", l: "Inflation zone euro (%)", t: "num", h: "dernier mois, annualisé" },
   { k: "inflUS", l: "Inflation US (%)", t: "num", h: "dernier mois, annualisé" },
@@ -255,6 +268,7 @@ function stepScore(v, brackets) {
 
 function computeDerived(d) {
   var der = {};
+  der.vixEff = (num(d.vix5) !== null) ? d.vix5 : num(d.vix);   // VIX lissé 5 j si dispo, sinon VIX du jour
   der.ddMsci = pctDD(d.msci, d.msciHigh52);
   der.ddOr = pctDD(d.orEUR, d.orHigh52);
   der.ddBtc = pctDD(d.btcEUR, d.btcHigh52);
@@ -280,9 +294,9 @@ function scoreActions(d, der) {
   parts.push(mkPart("Opportunité de prix (drawdown)",
     dd === null ? 0 : stepScore(-dd, [[3, -4], [5, 4], [10, 10], [15, 18], [20, 24], [Infinity, 30]]),
     dd === null ? "données manquantes" : "cours à " + r1(dd) + " % du sommet 52 sem."));
-  parts.push(mkPart("Volatilité (VIX " + (num(d.vix) !== null ? r1(d.vix) : "?") + ")",
-    stepScore(d.vix, [[13, -6], [20, 0], [27, 8], [Infinity, 12]]),
-    d.vix >= 27 ? "peur sur les marchés = acheter à rabais" : (d.vix < 13 ? "complaisance" : "normal")));
+  parts.push(mkPart("Volatilité (VIX " + (der.vixEff !== null ? r1(der.vixEff) : "?") + (num(d.vix5) !== null ? " lissé" : "") + ")",
+    stepScore(der.vixEff, [[13, -6], [20, 0], [27, 8], [Infinity, 12]]),
+    der.vixEff === null ? "données manquantes" : (der.vixEff >= 27 ? "peur sur les marchés = acheter à rabais" : (der.vixEff < 13 ? "complaisance" : "normal"))));
   var dirPts = d.bceDir === "baisse" ? 8 : d.bceDir === "hausse" ? -8 : 0;
   parts.push(mkPart("Politique monétaire BCE (" + d.bceDir + ")", dirPts,
     d.bceDir === "baisse" ? "des taux qui baissent soutiennent les actions" : "des taux qui montent pèsent sur les valorisations"));
@@ -335,7 +349,7 @@ function scoreMonetaire(d, der) {
   parts.push(mkPart("Rendement réel (" + (der.tauxReelZE !== null ? r1(der.tauxReelZE) : "?") + " %)",
     der.tauxReelZE === null ? 0 : stepScore(der.tauxReelZE, [[0, -6], [1, 2], [Infinity, 6]]),
     der.tauxReelZE !== null && der.tauxReelZE < 0 ? "l'inflation dépasse le taux : le monétaire perd du pouvoir d'achat" : "préserve le pouvoir d'achat"));
-  var refuge = ((num(d.vix) !== null && d.vix >= 25) || (der.ddMsci !== null && der.ddMsci <= -15)) ? 6 : 0;
+  var refuge = ((der.vixEff !== null && der.vixEff >= 25) || (der.ddMsci !== null && der.ddMsci <= -15)) ? 6 : 0;
   parts.push(mkPart("Rôle de refuge", refuge, refuge ? "marchés stressés : le monétaire protège" : "marchés calmes : peu d'avantage refuge"));
   return { id: "monetaire", icon: "🛡️", name: "Monétaire zone euro", score: clampScore(50 + parts.reduce(function (s, p) { return s + p.pts; }, 0)), parts: parts };
 }
@@ -366,7 +380,7 @@ function scoreCrypto(d, der) {
   parts.push(mkPart("Inflation (" + (num(d.inflZE) !== null ? r1(d.inflZE) : "?") + " %)",
     stepScore(d.inflZE, [[2, 0], [Infinity, 4]]),
     d.inflZE >= 3 ? "thèse « réserve de valeur hors monnaie fiat » relancée" : "peu d'attrait spécifique"));
-  var panique = (num(d.vix) !== null && d.vix >= 30) ? -8 : 0;
+  var panique = (der.vixEff !== null && der.vixEff >= 30) ? -8 : 0;
   parts.push(mkPart("Stress marché (VIX)", panique, panique ? "panique généralisée : le BTC tombe avec le marché" : "pas de stress marqué"));
   return { id: "crypto", icon: "₿", name: "Crypto (BTC)", score: clampScore(50 + parts.reduce(function (s, p) { return s + p.pts; }, 0)), parts: parts, partial: dd === null };
 }
@@ -386,6 +400,7 @@ function radarAll(d) {
 }
 
 function regimeOf(d) {
+  var vx = (num(d.vix5) !== null) ? d.vix5 : num(d.vix);
   var growth = d.pmiZE >= 53 ? "Expansion" : d.pmiZE >= 50 ? "Croissance modérée" : d.pmiZE >= 47 ? "Ralentissement" : "Contraction";
   var infl = d.inflZE >= 3 ? "élevée" : d.inflZE >= 2 ? "au-dessus de la cible" : "sous contrôle";
   var dirTxt = d.bceDir === "hausse" ? "en relèvement de taux" : d.bceDir === "baisse" ? "en assouplissement" : "en pause";
@@ -395,7 +410,7 @@ function regimeOf(d) {
   if (d.bceDir === "hausse") recs.push("le resserrement monétaire pèse sur les obligations et les valorisations élevées");
   if (d.pmiZE >= 52) recs.push("la croissance soutenue soutient les bénéfices des entreprises");
   if (d.cape >= 35) recs.push("CAPE ≥ 35 : les actions vivent au-dessus de leurs valorisations historiques — rendements long terme attendus modestes");
-  var desc = "PMI " + r1(d.pmiZE) + " · inflation ZE " + r1(d.inflZE) + " % (US " + r1(d.inflUS) + " %) · dépôt BCE " + r1(d.bceDepot) + " % · Bund " + r1(d.bund10) + " % · VIX " + r1(d.vix) + ". Historiquement dans ce régime : " + (recs.length ? recs.join(" ; ") + "." : "pas de biais marqué.");
+  var desc = "PMI " + r1(d.pmiZE) + " · inflation ZE " + r1(d.inflZE) + " % (US " + r1(d.inflUS) + " %) · dépôt BCE " + r1(d.bceDepot) + " % · Bund " + r1(d.bund10) + " % · VIX " + r1(vx) + (num(d.vix5) !== null ? " (lissé 5 j)" : "") + ". Historiquement dans ce régime : " + (recs.length ? recs.join(" ; ") + "." : "pas de biais marqué.");
   return { label: label, desc: desc };
 }
 
@@ -483,22 +498,22 @@ function snapshotOf(d, radar) {
 }
 
 var SOURCES = [
-  ["MSCI World (IWDA) : 146,73 $, clôture du 16/10/2026 ; plus haut 52 sem. 161,35 $ (26/02/2026) ; plus bas 123,17 $ (20/11/2025)", "Traders Union — historique IWDA, https://tradersunion.com/fr/etfs/iwda/price-history/"],
-  ["CAPE Shiller : 40,4 (01/10/2026) — 98,9e percentile historique, seule la bulle 1999-2000 a été plus haute", "GuruFocus (40,38), corroboré par MacroRadar et thetrading.tools (40,7)"],
-  ["VIX : 16,46 (15/10/2026)", "données de marché CBOE"],
-  ["Inflation zone euro : 3,8 % en septembre 2026 (flash, en hausse depuis 3 mois ; énergie +18,9 %)", "Eurostat, communiqué du 02/10/2026"],
-  ["Inflation US : 3,7 % en septembre 2026 (core 2,6 %) ; essence +34,2 % sur un an", "BLS via Trading Economics / CNBC (14/10/2026)"],
-  ["BCE : taux de dépôt porté à 2,50 % (+25 pb, décision du 10/09/2026, effectif 16/09/2026)", "Communiqué BCE, ecb.europa.eu"],
-  ["Bund 10 ans : 3,4 % ; OAT 10 ans : 4,74 % ; spread ≈ 134-135 pb (15/10/2026)", "Trading Economics / suivi spread OAT-Bund"],
-  ["PMI composite zone euro : 53,1 en septembre 2026 (plus haut depuis 3,5 ans)", "S&P Global via Trading Economics"],
-  ["Or : 3 705,85 €/once (16/10/2026) ; fourchette 52 sem. 3 387–4 592 €", "données de marché (spot XAU/EUR)"],
-  ["Bitcoin : 72 539 € (17/10/2026)", "données de marché (BTC/EUR) ; plus haut 52 sem. via bouton « en direct » (CoinGecko)"]
+  ["MSCI World (IWDA) : 146,81 $ (17/10/2026, cotation LSE en USD) ; plus haut 52 sem. 149,81 $ ; plus bas 123,20 $", "Investing.com, corroboré par Yahoo Finance (IWDA.L)"],
+  ["CAPE Shiller : 40,38 (01/10/2026) — 98,9e percentile historique, seule la bulle 1999-2000 a été plus haute", "GuruFocus, corroboré par thetrading.tools (40,7)"],
+  ["VIX : 19,99 (+21,5 %, clôture du 16/10/2026) ; moyenne 5 séances : 16,76", "CBOE via Yahoo Finance (^VIX)"],
+  ["Inflation zone euro : 3,8 % en septembre 2026 (confirmé le 16/10, en hausse depuis 3 mois ; énergie +18,8 %)", "Eurostat, communiqués du 02/10 et du 16/10/2026"],
+  ["Inflation US : 3,7 % en septembre 2026 (core 2,6 %) ; essence +34,2 % sur un an", "BLS via CNBC / Trading Economics (14/10/2026)"],
+  ["BCE : taux de dépôt 2,50 % (+25 pb, décision du 10/09/2026) ; marché attend stable le 29/10 (90 %)", "Communiqué BCE, ECB Watch Tool"],
+  ["Bund 10 ans : 3,42 % ; OAT 10 ans : 4,79 % ; spread ≈ 137 pb (16/10/2026)", "Trading Economics / suivi spread OAT-Bund"],
+  ["PMI composite zone euro : 53,1 en septembre 2026 (plus haut depuis 3,5 ans)", "S&P Global"],
+  ["Or : 3 729,84 €/once (16/10/2026, 4 186,70 $ / taux ECB 1,1225) ; fourchette 52 sem. 3 387–4 592 €", "Yahoo Finance / BCE"],
+  ["Bitcoin : 72 598 € (17/10/2026)", "CoinGecko"]
 ];
 /* ===LOGIC_END=== */
 
 // ================== Couche UI ==================
 var KEY = "radar-conjoncture-v1";
-var state = { data: null, history: [] };
+var state = { data: null, history: [], refAlert: null, episodes: [] };
 
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
@@ -511,13 +526,17 @@ function load() {
     state.data.reserve = num(raw.data.reserve) !== null ? num(raw.data.reserve) : 0;
     if (raw.data.paliersDone) state.data.paliersDone = { p5: !!raw.data.paliersDone.p5, p10: !!raw.data.paliersDone.p10, p15: !!raw.data.paliersDone.p15, p20: !!raw.data.paliersDone.p20 };
     state.history = Array.isArray(raw.history) ? raw.history : [];
+    state.refAlert = (raw.refAlert && typeof raw.refAlert === "object") ? raw.refAlert : null;
+    state.episodes = Array.isArray(raw.episodes) ? raw.episodes : [];
   } else {
     state.data = normalizeData(DEFAULT_DATA);
     state.history = [];
+    state.refAlert = null;
+    state.episodes = [];
   }
 }
 function save() {
-  try { localStorage.setItem(KEY, JSON.stringify({ data: state.data, history: state.history })); } catch (e) {}
+  try { localStorage.setItem(KEY, JSON.stringify({ data: state.data, history: state.history, refAlert: state.refAlert, episodes: state.episodes })); } catch (e) {}
   if (navigator.storage && navigator.storage.persist) { try { navigator.storage.persist(); } catch (e) {} }
 }
 
@@ -662,6 +681,21 @@ function renderRadar() {
     '<div class="verdict"><ul>' + strat.lines.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") + "</ul></div>" +
     strat.warns.map(function (w) { return '<div class="warnbox">⚠️ ' + esc(w) + "</div>"; }).join("");
 
+  // Alerte référence 52 sem. instable (déplacée de plus de 2 % d'un relevé à l'autre)
+  var ra = $("refAlert");
+  if (state.refAlert && num(d.msciHigh52) !== null && state.refAlert.to === d.msciHigh52) {
+    var raPct = r1((state.refAlert.to / state.refAlert.from - 1) * 100);
+    ra.innerHTML = '<div class="warnbox">⚠️ Référence 52 sem. déplacée au relevé du ' + esc(state.refAlert.date) + " : " +
+      state.refAlert.from + " $ → " + state.refAlert.to + " $ (" + (raPct > 0 ? "+" : "") + raPct +
+      " %). Seuils des paliers recalculés — vérifie la cohérence de la source. " +
+      '<button class="toggle" id="btnRefOk">compris ✓</button></div>';
+    $("btnRefOk").addEventListener("click", function () {
+      state.refAlert = null; save(); renderRadar();
+    });
+  } else {
+    ra.innerHTML = "";
+  }
+
   // Chips en-tête
   $("dataChip").innerHTML = "📅 Données du <b>" + esc(d.dateData) + "</b>";
   var sd = staleDays(d.dateData, Date.now());
@@ -685,7 +719,7 @@ function renderSuivi() {
   }
   var sw = $("sparkWrap");
   var pts = hist.filter(function (h) { return h.ddMsci !== null; });
-  if (pts.length < 2) { sw.innerHTML = '<div class="empty">Le tracé apparaîtra dès 2 snapshots avec drawdown connu.</div>'; return; }
+  if (pts.length < 2) { sw.innerHTML = '<div class="empty">Le tracé apparaîtra dès 2 snapshots avec drawdown connu.</div>'; renderScoresChart(); renderEpisodes(); return; }
   var W = 440, H = 120, P = 6;
   var vals = pts.map(function (h) { return h.ddMsci; });
   var vmin = Math.min(0, Math.min.apply(null, vals)), vmax = 0;
@@ -698,6 +732,65 @@ function renderSuivi() {
     '<polyline points="' + poly + '" fill="none" stroke="#38bdf8" stroke-width="2.5"/>' +
     pts.map(function (h, i) { return '<circle cx="' + xs[i].toFixed(1) + '" cy="' + ys[i].toFixed(1) + '" r="3" fill="' + (h.ddMsci <= -10 ? "#fbbf24" : "#38bdf8") + '"/>'; }).join("") +
     "</svg><div class='mut' style='margin-top:6px'>Ligne pointillée = 0 % (au sommet 52 sem.). Points orange = palier −10 % franchi.</div>";
+
+  renderScoresChart();
+  renderEpisodes();
+}
+
+// ---- Courbe des 6 scores au fil des snapshots ----
+var SCORE_META = [
+  { id: "or", label: "Or", color: "#eab308" },
+  { id: "monetaire", label: "Monétaire", color: "#34d399" },
+  { id: "actions", label: "Actions", color: "#38bdf8" },
+  { id: "obligations", label: "Obligations", color: "#a78bfa" },
+  { id: "immo", label: "Immobilier", color: "#fb7185" },
+  { id: "crypto", label: "Crypto", color: "#fb923c" }
+];
+
+function renderScoresChart() {
+  var wrap = $("scoresWrap");
+  var hist = state.history.filter(function (h) { return h.scores && typeof h.scores === "object"; });
+  if (hist.length < 2) { wrap.innerHTML = '<div class="empty">Le tracé apparaîtra dès 2 snapshots enregistrés.</div>'; return; }
+  var W = 440, H = 150, P = 8;
+  var xs = hist.map(function (h, i) { return P + (W - 2 * P) * i / (hist.length - 1); });
+  function yOf(v) { return H - P - (H - 2 * P) * (v - 0) / 100; }
+  var lines = SCORE_META.map(function (m) {
+    var segs = [], open = false;
+    hist.forEach(function (h, i) {
+      var v = h.scores[m.id];
+      if (typeof v === "number" && isFinite(v)) {
+        segs.push((open ? "L" : "M") + xs[i].toFixed(1) + "," + yOf(v).toFixed(1));
+        open = true;
+      } else { open = false; }
+    });
+    return segs.length ? '<path d="' + segs.join("") + '" fill="none" stroke="' + m.color + '" stroke-width="2"/>' : "";
+  }).join("");
+  var last = hist[hist.length - 1];
+  var legend = SCORE_META.map(function (m) {
+    var v = last.scores[m.id];
+    return '<span style="margin-right:10px;white-space:nowrap;font-size:11.5px;color:var(--mut)"><i style="display:inline-block;width:8px;height:8px;border-radius:99px;background:' + m.color + ';margin-right:4px"></i>' + m.label + (typeof v === "number" ? " <b style='color:var(--txt)'>" + v + "</b>" : "") + "</span>";
+  }).join("");
+  var labels = xs.map(function (x, i) {
+    return i === 0 || i === hist.length - 1 || hist.length <= 6
+      ? '<text x="' + x.toFixed(1) + '" y="' + (H - 1) + '" fill="#64748b" font-size="9" text-anchor="' + (i === 0 ? "start" : i === hist.length - 1 ? "end" : "middle") + '">' + esc(hist[i].date.slice(5)) + "</text>"
+      : "";
+  }).join("");
+  wrap.innerHTML = '<svg viewBox="0 0 ' + W + " " + H + '" style="width:100%;height:auto">' +
+    [25, 50, 75].map(function (g) { return '<line x1="' + P + '" y1="' + yOf(g) + '" x2="' + (W - P) + '" y2="' + yOf(g) + '" stroke="#29405f" stroke-dasharray="3,4" stroke-width="1"/>'; }).join("") +
+    lines + labels + "</svg>" +
+    '<div style="margin-top:6px;line-height:2">' + legend + "</div>";
+}
+
+// ---- Épisodes de paliers (un nouveau plus haut 52 sem. clôt l'épisode en cours) ----
+function renderEpisodes() {
+  var t = $("episodesTable");
+  var eps = state.episodes || [];
+  if (!eps.length) { t.innerHTML = '<tr><td colspan="4" class="empty">Aucun épisode clos pour l\'instant — dès qu\'un nouveau plus haut 52 sem. sera détecté, l\'épisode précédent s\'affichera ici.</td></tr>'; return; }
+  var rows = eps.slice().reverse().map(function (e) {
+    return "<tr><td>" + esc(e.date) + "</td><td>" + e.oldHigh52 + " $</td><td><b>" + e.newHigh52 + " $</b></td><td>" +
+      (e.deployed ? e.deployed + " palier(s) déployé(s)" : "aucun palier déployé") + "</td></tr>";
+  }).join("");
+  t.innerHTML = "<tr><th>Date</th><th>Ancien sommet</th><th>Nouveau sommet</th><th>Bilan de l'épisode</th></tr>" + rows;
 }
 
 // ---- Boutons données ----
@@ -755,6 +848,8 @@ $("importFile").addEventListener("change", function (ev) {
       if (parsed.data.reserve !== undefined) state.data.reserve = num(parsed.data.reserve) || 0;
       if (parsed.data.paliersDone) state.data.paliersDone = parsed.data.paliersDone;
       state.history = Array.isArray(parsed.history) ? parsed.history : [];
+      state.refAlert = (parsed.refAlert && typeof parsed.refAlert === "object") ? parsed.refAlert : null;
+      state.episodes = Array.isArray(parsed.episodes) ? parsed.episodes : [];
       save(); buildForm(); renderRadar();
       toast("Import réussi");
     } catch (e) { toast("Import impossible : fichier invalide"); }
@@ -775,7 +870,7 @@ $("btnClearHist").addEventListener("click", function () {
   ul.innerHTML = SOURCES.map(function (s) {
     return "<li><b style='color:#cbd5e1'>" + esc(s[0]) + "</b><br>↳ " + esc(s[1]) + "</li>";
   }).join("") +
-  "<li style='margin-top:6px'><b style='color:#cbd5e1'>Mise à jour automatique :</b> à chaque ouverture, l'app récupère le relevé hebdomadaire (data.json, mis à jour le lundi par l'assistant) et rafraîchit or & BTC en direct via l'API publique CoinGecko (or via PAXG = 1 once, ± léger premium). Aucune saisie nécessaire.</li>" +
+  "<li style='margin-top:6px'><b style='color:#cbd5e1'>Mise à jour automatique :</b> à chaque ouverture, l'app récupère le relevé hebdomadaire vérifié (data.json, mis à jour le lundi par l'assistant) puis le relevé quotidien automatique (data-daily.json : cours IWDA + VIX lissé, généré chaque soir de semaine par GitHub Actions) — les paliers réagissent donc chaque jour, pas seulement le lundi. Or & BTC en direct via l'API publique CoinGecko (or via PAXG = 1 once, ± léger premium). Un nouveau plus haut 52 sem. réinitialise automatiquement les paliers déployés (nouvel épisode, tracé dans l'onglet Suivi). Aucune saisie nécessaire.</li>" +
   "<li style='margin-top:6px'><b style='color:#cbd5e1'>Instruments exemples :</b> chaque actif de l'onglet Radar affiche un véhicule concret vérifié le 17/10/2026 — justETF, extraETF, Boursorama, DCA Tracker (éligibilité PEA), ASPIM (SCPI). Exemples indicatifs, pas des recommandations.</li>";
 })();
 
