@@ -1,37 +1,67 @@
 {
   "version": 1,
   "dateData": "2026-10-17",
-  "note": "données initiales vérifiées",
+  "note": "Maj hebdo — VIX bondit, taux hauts",
   "data": {
-    "msci": 146.73,
-    "msciHigh52": 161.35,
-    "msciLow52": 123.17,
-    "cape": 40.4,
-    "vix": 16.46,
+    "msci": 146.81,
+    "msciHigh52": 149.81,
+    "msciLow52": 123.2,
+    "cape": 40.38,
+    "vix": 19.99,
     "inflZE": 3.8,
     "inflUS": 3.7,
     "bceDepot": 2.5,
     "bceDir": "hausse",
-    "bund10": 3.4,
-    "oat10": 4.74,
+    "bund10": 3.42,
+    "oat10": 4.79,
     "pmiZE": 53.1,
-    "orEUR": 3705.85,
+    "orEUR": 3729.84,
     "orHigh52": 4592,
     "orLow52": 3387.45,
-    "btcEUR": 72539,
+    "btcEUR": 72598,
     "btcHigh52": null,
-    "imoRendement": 5.0
+    "imoRendement": 5
   },
   "sources": [
-    ["MSCI World (IWDA) : 146,73 $ (clôture 16/10/2026) ; plus haut 52 sem. 161,35 $ (26/02/2026) ; plus bas 123,17 $ (20/11/2025)", "Traders Union — historique IWDA"],
-    ["CAPE Shiller : 40,4 (98,9e percentile)", "GuruFocus, corroboré par thetrading.tools"],
-    ["VIX : 16,46 (15/10/2026)", "CBOE"],
-    ["Inflation zone euro : 3,8 % (septembre, flash)", "Eurostat"],
-    ["Inflation US : 3,7 % (septembre)", "BLS via Trading Economics / CNBC"],
-    ["BCE : dépôt 2,50 % en hausse (+25 pb le 10/09/2026)", "BCE"],
-    ["Bund 3,4 % ; OAT 4,74 % ; spread ~134 pb", "Trading Economics"],
-    ["PMI composite zone euro : 53,1", "S&P Global via Trading Economics"],
-    ["Or : 3 705,85 €/once (16/10/2026)", "spot XAU/EUR"],
-    ["Bitcoin : 72 539 € (17/10/2026)", "BTC/EUR"]
+    [
+      "MSCI World (IWDA) : 146,81 $ (17/10/2026) ; plus haut 52 sem. 149,81 $ ; plus bas 123,20 $",
+      "Investing.com"
+    ],
+    [
+      "CAPE Shiller : 40,38 (2026-10-01, 98,9e percentile)",
+      "GuruFocus"
+    ],
+    [
+      "VIX : 19,99 (+21,5 % — clôture 16/10/2026)",
+      "CBOE via Yahoo Finance"
+    ],
+    [
+      "Inflation zone euro : 3,8 % (septembre, confirmé)",
+      "Eurostat"
+    ],
+    [
+      "Inflation US : 3,7 % (septembre, +0,6 % m/m)",
+      "BLS via CNBC / Trading Economics"
+    ],
+    [
+      "BCE : dépôt 2,50 % en hausse (+25 pb, septembre) ; marché attend stable au 29/10 (90 %)",
+      "BCE / ECB Watch Tool"
+    ],
+    [
+      "Bund 3,42 % ; OAT 4,79 % ; spread ~137 pb (16/10/2026)",
+      "Trading Economics"
+    ],
+    [
+      "PMI composite zone euro : 53,1 (septembre)",
+      "S&P Global"
+    ],
+    [
+      "Or : 3 729,84 €/once (4 186,70 $ / taux ECB 1,1225)",
+      "Yahoo Finance / BCE"
+    ],
+    [
+      "Bitcoin : 72 598 € (17/10/2026)",
+      "CoinGecko"
+    ]
   ]
 }
