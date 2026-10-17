@@ -108,7 +108,7 @@
 <header>
   <div class="hrow">
     <h1>📡 Radar <span>Conjoncture</span></h1>
-    <span class="badge">💾 Sauvegarde auto · <b>v1</b></span>
+    <span class="badge">🔄 Maj auto hebdo · <b>v2</b></span>
   </div>
   <div class="hrow" style="margin-top:6px">
     <span class="chip" id="dataChip">—</span>
@@ -770,7 +770,7 @@ $("btnClearHist").addEventListener("click", function () {
   ul.innerHTML = SOURCES.map(function (s) {
     return "<li><b style='color:#cbd5e1'>" + esc(s[0]) + "</b><br>↳ " + esc(s[1]) + "</li>";
   }).join("") +
-  "<li style='margin-top:6px'><b style='color:#cbd5e1'>Rafraîchissement auto :</b> le bouton « Or & BTC en direct » interroge l'API publique CoinGecko (or via PAXG = 1 once, ± léger premium). Les autres données se vérifient sur les sites ci-dessus (≈ 2 min).</li>";
+  "<li style='margin-top:6px'><b style='color:#cbd5e1'>Mise à jour automatique :</b> à chaque ouverture, l'app récupère le relevé hebdomadaire (data.json, mis à jour le lundi par l'assistant) et rafraîchit or & BTC en direct via l'API publique CoinGecko (or via PAXG = 1 once, ± léger premium). Aucune saisie nécessaire.</li>";
 })();
 
 // ---- Init ----
@@ -784,5 +784,6 @@ if ("serviceWorker" in navigator) {
   });
 }
 </script>
+<script src="auto.js"></script>
 </body>
 </html>
