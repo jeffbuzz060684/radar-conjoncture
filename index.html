@@ -56,6 +56,7 @@
   .part .l { color: var(--mut); }
   .part .v { font-variant-numeric: tabular-nums; white-space: nowrap; }
   .pt-pos { color: var(--good); } .pt-neg { color: var(--bad); } .pt-zero { color: var(--mut); }
+  .veh { font-size: 12px; margin-top: 8px; color: var(--txt); line-height: 1.45; }
 
   /* Paliers */
   .palrow { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px dashed rgba(148,163,184,.18); font-size: 13.5px; }
@@ -108,7 +109,7 @@
 <header>
   <div class="hrow">
     <h1>📡 Radar <span>Conjoncture</span></h1>
-    <span class="badge">🔄 Maj auto hebdo · <b>v2</b></span>
+    <span class="badge">🔄 Maj auto hebdo · <b>v3</b></span>
   </div>
   <div class="hrow" style="margin-top:6px">
     <span class="chip" id="dataChip">—</span>
@@ -189,6 +190,7 @@
 </nav>
 <div class="toast" id="toast"></div>
 
+<script src="vehicles.js"></script>
 <script>
 /* ===LOGIC_START=== */
 "use strict";
@@ -612,6 +614,8 @@ function renderRadar() {
       var cls = p.pts > 0 ? "pt-pos" : p.pts < 0 ? "pt-neg" : "pt-zero";
       return '<div class="part"><span class="l">' + esc(p.label) + (p.detail ? ' <em style="color:#64748b;font-style:normal">— ' + esc(p.detail) + '</em>' : "") + '</span><span class="v ' + cls + '">' + fmtPts(p.pts) + "</span></div>";
     }).join("");
+    var veh = VEHICULES[a.id];
+    var vehHtml = veh ? '<div class="veh">💡 ' + esc(veh.nom) + (veh.isin ? " · ISIN " + esc(veh.isin) : "") + " · " + esc(veh.frais) + ' · <b style="color:' + (veh.enceinte === "PEA" ? "var(--good)" : "var(--mut)") + '">' + esc(veh.enceinte) + "</b>" + (veh.note ? '<br><span class="mut" style="font-size:11px">' + esc(veh.note) + "</span>" : "") + "</div>" : "";
     el.innerHTML =
       '<div class="arow">' +
       '<span class="rank">' + (i + 1) + '</span>' +
@@ -619,6 +623,7 @@ function renderRadar() {
       '<span class="aname"><span class="n">' + esc(a.name) + (a.partial ? ' <span class="mut" style="font-size:10px">(score partiel)</span>' : "") + '</span><span class="b ' + a.badge.cls + '">' + a.badge.icon + " " + a.badge.label + "</span></span>" +
       '<span class="score">' + a.score + "</span></div>" +
       '<div class="bar"><i class="' + a.badge.cls + '" style="width:' + a.score + '%"></i></div>' +
+      vehHtml +
       '<details class="why"><summary>Pourquoi ce score ?</summary><div class="parts">' + partsHtml + "</div></details>";
     listEl.appendChild(el);
   });
@@ -770,7 +775,8 @@ $("btnClearHist").addEventListener("click", function () {
   ul.innerHTML = SOURCES.map(function (s) {
     return "<li><b style='color:#cbd5e1'>" + esc(s[0]) + "</b><br>↳ " + esc(s[1]) + "</li>";
   }).join("") +
-  "<li style='margin-top:6px'><b style='color:#cbd5e1'>Mise à jour automatique :</b> à chaque ouverture, l'app récupère le relevé hebdomadaire (data.json, mis à jour le lundi par l'assistant) et rafraîchit or & BTC en direct via l'API publique CoinGecko (or via PAXG = 1 once, ± léger premium). Aucune saisie nécessaire.</li>";
+  "<li style='margin-top:6px'><b style='color:#cbd5e1'>Mise à jour automatique :</b> à chaque ouverture, l'app récupère le relevé hebdomadaire (data.json, mis à jour le lundi par l'assistant) et rafraîchit or & BTC en direct via l'API publique CoinGecko (or via PAXG = 1 once, ± léger premium). Aucune saisie nécessaire.</li>" +
+  "<li style='margin-top:6px'><b style='color:#cbd5e1'>Instruments exemples :</b> chaque actif de l'onglet Radar affiche un véhicule concret vérifié le 17/10/2026 — justETF, extraETF, Boursorama, DCA Tracker (éligibilité PEA), ASPIM (SCPI). Exemples indicatifs, pas des recommandations.</li>";
 })();
 
 // ---- Init ----

@@ -1,5 +1,5 @@
-var CACHE = "radar-v2";
-var SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png", "./auto.js"];
+var CACHE = "radar-v3";
+var SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png", "./auto.js", "./vehicles.js"];
 
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) {

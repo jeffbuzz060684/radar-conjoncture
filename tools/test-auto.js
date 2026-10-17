@@ -1,4 +1,4 @@
-/* Harnais de tests — Radar Conjoncture v2 (module auto.js + cohérence des fichiers)
+/* Harnais de tests — Radar Conjoncture v3 (modules auto.js & vehicles.js + cohérence des fichiers)
    Exécution : node tools/test-auto.js  →  0 échec obligatoire avant publication. */
 "use strict";
 var fs = require("fs");
@@ -94,18 +94,38 @@ t("data.json: fusion sur données par défaut OK", mergedDefaults.msci === raw.d
 // ---------- index.html & sw.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v2", html.indexOf("<b>v2</b>") !== -1);
+t("index.html: badge v3", html.indexOf("<b>v3</b>") !== -1);
+t("index.html: aucun ancien badge v2/v1", html.indexOf("<b>v2</b>") === -1 && html.indexOf("<b>v1</b>") === -1);
 t("index.html: badge « Maj auto hebdo »", html.indexOf("Maj auto hebdo") !== -1);
 t("index.html: aucune trace d'ancien badge v1", html.indexOf("<b>v1</b>") === -1);
+t("index.html: vehicles.js référencé avant le script inline",
+  html.indexOf('<script src="vehicles.js"></script>') !== -1 &&
+  html.indexOf('<script src="vehicles.js"></script>') < html.indexOf("/* ===LOGIC_START=== */"));
+t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES[a.id]") !== -1);
+t("index.html: note « Instruments exemples » dans les sources", html.indexOf("Instruments exemples") !== -1);
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: l'ancien texte du pied de page remplacé", html.indexOf("Les autres données se vérifient sur les sites ci-dessus") === -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v2", sw.indexOf('CACHE = "radar-v2"') !== -1);
+t("sw.js: cache v3", sw.indexOf('CACHE = "radar-v3"') !== -1);
+t("sw.js: ancien cache v2 absent", sw.indexOf("radar-v2") === -1);
+t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
 t("sw.js: data.json en réseau d'abord", sw.indexOf('data.json') !== -1 && sw.indexOf('url.pathname.indexOf("data.json")') !== -1);
 t("sw.js: auto.js dans le shell", sw.indexOf('"./auto.js"') !== -1);
 t("sw.js: ancien cache v1 absent", sw.indexOf("radar-v1") === -1);
 // auto.js : le câblage ne tourne pas sous Node (guard module.exports)
 t("auto.js: pas d'exception à l'import Node", true);
+
+// ---------- vehicles.js (v3 : instruments exemples) ----------
+var V = require(path.join(ROOT, "vehicles.js"));
+var VKEYS = ["actions", "obligations", "or", "monetaire", "immo", "crypto"];
+t("vehicles.js: exactement 6 clés = ids d'actifs", Object.keys(V).length === 6 && VKEYS.every(function (k) { return k in V; }));
+t("vehicles.js: nom/frais/enceinte non vides pour les 6", VKEYS.every(function (k) { return typeof V[k].nom === "string" && V[k].nom && typeof V[k].frais === "string" && V[k].frais && typeof V[k].enceinte === "string" && V[k].enceinte; }));
+t("vehicles.js: note non vide pour les 6", VKEYS.every(function (k) { return typeof V[k].note === "string" && V[k].note.length > 10; }));
+t("vehicles.js: ISIN valide ou vide", VKEYS.every(function (k) { return !V[k].isin || /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/.test(V[k].isin); }));
+t("vehicles.js: enceinte parmi PEA/CTO/CTO / AV", VKEYS.every(function (k) { return ["PEA", "CTO", "CTO / AV"].indexOf(V[k].enceinte) >= 0; }));
+t("vehicles.js: actions éligibles PEA (DCAM)", V.actions.enceinte === "PEA" && V.actions.isin === "FR001400U5Q4");
+t("vehicles.js: monétaire éligible PEA (OVNI)", V.monetaire.enceinte === "PEA" && V.monetaire.isin === "LU3215541056");
+t("vehicles.js: obligataire IEGA", V.obligations.isin === "IE00B4WXJJ64");
 
 // ---------- Bilan ----------
 var fail = results.filter(function (r) { return !r.ok; });
