@@ -1,6 +1,10 @@
-/* Radar Conjoncture — module de mise à jour automatique (v2)
-   1. Applique data.json (mis à jour chaque semaine sur GitHub) si plus récent que les données locales.
-   2. Rafraîchit or & BTC via CoinGecko au plus 1 fois / 22 h, silencieusement.
+/* Radar Conjoncture — module de mise à jour automatique (v3)
+   1. Applique data.json (relevé hebdo vérifié, poussé sur GitHub) si plus récent que le local.
+   2. Applique data-daily.json (relevé quotidien automatique via GitHub Actions) par-dessus
+      si plus récent : cours IWDA + VIX lissé — les paliers réagissent chaque jour, pas seulement le lundi.
+   3. Détecte un nouveau plus haut 52 sem. → réinitialise les paliers déployés (nouvel épisode).
+   4. Signale une référence 52 sem. instable (écart > 2 % d'un relevé à l'autre) → alerte UI.
+   5. Rafraîchit or & BTC via CoinGecko au plus 1 fois / 22 h, silencieusement.
    Les fonctions pures (Auto_*) sont testées par tools/test-auto.js (Node). */
 "use strict";
 (function () {
@@ -18,7 +22,7 @@
     return json;
   }
 
-  // Fusion : n'écrase que les champs connus du schéma local et de même type.
+  // Fusion hebdo : n'écrase que les champs connus du schéma local et de même type.
   // Jamais reserve, paliersDone ni dateData (gérés séparément).
   function Auto_merge(localData, remoteData) {
     var out = JSON.parse(JSON.stringify(localData));
@@ -37,6 +41,73 @@
       }
     });
     return out;
+  }
+
+  // ---------- v3 : relevé quotidien ----------
+
+  // Champs de marché autorisés dans data-daily.json (jamais les références 52 sem.
+  // ni les données personnelles — la référence hebdo vérifiée reste maîtresse).
+  var AUTO_DAILY_FIELDS = ["msci", "vix", "vix5", "bund10", "oat10"];
+  var AUTO_DAILY_MAX_DRIFT = 0.15; // écart max toléré vs valeur locale (donnée aberrante → ignorée)
+
+  // Applique les champs du relevé quotidien sur une copie des données locales.
+  // Chaque champ est filtré individuellement ; renvoie null si rien d'appliqué.
+  function Auto_overlayDaily(localData, dailyData) {
+    if (!localData || typeof localData !== "object") return null;
+    if (!dailyData || typeof dailyData !== "object") return null;
+    var out = JSON.parse(JSON.stringify(localData));
+    var applied = 0;
+    AUTO_DAILY_FIELDS.forEach(function (k) {
+      var rv = dailyData[k];
+      if (typeof rv !== "number" || !isFinite(rv)) return;
+      var lv = out[k];
+      // garde-fou : un écart > 15 % vs la valeur locale en place est aberrant → ignoré
+      if (typeof lv === "number" && isFinite(lv) && lv !== 0 && Math.abs(rv / lv - 1) > AUTO_DAILY_MAX_DRIFT) return;
+      out[k] = rv;
+      applied++;
+    });
+    return applied ? out : null;
+  }
+
+  // ---------- v3 : nouvel épisode de paliers ----------
+
+  // Nouveau plus haut 52 sem. (cours > référence) → la référence monte à hauteur du cours,
+  // la date du sommet est consignée et les paliers déployés sont réinitialisés (nouvel épisode).
+  // Garde-fou : un cours à plus de 10 % au-dessus de la référence est aberrant → ignoré.
+  var AUTO_EPISODE_MAX_JUMP = 0.10;
+
+  function Auto_episodeUpdate(data, dateStr) {
+    if (!data || typeof data !== "object") return null;
+    if (typeof dateStr !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return null;
+    if (typeof data.msci !== "number" || !isFinite(data.msci) || data.msci <= 0) return null;
+    if (typeof data.msciHigh52 !== "number" || !isFinite(data.msciHigh52) || data.msciHigh52 <= 0) return null;
+    if (data.msci <= data.msciHigh52) return null;
+    if (data.msci > data.msciHigh52 * (1 + AUTO_EPISODE_MAX_JUMP)) return null;
+    var deployed = 0;
+    if (data.paliersDone) {
+      ["p5", "p10", "p15", "p20"].forEach(function (k) { if (data.paliersDone[k]) deployed++; });
+    }
+    var episode = {
+      date: dateStr,
+      oldHigh52: data.msciHigh52,
+      newHigh52: Math.round(data.msci * 100) / 100,
+      deployed: deployed
+    };
+    var out = JSON.parse(JSON.stringify(data));
+    out.msciHigh52 = episode.newHigh52;
+    out.msciHigh52Date = dateStr;
+    out.paliersDone = { p5: false, p10: false, p15: false, p20: false };
+    return { data: out, episode: episode };
+  }
+
+  // ---------- v3 : stabilité de la référence 52 sem. ----------
+  // Le sommet 52 sem. est la base des paliers : s'il bouge de plus de 2 % d'un relevé
+  // à l'autre (source qui a changé), l'app doit prévenir — seuils recalculés.
+  // Écart arrondi au point de base pour éviter les artefacts flottants (2,00 % ≠ > 2 %).
+  function Auto_refUnstable(localHigh, remoteHigh) {
+    if (typeof localHigh !== "number" || !isFinite(localHigh) || localHigh <= 0) return false;
+    if (typeof remoteHigh !== "number" || !isFinite(remoteHigh) || remoteHigh <= 0) return false;
+    return Math.abs(Math.round((remoteHigh / localHigh - 1) * 10000)) > 200;
   }
 
   var AUTO_GEOCO_MIN_MS = 22 * 3600 * 1000; // max 1 rafraîchissement CoinGecko / 22 h
@@ -67,8 +138,14 @@
       Auto_isNewerDate: Auto_isNewerDate,
       Auto_validRemote: Auto_validRemote,
       Auto_merge: Auto_merge,
+      Auto_overlayDaily: Auto_overlayDaily,
+      Auto_episodeUpdate: Auto_episodeUpdate,
+      Auto_refUnstable: Auto_refUnstable,
       Auto_shouldGecko: Auto_shouldGecko,
       Auto_applyGecko: Auto_applyGecko,
+      AUTO_DAILY_FIELDS: AUTO_DAILY_FIELDS,
+      AUTO_DAILY_MAX_DRIFT: AUTO_DAILY_MAX_DRIFT,
+      AUTO_EPISODE_MAX_JUMP: AUTO_EPISODE_MAX_JUMP,
       AUTO_GEOCO_MIN_MS: AUTO_GEOCO_MIN_MS
     };
     return;
@@ -81,21 +158,58 @@
 
   var GECKO_LAST_KEY = "radar-conjoncture-gecko-last";
 
-  // 1) Maj hebdo : data.json poussé sur GitHub, récupéré à chaque ouverture.
-  function runAutoUpdate() {
-    return fetch("data.json?v=" + Date.now())
+  function fetchRemote(file) {
+    return fetch(file + "?v=" + Date.now())
       .then(function (r) { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
-      .then(function (json) {
-        var rem = Auto_validRemote(json);
-        if (!rem) return;                    // format inattendu → silence
-        if (!Auto_isNewerDate(rem.dateData, state.data.dateData)) return; // pas plus récent → rien
-        state.data = Auto_merge(state.data, rem.data);
-        state.data.dateData = rem.dateData;
-        commitSnapshot(false);
-        save(); buildForm(); renderRadar();
-        toast("✅ Maj auto du " + rem.dateData + (rem.note ? " — " + rem.note : ""));
-      })
-      .catch(function () { /* pas de data.json / hors ligne → silence */ });
+      .then(Auto_validRemote)
+      .catch(function () { return null; }); // absent / hors ligne / format inattendu → silence
+  }
+
+  // 1) Maj hebdo (data.json vérifié) + quotidienne (data-daily.json auto), épisode, alerte référence.
+  function runAutoUpdate() {
+    return Promise.all([fetchRemote("data.json"), fetchRemote("data-daily.json")]).then(function (remotes) {
+      var weekly = remotes[0], daily = remotes[1];
+      var cur = state.data;
+      var msgs = [];
+      var refAlert = null;
+
+      // a) relevé hebdo vérifié
+      if (weekly && Auto_isNewerDate(weekly.dateData, cur.dateData)) {
+        if (Auto_refUnstable(cur.msciHigh52, weekly.data.msciHigh52)) {
+          refAlert = { date: weekly.dateData, from: cur.msciHigh52, to: weekly.data.msciHigh52 };
+        }
+        cur = Auto_merge(cur, weekly.data);
+        cur.dateData = weekly.dateData;
+        msgs.push("✅ Relevé hebdo du " + weekly.dateData + (weekly.note ? " — " + weekly.note : ""));
+      }
+
+      // b) relevé quotidien automatique (jamais appliqué s'il n'est pas plus récent)
+      if (daily && Auto_isNewerDate(daily.dateData, cur.dateData)) {
+        var ov = Auto_overlayDaily(cur, daily.data);
+        if (ov) {
+          ov.dateData = daily.dateData;
+          cur = ov;
+          msgs.push("📈 Cours du jour appliqué (" + daily.dateData + ")");
+        }
+      }
+
+      // c) nouveau plus haut 52 sem. → nouvel épisode, paliers réinitialisés
+      var ep = Auto_episodeUpdate(cur, cur.dateData);
+      if (ep) {
+        cur = ep.data;
+        if (!state.episodes) state.episodes = [];
+        state.episodes.push(ep.episode);
+        if (state.episodes.length > 50) state.episodes = state.episodes.slice(-50);
+        msgs.push("🆕 Nouveau plus haut 52 sem. (" + ep.episode.newHigh52 + " $) — paliers réinitialisés (nouvel épisode)");
+      }
+
+      if (!msgs.length && !refAlert) return;
+      state.data = cur;
+      if (refAlert) state.refAlert = refAlert;
+      commitSnapshot(false);
+      save(); buildForm(); renderRadar();
+      toast(msgs.join(" · ") || "Données à jour");
+    });
   }
 
   // 2) Or & BTC en direct, silencieux, max 1 fois / 22 h.
@@ -119,7 +233,7 @@
     }).catch(function () { /* silencieux */ });
   }
 
-  // Ordre : d'abord la maj hebdo (valeurs vérifiées), puis le direct par-dessus.
+  // Ordre : d'abord les relevés GitHub (valeurs vérifiées + quotidien), puis le direct par-dessus.
   function init() {
     runAutoUpdate().then(runAutoGecko, runAutoGecko);
   }

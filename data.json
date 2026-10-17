@@ -5,9 +5,11 @@
   "data": {
     "msci": 146.81,
     "msciHigh52": 149.81,
+    "msciHigh52Date": "",
     "msciLow52": 123.2,
     "cape": 40.38,
     "vix": 19.99,
+    "vix5": 16.76,
     "inflZE": 3.8,
     "inflUS": 3.7,
     "bceDepot": 2.5,
@@ -32,7 +34,7 @@
       "GuruFocus"
     ],
     [
-      "VIX : 19,99 (+21,5 % — clôture 16/10/2026)",
+      "VIX : 19,99 (+21,5 % — clôture 16/10/2026) ; moyenne 5 séances : 16,76",
       "CBOE via Yahoo Finance"
     ],
     [

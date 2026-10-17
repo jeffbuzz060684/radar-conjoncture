@@ -1,0 +1,28 @@
+name: Relevé quotidien data-daily.json
+on:
+  schedule:
+    - cron: "45 21 * * 1-5" # 21:45 UTC ≈ 23:45 Paris (été) — après la clôture US
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Relever les marchés (IWDA USD + VIX lissé) et valider
+        run: node tools/fetch-daily.js
+      - name: Commiter si changé
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data-daily.json
+          if git diff --cached --quiet; then
+            echo "data-daily.json inchangé — pas de commit."
+          else
+            git commit -m "Relevé quotidien $(date -u +%F) — IWDA/VIX (Yahoo Finance)"
+            git push
+          fi

@@ -21,6 +21,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Valider les fichiers de données (schéma + plages plausibles)
+        run: node tools/validate-data.js
       - name: Générer les icônes PNG
         run: node tools/gen-icons.js
       - uses: actions/configure-pages@v5

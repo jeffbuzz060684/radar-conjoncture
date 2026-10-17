@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "dateData": "2026-10-17",
+  "note": "relevé quotidien automatique (marchés)",
+  "data": {
+    "msci": 146.81,
+    "vix": 19.99,
+    "vix5": 16.76
+  },
+  "sources": [
+    [
+      "MSCI World (IWDA) : 146.81 $ — clôture du 2026-10-16 (IWDA.L, LSE, cotation USD)",
+      "Yahoo Finance"
+    ],
+    [
+      "VIX : 19.99 ; moyenne 5 séances : 16.76",
+      "Yahoo Finance (^VIX)"
+    ],
+    [
+      "Garde-fous appliqués vs relevé vérifié du 2026-10-17 — champs écartés : aucun",
+      "tools/fetch-daily.js"
+    ]
+  ]
+}
