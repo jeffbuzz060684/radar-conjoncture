@@ -1,6 +1,6 @@
-/* Harnais de tests — Radar Conjoncture v5.2 (logic.js, auto.js, vehicles.js, fichiers livrés,
+/* Harnais de tests — Radar Conjoncture v5.3 (logic.js, auto.js, vehicles.js, fichiers livrés,
    pipeline quotidien/épisode/référence, validateurs, workflows, notifications ntfy/Telegram,
-   sanitisation des imports et régressions v4.1/v5).
+   sanitisation des imports, régressions v4.1/v5 et compilation navigateur des scripts servis).
    Exécution : node tools/test-auto.js  →  0 échec obligatoire avant publication. */
 "use strict";
 var fs = require("fs");
@@ -360,8 +360,8 @@ t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === 
 // ---------- index.html, logic.js, sw.js, auto.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v5.2", html.indexOf("<b>v5.2</b>") !== -1);
-t("index.html: aucun ancien badge v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
+t("index.html: badge v5.3", html.indexOf("<b>v5.3</b>") !== -1);
+t("index.html: aucun ancien badge v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: logic.js chargé entre vehicles.js et le script UI inline",
   html.indexOf('<script src="vehicles.js"></script>') !== -1 &&
@@ -387,8 +387,8 @@ t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: VIX lissé utilisé dans le scoring (vixEff, désormais dans logic.js)", srcLogic.indexOf("der.vixEff") !== -1 && srcLogic.indexOf("vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v8", sw.indexOf('CACHE = "radar-v8"') !== -1);
-t("sw.js: anciens caches v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
+t("sw.js: cache v9", sw.indexOf('CACHE = "radar-v9"') !== -1);
+t("sw.js: anciens caches v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
 t("sw.js: logic.js dans le shell", sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
 t("sw.js: shell en stale-while-revalidate (cache d'abord, réseau en arrière-plan)", sw.indexOf("stale-while-revalidate") !== -1 && sw.indexOf("m || net") !== -1);
@@ -447,6 +447,25 @@ t("vehicles.js: enceinte parmi PEA/CTO/CTO / AV", VKEYS.every(function (k) { ret
 t("vehicles.js: actions éligibles PEA (DCAM)", V.actions.enceinte === "PEA" && V.actions.isin === "FR001400U5Q4");
 t("vehicles.js: monétaire éligible PEA (OVNI)", V.monetaire.enceinte === "PEA" && V.monetaire.isin === "LU3215541056");
 t("vehicles.js: obligataire IEGA", V.obligations.isin === "IE00B4WXJJ64");
+
+
+// ---------- Régression v5.3 : chaque script servi doit compiler comme script navigateur ----------
+// Un `return` au niveau global est légal en CommonJS/Node mais SyntaxError dans un <script>
+// classique → page blanche. Le harnais Node (require) ne pouvait pas le voir ; vm.Script si.
+var vm = require("vm");
+function compilesAsBrowserScript(name, src) {
+  try { new vm.Script(src, { filename: name }); return true; }
+  catch (e) { console.log("   ⛔ " + name + " : " + e.message); return false; }
+}
+["logic.js", "auto.js", "vehicles.js"].forEach(function (f) {
+  t("browser-compile: " + f + " compile comme script classique (aucun return top-level)",
+    compilesAsBrowserScript(f, fs.readFileSync(path.join(ROOT, f), "utf8")));
+});
+var inlineBlocks = [];
+var reInline = /<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g, mInline;
+while ((mInline = reInline.exec(html))) inlineBlocks.push(mInline[1]);
+t("browser-compile: les " + inlineBlocks.length + " blocs <script> inline d'index.html compilent",
+  inlineBlocks.length > 0 && inlineBlocks.every(function (blk, i) { return compilesAsBrowserScript("index.html#inline" + i, blk); }));
 
 // ---------- Bilan ----------
 var fail = results.filter(function (r) { return !r.ok; });

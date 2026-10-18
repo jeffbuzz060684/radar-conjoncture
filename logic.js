@@ -381,5 +381,4 @@ if (typeof module !== "undefined" && module.exports) {
     snapshotOf: snapshotOf, badgeOf: badgeOf, radarAll: radarAll, parseGecko: parseGecko,
     staleDays: staleDays, Auto_sanStr: Auto_sanStr, Auto_sanNum: Auto_sanNum, Auto_sanitizeImport: Auto_sanitizeImport
   };
-  return;
 }
