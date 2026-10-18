@@ -222,7 +222,7 @@ function paliersOf(d, der) {
 
 function strategyOf(d, der, paliers, top) {
   var lines = [];
-  lines.push("Socle inchangé : 800 €/mois DCAM (Amundi PEA Monde) — la conjoncture ne change pas le socle, et on ne vend jamais sur baisse.");
+  lines.push("Socle inchangé : 1 000 €/mois tout compris — 800 €/mois DCAM (Amundi PEA Monde) + 200 €/mois réserve tactique (monétaire PEA). La conjoncture ne change pas le socle, et on ne vend jamais sur baisse.");
   var next = null, i;
   for (i = 0; i < paliers.length; i++) {
     if (paliers[i].atteint && !d.paliersDone["p" + paliers[i].p]) { next = paliers[i]; break; }

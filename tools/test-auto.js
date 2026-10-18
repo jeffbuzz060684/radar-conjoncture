@@ -1,6 +1,6 @@
-/* Harnais de tests — Radar Conjoncture v5.4 (logic.js, auto.js, vehicles.js, fichiers livrés,
+/* Harnais de tests — Radar Conjoncture v5.5 (logic.js, auto.js, vehicles.js, fichiers livrés,
    pipeline quotidien/épisode/référence, validateurs, workflows, notifications ntfy/Telegram,
-   sanitisation des imports, régressions v4.1/v5, compilation navigateur des scripts servis et conseil d'allocation v5.4).
+   sanitisation des imports, régressions v4.1/v5, compilation navigateur des scripts servis et conseil d'allocation v5.4 et socle 1 000 €/mois v5.5).
    Exécution : node tools/test-auto.js  →  0 échec obligatoire avant publication. */
 "use strict";
 var fs = require("fs");
@@ -271,6 +271,8 @@ var stratEU = L.strategyOf(dEU, radarEU.der, L.paliersOf(dEU, radarEU.der), rada
 t("stratégie: prochain palier en euros — « encore 3.8 % de baisse » (régression bug 1)",
   stratEU.indexOf("Prochain palier : −5 % à 125.65 €, soit encore 3.8 % de baisse") !== -1 && stratEU.indexOf("déjà franchi") === -1);
 t("stratégie: anti-accumulation CAPE ≥ 30 présente", stratEU.indexOf("Anti-accumulation") !== -1);
+t("stratégie: socle 1 000 €/mois tout compris = 800 € DCAM + 200 € réserve tactique (v5.5)",
+  stratEU.indexOf("1 000 €/mois tout compris") !== -1 && stratEU.indexOf("800 €/mois DCAM") !== -1 && stratEU.indexOf("200 €/mois réserve tactique") !== -1);
 // régression v4.1 (bug 1) : cas historique en USD — la distance restante doit rester juste
 var dFix = L.normalizeData({ dateData: "2026-10-17", msci: 146.81, msciHigh52: 149.81, reserve: 1000, paliersDone: { p5: false, p10: false, p15: false, p20: false } });
 var derFix = L.computeDerived(dFix);
@@ -360,8 +362,8 @@ t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === 
 // ---------- index.html, logic.js, sw.js, auto.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v5.4", html.indexOf("<b>v5.4</b>") !== -1);
-t("index.html: aucun ancien badge v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
+t("index.html: badge v5.5", html.indexOf("<b>v5.5</b>") !== -1);
+t("index.html: aucun ancien badge v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: logic.js chargé entre vehicles.js et le script UI inline",
   html.indexOf('<script src="vehicles.js"></script>') !== -1 &&
@@ -387,8 +389,8 @@ t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: VIX lissé utilisé dans le scoring (vixEff, désormais dans logic.js)", srcLogic.indexOf("der.vixEff") !== -1 && srcLogic.indexOf("vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v10", sw.indexOf('CACHE = "radar-v10"') !== -1);
-t("sw.js: anciens caches v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
+t("sw.js: cache v11", sw.indexOf('CACHE = "radar-v11"') !== -1);
+t("sw.js: anciens caches v10/v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
 t("sw.js: logic.js dans le shell", sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
 t("sw.js: shell en stale-while-revalidate (cache d'abord, réseau en arrière-plan)", sw.indexOf("stale-while-revalidate") !== -1 && sw.indexOf("m || net") !== -1);
@@ -480,6 +482,8 @@ t("allocOf: actions bon marché + corrigées → « une fois » recommandé", (f
 t("index.html: carte conseil du jour (v5.4) rendue depuis adviceOf", html.indexOf('id="adviceCard"') !== -1 && html.indexOf('id="advicePosture"') !== -1 && html.indexOf("adviceOf(d, radar)") !== -1);
 t("index.html: simulateur d'apport complet (montant, mode, mois, bouton, allocOf)", html.indexOf('id="allocMontant"') !== -1 && html.indexOf('id="allocMode"') !== -1 && html.indexOf('id="allocMonths"') !== -1 && html.indexOf('id="btnAlloc"') !== -1 && html.indexOf("allocOf(") !== -1);
 t("index.html: méthode d'allocation documentée (transparence)", srcLogic.indexOf("pondération de référence") !== -1);
+t("index.html: footnote stratégie 1 000 € tout compris + supplément possible", html.indexOf("1 000 €/mois tout compris (800 € DCAM + 200 € réserve tactique)") !== -1 && html.indexOf("supplément quand tu veux reste possible") !== -1);
+t("index.html: simulateur = supplément en plus des 1 000 €/mois du socle", html.indexOf("en plus des 1 000 €/mois du socle") !== -1);
 t("index.html: échappement des textes du conseil (esc sur stance, synthèse, arbitrages)", html.indexOf("esc(a.stance)") !== -1 && html.indexOf("esc(adv.synthese)") !== -1 && html.indexOf("esc(x)") !== -1);
 
 // ---------- vehicles.js (inchangé) ----------
