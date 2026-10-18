@@ -15,6 +15,8 @@ jobs:
         with:
           node-version: 20
       - name: Relever les marchés (IWDA EUR + VIX lissé + macro BCE/Eurostat) et valider
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}   # v5.6 : notification palier app fermée — sujet long et aléatoire, jamais en dur (dépôt public)
         run: node tools/fetch-daily.js
       - name: Commiter si changé
         id: commit

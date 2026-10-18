@@ -1,4 +1,4 @@
-var CACHE = "radar-v11";
+var CACHE = "radar-v12";
 var SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png", "./logic.js", "./auto.js", "./vehicles.js"];
 
 self.addEventListener("install", function (e) {
@@ -39,16 +39,15 @@ self.addEventListener("fetch", function (e) {
     }));
     return;
   }
-  // Fichiers du shell : stale-while-revalidate — réponse immédiate du cache,
-  // mise à jour du cache en arrière-plan pour la prochaine ouverture.
-  e.respondWith(caches.match(e.request).then(function (m) {
-    var net = fetch(e.request).then(function (r) {
-      if (r && r.ok) {
-        var copy = r.clone();
-        caches.open(CACHE).then(function (c) { c.put(e.request, copy); });
-      }
-      return r;
-    }).catch(function () { return m; });
-    return m || net;
+  // Fichiers du shell : réseau d'abord, cache en secours — évite tout skew de versions
+  // entre le HTML servi frais et les JS servis périmés (rapport revue v5.6, point 4).
+  e.respondWith(fetch(e.request).then(function (r) {
+    if (r && r.ok) {
+      var copy = r.clone();
+      caches.open(CACHE).then(function (c) { c.put(e.request, copy); });
+    }
+    return r;
+  }).catch(function () {
+    return caches.match(e.request);
   }));
 });

@@ -13,6 +13,7 @@ var DEFAULT_DATA = {
   bund10: 3.42, oat10: 4.79, pmiZE: 53.1,
   orEUR: 3729.84, orHigh52: 4592, orLow52: 3387.45,       // €/once
   btcEUR: 72598, btcHigh52: null,                        // 52 sem BTC : bouton « en direct » ou saisie
+  dateGecko: "",
   imoRendement: 5.0,
   reserve: 0,
   paliersDone: { p5: false, p10: false, p15: false, p20: false }
@@ -25,13 +26,13 @@ var FIELDS = [
   { k: "msciHigh52", l: "Plus haut 52 sem. MSCI (€)", t: "num", h: "sommet 52 semaines" },
   { k: "msciHigh52Date", l: "Date du sommet 52 sem.", t: "date", h: "optionnel — trace la référence des paliers" },
   { k: "msciLow52", l: "Plus bas 52 sem. MSCI (€)", t: "num", h: "optionnel, jauge de position" },
-  { k: "cape", l: "CAPE Shiller (S&P 500)", t: "num", h: "valorisation actions US" },
-  { k: "vix", l: "VIX", t: "num", h: "volatilité implicite US" },
+  { k: "cape", l: "CAPE Shiller (S&P 500)", t: "num", h: "valorisation actions US — proxy du monde, lent" },
+  { k: "vix", l: "VIX", t: "num", h: "volatilité implicite S&P 500 à ~30 j — proxy de stress, non directionnel" },
   { k: "vix5", l: "VIX lissé 5 j", t: "num", h: "optionnel — moyenne 5 séances, lisse les spikes" },
   { g: "Macro zone euro & US" },
   { k: "dateMacro", l: "Date du relevé macro", t: "date", h: "date du dernier relevé vérifié (inflation, BCE, PMI…)" },
-  { k: "inflZE", l: "Inflation zone euro (%)", t: "num", h: "dernier mois, annualisé" },
-  { k: "inflUS", l: "Inflation US (%)", t: "num", h: "dernier mois, annualisé" },
+  { k: "inflZE", l: "Inflation zone euro (%), YoY", t: "num", h: "dernier mois publié, glissement sur un an (pas un taux annualisé)" },
+  { k: "inflUS", l: "Inflation US (%), YoY", t: "num", h: "dernier mois publié, glissement sur un an (pas un taux annualisé)" },
   { k: "bceDepot", l: "Taux de dépôt BCE (%)", t: "num", h: "taux directeur" },
   { k: "bceDir", l: "Direction BCE", t: "sel", o: ["hausse", "stable", "baisse"], h: "dernière décision" },
   { k: "bund10", l: "Rendement Bund 10 ans (%)", t: "num", h: "obligations souveraines ZE" },
@@ -43,6 +44,7 @@ var FIELDS = [
   { k: "orLow52", l: "Plus bas 52 sem. or (€)", t: "num", h: "optionnel" },
   { k: "btcEUR", l: "Bitcoin (€)", t: "num", h: "cours" },
   { k: "btcHigh52", l: "Plus haut 52 sem. BTC (€)", t: "num", h: "optionnel — auto via bouton en direct" },
+  { k: "dateGecko", l: "Date du relevé or/BTC en direct", t: "date", h: "optionnel — date du dernier « Or & BTC en direct », sans toucher aux marchés" },
   { k: "imoRendement", l: "Rendement locatif immo (%)", t: "num", h: "proxy SCPI (hors frais)" },
   { g: "Ta stratégie (PEA)" },
   { k: "reserve", l: "Réserve tactique actuelle (€)", t: "num", h: "montant disponible sur le monétaire PEA" }
@@ -77,6 +79,9 @@ function computeDerived(d) {
   if (num(d.orEUR) !== null && num(d.orHigh52) !== null && num(d.orLow52) !== null && d.orHigh52 > d.orLow52) {
     der.posOr = (d.orEUR - d.orLow52) / (d.orHigh52 - d.orLow52) * 100;
   } else der.posOr = null;
+  // v5.6 : garde-fou d'unité — un drawdown ≤ −25 % sur MSCI World signale presque sûrement
+  // des références mélangeant dollars et euros (ex. téléphone resté en USD au passage EUR).
+  der.msciIncoherent = (der.ddMsci !== null && der.ddMsci <= -25);
   return der;
 }
 
@@ -101,7 +106,9 @@ function scoreActions(d, der) {
   parts.push(mkPart("Croissance (PMI " + (num(d.pmiZE) !== null ? r1(d.pmiZE) : "?") + ")",
     stepScore(d.pmiZE, [[47, -8], [50, -3], [53, 3], [Infinity, 6]]),
     d.pmiZE >= 50 ? "l'économie européenne grandit" : "l'économie ralentit"));
-  return { id: "actions", icon: "🌍", name: "Actions monde (MSCI World)", score: clampScore(50 + parts.reduce(function (s, p) { return s + p.pts; }, 0)), parts: parts };
+  var _tot = parts.reduce(function (s, p) { return s + p.pts; }, 0);
+  var _timing = _tot - parts[0].pts;   // v5.6 : timing = tout sauf la valorisation (CAPE, lente)
+  return { id: "actions", icon: "🌍", name: "Actions monde (MSCI World)", score: clampScore(50 + _tot), timingScore: clampScore(50 + _timing), parts: parts };
 }
 
 function scoreObligations(d, der) {
@@ -215,6 +222,7 @@ function regimeOf(d) {
 
 function paliersOf(d, der) {
   if (num(d.msciHigh52) === null) return [];
+  if (der && der.msciIncoherent) return [];   // v5.6 : références incohérentes → aucun palier calculé
   return PALIERS.map(function (p) {
     return { p: p, seuil: r2(d.msciHigh52 * (1 - p / 100)), atteint: der.ddMsci !== null && der.ddMsci <= -p };
   });
@@ -222,6 +230,9 @@ function paliersOf(d, der) {
 
 function strategyOf(d, der, paliers, top) {
   var lines = [];
+  if (der && der.msciIncoherent && num(d.msci) !== null && num(d.msciHigh52) !== null) {
+    lines.push("⛔ RÉFÉRENCES INCOHÉRENTES : le cours (" + d.msci + " €) est à " + r1(der.ddMsci) + " % du sommet 52 sem. (" + d.msciHigh52 + " €) — unités probablement mélangées (USD/EUR). Les paliers sont désactivés. Utilise « Valeurs du 16/10/2026 » (onglet Données) pour réparer, ou réinstalle la carte.");
+  } else {
   lines.push("Socle inchangé : 1 000 €/mois tout compris — 800 €/mois DCAM (Amundi PEA Monde) + 200 €/mois réserve tactique (monétaire PEA). La conjoncture ne change pas le socle, et on ne vend jamais sur baisse.");
   var next = null, i;
   for (i = 0; i < paliers.length; i++) {
@@ -247,7 +258,9 @@ function strategyOf(d, der, paliers, top) {
   }
   if (num(d.cape) !== null && d.cape >= 30) lines.push("Anti-accumulation : CAPE à " + r1(d.cape) + " (≥ 30) — hors paliers, la réserve reste au monétaire, pas de déploiement « par ennui ».");
   if (top) lines.push("Radar du jour : l'actif le plus favorable est " + top.name + " (" + top.score + "/100) — information, la stratégie PEA reste la règle.");
+  }
   var warns = [];
+  if (der && der.msciIncoherent) warns.push("Paliers désactivés : références incohérentes avec le cours (−" + r1(Math.abs(der.ddMsci)) + " %) — unités USD/EUR mélangées ?");
   if (reserve !== null && reserve > 3000) warns.push("Réserve > 3 000 € : règle anti-accumulation — vérifie le CAPE avant tout déploiement hors palier (actuellement " + (num(d.cape) !== null ? r1(d.cape) : "?") + ").");
   return { lines: lines, warns: warns };
 }
@@ -261,16 +274,19 @@ function stanceOf(score) {
   if (score >= 55) return { cls: "good", label: "Renforcer", verb: "INVESTIR" };
   if (score >= 45) return { cls: "mid", label: "Conserver", verb: "CONSERVER" };
   if (score >= 35) return { cls: "mid", label: "Ne pas renforcer", verb: "ATTENDRE" };
-  return { cls: "bad", label: "Sous-pondérer / alléger", verb: "ALLÉGER" };
+  return { cls: "bad", label: "Sous-pondérer", verb: "SOUS-PONDÉRER" };
 }
 
 function adviceOf(d, radar) {
   var der = radar.der;
   var byId = {};
   radar.list.forEach(function (a) { byId[a.id] = a; });
-  var res = { posture: "", postureScore: 0, detail: "", synthese: "", assets: [], desinv: [] };
+  var res = { posture: "", postureScore: 0, timingScore: null, detail: "", synthese: "", assets: [], contexte: [], desinv: [] };
   var act = byId.actions || null;
-  var ap = act ? act.score : 50;
+  // v5.6 : la posture suit le TIMING (drawdown, VIX, BCE, PMI) qui bouge ; la valorisation
+  // (CAPE) est lente et structurelle → affichée en contexte, pas en signal du jour.
+  var ap = (act && num(act.timingScore) !== null) ? act.timingScore : (act ? act.score : 50);
+  res.timingScore = ap;
   res.postureScore = ap;
   if (ap >= 65) res.posture = "Offensive";
   else if (ap >= 55) res.posture = "Constructive";
@@ -278,34 +294,34 @@ function adviceOf(d, radar) {
   else if (ap >= 35) res.posture = "Prudente";
   else res.posture = "Défensive";
   var top = radar.list[0];
-  res.detail = "Pilotée par le score Actions (" + ap + "/100 — intègre CAPE, VIX, direction BCE, PMI et drawdown). Actif le plus favorable du jour : " + top.name + " (" + top.score + "/100).";
+  res.detail = "Pilotée par le timing actions (" + ap + "/100 — drawdown, VIX, direction BCE, PMI). Actif le plus favorable du jour : " + top.name + " (" + top.score + "/100).";
   var syn = {
-    "Offensive": "Les signaux d'achat dominent : les apports peuvent aller au marché sans attendre, l'étalement n'apporte que du confort psychologique.",
+    "Offensive": "Le timing domine à l'achat : les apports peuvent aller au marché sans attendre, l'étalement n'apporte que du confort psychologique.",
     "Constructive": "Contexte globalement favorable : investir reste la bonne trajectoire ; un gros apport se lisse pour réduire le risque d'entrée.",
-    "Neutre": "Aucun signal fort dans un sens ou l'autre : la régularité du socle prime, un apport exceptionnel se lisse plutôt qu'il ne se place d'un coup.",
-    "Prudente": "Les valorisations et le contexte dégradent les perspectives : privilégier monétaire et actifs défensifs, étaler tout apport sur les actifs risqués.",
+    "Neutre": "Aucun signal de timing fort dans un sens ou l'autre : la régularité du socle prime, un apport exceptionnel se lisse plutôt qu'il ne se place d'un coup.",
+    "Prudente": "Le timing dégradé appelle la prudence : privilégier monétaire et actifs défensifs, étaler tout apport sur les actifs risqués.",
     "Défensive": "Préservation du capital d'abord : monétaire, or en couverture, apports sur les actifs risqués différés — aucune précipitation."
   };
   res.synthese = syn[res.posture];
   radar.list.forEach(function (a) {
     var st = stanceOf(a.score);
-    var why = a.parts.slice().sort(function (x, y) { return Math.abs(y.pts) - Math.abs(x.pts); }).slice(0, 2)
-      .map(function (p) { return p.label.split(" (")[0]; });
+    var why = a.parts.slice().sort(function (x, y) { return Math.abs(y.pts) - Math.abs(x.pts); }).slice(0, 2).map(function (p) { return p.label.split(" (")[0]; });
     if (a.partial) why = ["score partiel : 52 sem. manquantes"];
     res.assets.push({ id: a.id, icon: a.icon, name: a.name, score: a.score, stance: st.label, cls: st.cls, verb: st.verb, why: why.join(" · ") });
   });
-  // ---- signaux d'arbitrage / désinvestissement (règles déclenchées, pas systématiques) ----
-  var ddM = der.ddMsci, ddO = der.ddOr, cape = num(d.cape), tr = der.tauxReelZE, marge = der.imoMarge;
-  if (act && act.score < 50 && ddM !== null && ddM > -5 && cape !== null && cape >= 30)
-    res.desinv.push("Actions : valorisations tendues (CAPE " + r1(cape) + ") à " + r1(-ddM) + " % du sommet 52 sem. — un allègement marginal peut se justifier, uniquement sur l'enveloppe libre (CTO/AV). Le socle PEA ne se touche pas.");
+  // ---- contexte de valorisation (axes LENTS : information structurelle, pas des signaux du jour) ----
+  var cape = num(d.cape), ddM = der.ddMsci, ddO = der.ddOr, tr = der.tauxReelZE, marge = der.imoMarge;
+  if (cape !== null && cape >= 30)
+    res.contexte.push("Valorisation lente : CAPE " + r1(cape) + " — les actions vivent au-dessus de leurs valorisations historiques, rendements long terme attendus faibles. C'est un contexte structurel, pas un signal du jour : il ne déclenche rien à lui seul.");
+  if (d.bceDir === "hausse")
+    res.contexte.push("BCE en relèvement : tant que le cycle n'est pas retourné, la poche obligations se limite aux maturités courtes ou au taux variable.");
+  if (marge !== null && marge < 0)
+    res.contexte.push("Immobilier : rendement locatif (" + r1(num(d.imoRendement)) + " %) sous le coût du crédit (OAT " + r1(num(d.oat10)) + " %) — défavorable aux nouvelles souscriptions SCPI.");
+  // ---- signaux d'arbitrage / désinvestissement (uniquement DÉCLENCHÉS par le prix, jamais permanents) ----
   if (ddM !== null && ddM <= -5)
     res.desinv.push("Actions en drawdown (" + r1(ddM) + " %) — règle maison absolue : on ne vend JAMAIS sur la baisse ; les paliers tactiques achètent cette faiblesse au contraire.");
   if (byId.or && ddO !== null && ddO > -3 && tr !== null && tr > 0 && byId.or.score < 55)
     res.desinv.push("Or : à " + r1(-ddO) + " % du sommet 52 sem. avec des taux réels positifs (" + r1(tr) + " %) — prise de profit partielle possible sur l'ETF ou le physique si besoin de liquidités.");
-  if (marge !== null && marge < 0)
-    res.desinv.push("Immobilier : rendement locatif (" + r1(num(d.imoRendement)) + " %) sous le coût du crédit (OAT " + r1(num(d.oat10)) + " %) — défavorable aux nouvelles souscriptions SCPI ; en cas de besoin, privilégier le marché secondaire plutôt que du neuf.");
-  if (d.bceDir === "hausse")
-    res.desinv.push("Obligations : BCE en relèvement — limiter la poche aux maturités courtes ou au taux variable, le segment long reste pénalisé jusqu'au retournement du cycle.");
   return res;
 }
 
@@ -324,31 +340,37 @@ function allocOf(montant, mode, months, d, radar) {
   }
   var byId = {};
   radar.list.forEach(function (a) { byId[a.id] = a; });
-  // poids = base × (score/50), borné ×0,4 à ×1,6, puis renormalisé à 100
+  // v5.6 : les actifs « Ne pas renforcer » (score < 45) sont EXCLUS de l'apport —
+  // le simulateur ne doit jamais acheter ce que le conseil déconseille de renforcer.
   var raw = {}, total = 0, i, k;
   for (i = 0; i < ALLOC_IDS.length; i++) {
     k = ALLOC_IDS[i];
     var sc = (byId[k] && num(byId[k].score) !== null) ? byId[k].score : 50;
-    var t = Math.max(0.4, Math.min(1.6, sc / 50));
-    raw[k] = ALLOC_BASE[k] * t;
+    raw[k] = (sc < 45) ? 0 : ALLOC_BASE[k] * Math.max(0.4, Math.min(1.6, sc / 50));
     total += raw[k];
   }
-  var parts = [], sum = 0;
+  if (total <= 0) {   // tous les actifs < 45 (marché extrême) → tout au monétaire, l'actif de préservation
+    raw["monetaire"] = 1; total = 1;
+  }
+  var parts = [], sum = 0, firstIdx = -1;
   for (i = 0; i < ALLOC_IDS.length; i++) {
     k = ALLOC_IDS[i];
+    var a = byId[k];
+    var excl = (raw[k] === 0);
+    if (!excl && firstIdx === -1) firstIdx = i;
     var share = raw[k] / total;
     var eur = Math.round(m * share);
     sum += eur;
-    var a = byId[k];
-    parts.push({ id: k, icon: a ? a.icon : "•", name: a ? a.name : k, pct: r1(share * 100), euros: eur });
+    parts.push({ id: k, icon: a ? a.icon : "•", name: a ? a.name : k, pct: r1(share * 100), euros: eur, exclu: excl });
   }
-  parts[0].euros += m - sum;   // reste d'arrondi au premier actif (déterministe)
-  // verdict « une fois » vs « DCA » : préférence pilotée par le score actions et le contexte d'entrée
+  if (firstIdx !== -1) parts[firstIdx].euros += m - sum;   // reste d'arrondi au premier actif inclus (déterministe)
+  // verdict « une fois » vs « DCA » : piloté par le TIMING actions (le CAPE, lent, pèse à part)
   var ddM = radar.der.ddMsci, cape = num(d.cape);
-  var pref = (byId.actions ? byId.actions.score : 50);
+  var actA = byId.actions;
+  var pref = (actA && num(actA.timingScore) !== null) ? actA.timingScore : (actA ? actA.score : 50);
   if (ddM !== null && ddM <= -10) pref += 8;     // marché déjà corrigé : moins de risque d'entrée
   if (ddM !== null && ddM > -3) pref -= 6;       // au contact du sommet : risque d'acheter le pic
-  if (cape !== null && cape >= 30) pref -= 6;    // valorisations tendues
+  if (cape !== null && cape >= 30) pref -= 5;    // valorisations tendues : prudence sur la mise en une fois
   pref = clampScore(pref);
   var recommande = (pref >= 60) ? "une fois" : (pref >= 45) ? "hybride" : "dca";
   var labels = {
@@ -360,7 +382,7 @@ function allocOf(montant, mode, months, d, radar) {
     montant: m, mode: mode, months: n,
     mensualite: n ? r2(m / n) : null,
     parts: parts, pref: pref, recommande: recommande, recommandeLabel: labels[recommande],
-    note: "Méthode : pondération de référence (actions 40 % · immo 15 % · obligations 15 % · monétaire 13 % · or 12 % · crypto 5 %) pondérée par le score du jour (× score/50, borné ×0,4 à ×1,6), renormalisée à 100 %. En DCA, la répartition est recalculée à chaque échéance sur les données du jour. Repère : investir en une fois gagne historiquement ~2 fois sur 3 en marché actions haussier ; le DCA achète surtout de la sérénité."
+    note: "Méthode : pondération de référence (actions 40 % · immo 15 % · obligations 15 % · monétaire 13 % · or 12 % · crypto 5 %) pondérée par le score du jour (× score/50, borné ×0,4 à ×1,6), renormalisée à 100 % — les actifs sous 45/100 sont exclus. En DCA, la répartition est recalculée à chaque échéance sur les données du jour. Repère : sur les actions US 1926-2015, l'étude Vanguard « Cost Averaging: Invest Now or Temporarily Hold Your Cash » trouve que l'investissement en une fois bat le DCA ~2 fois sur 3 — un résultat propre à cette étude, qui ne valide pas ce simulateur multi-actifs. Heuristique transparente, pas un conseil financier : l'allocation dépend aussi de ton horizon et de ta tolérance au risque."
   };
 }
 
@@ -404,6 +426,15 @@ function normalizeData(d) {
   });
   out.paliersDone = { p5: false, p10: false, p15: false, p20: false };
   if (d.paliersDone) PALIERS.forEach(function (p) { out.paliersDone["p" + p] = !!d.paliersDone["p" + p]; });
+  // v5.6 : sources datées véhiculées par data.json/data-daily.json (affichées dans l'onglet
+  // Données à la place de SOURCES codées en dur). Sanitisation stricte : paires de chaînes.
+  out.sources = null;
+  if (Array.isArray(d.sources)) {
+    var srcs = d.sources.map(function (s) {
+      return (Array.isArray(s) && typeof s[0] === "string" && s[0] && typeof s[1] === "string" && s[1]) ? [s[0], s[1]] : null;
+    }).filter(Boolean).slice(0, 20);
+    if (srcs.length) out.sources = srcs;
+  }
   return out;
 }
 

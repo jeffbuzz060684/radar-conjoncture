@@ -1,6 +1,6 @@
-/* Harnais de tests — Radar Conjoncture v5.5 (logic.js, auto.js, vehicles.js, fichiers livrés,
+/* Harnais de tests — Radar Conjoncture v5.6 (logic.js, auto.js, vehicles.js, fichiers livrés,
    pipeline quotidien/épisode/référence, validateurs, workflows, notifications ntfy/Telegram,
-   sanitisation des imports, régressions v4.1/v5, compilation navigateur des scripts servis et conseil d'allocation v5.4 et socle 1 000 €/mois v5.5).
+   sanitisation des imports, régressions v4.1/v5, compilation navigateur des scripts servis, conseil d'allocation v5.4, socle 1 000 €/mois v5.5, revue v5.6 : paliers incohérents, unités EUR, conseil non prescriptif, exclusions d'allocation, notification serveur, bceDirOf stable).
    Exécution : node tools/test-auto.js  →  0 échec obligatoire avant publication. */
 "use strict";
 var fs = require("fs");
@@ -9,6 +9,7 @@ var child_process = require("child_process");
 
 var A = require(path.join(__dirname, "..", "auto.js"));
 var L = require(path.join(__dirname, "..", "logic.js"));
+var FD = require(path.join(__dirname, "..", "tools", "fetch-daily.js")); // v5.6 : bceDirOf testable
 var results = [];
 function t(name, cond) { results.push({ name: name, ok: !!cond }); }
 
@@ -349,7 +350,7 @@ t("fetch-daily: fichier présent", fd.length > 1000);
 t("fetch-daily: IWDA en EUR (IWDA.AS, Euronext Amsterdam), plus IWDA.L", fd.indexOf("IWDA.AS") !== -1 && fd.indexOf("IWDA.L") === -1);
 t("fetch-daily: fenêtre 1 an pour cours + références 52 sem. (même source)", fd.indexOf('fetchChart("IWDA.AS", "1y")') !== -1);
 t("fetch-daily: BCE officielle (ECB Data Portal, DFR)", fd.indexOf("B.U2.EUR.4F.KR.DFR.LEV") !== -1);
-t("fetch-daily: direction BCE dérivée des 2 dernières décisions", fd.indexOf('"hausse" : last < prev ? "baisse" : "stable"') !== -1);
+t("fetch-daily: direction BCE via bceDirOf (retour à stable après ~6 mois sans changement)", fd.indexOf("bceDirOf") !== -1 && fd.indexOf("lastNObservations=6") !== -1);
 t("fetch-daily: Eurostat officielle (prc_hicp_manr)", fd.indexOf("prc_hicp_manr") !== -1);
 t("fetch-daily: garde de fraîcheur Eurostat (période ≤ 3 mois)", fd.indexOf("eurostatAgeMonths") !== -1 && fd.indexOf("> 3") !== -1);
 t("fetch-daily: garde-fous une séance (10 % msci / 25 % références / 30 % macro / 60 % VIX)", fd.indexOf("0.10") !== -1 && fd.indexOf("0.25") !== -1 && fd.indexOf("0.30") !== -1 && fd.indexOf("0.60") !== -1);
@@ -357,13 +358,19 @@ t("fetch-daily: référence de dérive = dernier relevé quotidien accepté", fd
 t("fetch-daily: dateData = date de clôture (last.date), pas la date d'exécution", fd.indexOf("dateData = last.date") !== -1 && fd.indexOf("dateData = today") === -1);
 t("fetch-daily: no-op si relevé existant ≥ clôture (jamais d'écrasement ancien)", fd.indexOf("previous.dateData >= dateData") !== -1);
 t("fetch-daily: échec macro silencieux (champs absents, marchés intacts)", fd.indexOf("macroNotes") !== -1);
+t("fetch-daily: notification serveur ntfy au franchissement (secret NTFY_TOPIC, app fermée)",
+  fd.indexOf("NTFY_TOPIC") !== -1 && fd.indexOf("notifyPaliersServer") !== -1 && fd.indexOf("ddPrev > -p && ddNow <= -p") !== -1);
+t("fetch-daily: notification serveur : garde d'unité (référence ± 10 %) + silencieux sans sujet",
+  fd.indexOf("Math.abs(h / ph - 1) > 0.10") !== -1 && fd.indexOf("return Promise.resolve(null);") !== -1);
+t("fetch-daily: require testable (module.exports bceDirOf, require.main guard)",
+  fd.indexOf("module.exports = { bceDirOf: bceDirOf };") !== -1 && fd.indexOf("require.main === module") !== -1);
 t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === -1 && fd.indexOf("paliersDone") === -1);
 
 // ---------- index.html, logic.js, sw.js, auto.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v5.5", html.indexOf("<b>v5.5</b>") !== -1);
-t("index.html: aucun ancien badge v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
+t("index.html: badge v5.6", html.indexOf("<b>v5.6</b>") !== -1);
+t("index.html: aucun ancien badge v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: logic.js chargé entre vehicles.js et le script UI inline",
   html.indexOf('<script src="vehicles.js"></script>') !== -1 &&
@@ -389,11 +396,13 @@ t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: VIX lissé utilisé dans le scoring (vixEff, désormais dans logic.js)", srcLogic.indexOf("der.vixEff") !== -1 && srcLogic.indexOf("vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v11", sw.indexOf('CACHE = "radar-v11"') !== -1);
-t("sw.js: anciens caches v10/v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
+t("sw.js: cache v12", sw.indexOf('CACHE = "radar-v12"') !== -1);
+t("sw.js: anciens caches v11/v10/v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
 t("sw.js: logic.js dans le shell", sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
-t("sw.js: shell en stale-while-revalidate (cache d'abord, réseau en arrière-plan)", sw.indexOf("stale-while-revalidate") !== -1 && sw.indexOf("m || net") !== -1);
+t("sw.js: shell réseau d'abord + repli cache (plus aucun skew HTML frais / JS périmé)",
+  sw.indexOf("stale-while-revalidate") === -1 && sw.indexOf("m || net") === -1 &&
+  sw.indexOf("// Fichiers du shell : réseau d'abord, cache en secours") !== -1);
 t("sw.js: data.json ET data-daily.json en réseau d'abord",
   sw.indexOf('url.pathname.indexOf("data.json")') !== -1 && sw.indexOf('url.pathname.indexOf("data-daily.json")') !== -1);
 t("sw.js: auto.js dans le shell", sw.indexOf('"./auto.js"') !== -1);
@@ -443,10 +452,13 @@ t("logic.js: exports adviceOf/allocOf/stanceOf", typeof L.adviceOf === "function
 var RAD0 = L.radarAll(L.DEFAULT_DATA);
 var ADV0 = L.adviceOf(L.DEFAULT_DATA, RAD0);
 t("adviceOf: posture + score pilote 0-100", typeof ADV0.posture === "string" && ADV0.posture.length > 2 && ADV0.postureScore >= 0 && ADV0.postureScore <= 100);
-t("adviceOf: 6 stances avec verbes valides et justifications", ADV0.assets.length === 6 && ADV0.assets.every(function (a) { return ["INVESTIR", "CONSERVER", "ATTENDRE", "ALLÉGER"].indexOf(a.verb) >= 0 && a.why.length > 0; }));
+t("adviceOf: 6 stances avec verbes valides et justifications", ADV0.assets.length === 6 && ADV0.assets.every(function (a) { return ["INVESTIR", "CONSERVER", "ATTENDRE", "SOUS-PONDÉRER"].indexOf(a.verb) >= 0 && a.why.length > 0; }));
 t("adviceOf: synthèse non vide, dérivée de la posture", typeof ADV0.synthese === "string" && ADV0.synthese.length > 20);
-t("adviceOf: données du jour (CAPE 40, à 1,3 % du sommet) → allègement marginal signalé, CTO/AV uniquement", ADV0.desinv.some(function (x) { return x.indexOf("CTO/AV") !== -1; }));
-t("adviceOf: BCE en hausse → poche obligations limitée aux maturités courtes", ADV0.desinv.some(function (x) { return x.indexOf("Obligations") !== -1 && x.indexOf("courtes") !== -1; }));
+t("adviceOf: données du jour (CAPE 40, à 1,3 % du sommet) → plus d'allègement quotidien, CAPE en contexte lent",
+  ADV0.desinv.every(function (x) { return x.indexOf("allègement marginal") === -1; }) &&
+  ADV0.contexte.some(function (x) { return x.indexOf("CAPE") !== -1; }));
+t("adviceOf: BCE en relèvement → obligations courtes reléguées au contexte (axes lents), pas au désinvestissement",
+  ADV0.contexte.some(function (x) { return x.indexOf("maturités courtes") !== -1; }));
 t("adviceOf: actions très attractives → posture Offensive et verbe INVESTIR", (function () {
   var d = JSON.parse(JSON.stringify(L.DEFAULT_DATA));
   d.cape = 15; d.vix = 30; d.vix5 = 28; d.bceDir = "baisse"; d.pmiZE = 55; d.msciHigh52 = L.r2(d.msci * 1.2);
@@ -497,6 +509,131 @@ t("vehicles.js: enceinte parmi PEA/CTO/CTO / AV", VKEYS.every(function (k) { ret
 t("vehicles.js: actions éligibles PEA (DCAM)", V.actions.enceinte === "PEA" && V.actions.isin === "FR001400U5Q4");
 t("vehicles.js: monétaire éligible PEA (OVNI)", V.monetaire.enceinte === "PEA" && V.monetaire.isin === "LU3215541056");
 t("vehicles.js: obligataire IEGA", V.obligations.isin === "IE00B4WXJJ64");
+t("vehicles.js: en-tête v5 (plus de mention v3)", fs.readFileSync(path.join(ROOT, "vehicles.js"), "utf8").indexOf("Radar Conjoncture v3") === -1);
+
+// ---------- Régression v5.6 (revue de code) ----------
+// 1. Scores figés au 16/10/2026 — non-régression du scoring (la revue les a calculés à la main)
+t("v5.6: scores figés données du jour — Or 76 / Monétaire 52 / Crypto 44 / Immo 43 / Obligations 41 / Actions 20",
+  (function () {
+    var by = {}; RAD0.list.forEach(function (a) { by[a.id] = a.score; });
+    return by.or === 76 && by.monetaire === 52 && by.crypto === 44 && by.immo === 43 && by.obligations === 41 && by.actions === 20;
+  })());
+t("v5.6: timingScore actions = 44 (CAPE sorti du signal du jour, relégué en contexte)",
+  ADV0.timingScore === 44 && RAD0.list.filter(function (a) { return a.id === "actions"; })[0].timingScore === 44);
+t("v5.6: posture données du jour = Prudente (pilotée par le timing seul, pas par le CAPE)",
+  ADV0.posture === "Prudente" && ADV0.postureScore === ADV0.timingScore);
+
+// 2. Références incohérentes (unités mélangées USD/EUR OU crash majeur) → paliers suspendus
+t("v5.6: msciIncoherent (dd ≤ −25 %) → paliersOf vide + strategyOf en alerte",
+  (function () {
+    var d = JSON.parse(JSON.stringify(L.DEFAULT_DATA));
+    d.msciHigh52 = L.r2(d.msci * 1.45);   // simulate un mix 149,81 $ / 130,55 €
+    var der = L.computeDerived(d);
+    var pal = L.paliersOf(d, der);
+    var strat = L.strategyOf(d, der, pal, L.radarAll(d).list[0]);
+    return der.msciIncoherent === true && pal.length === 0 && strat.lines.some(function (l) { return l.indexOf("INCOHÉRENTES") !== -1; });
+  })());
+t("v5.6: références cohérentes (dd > −25 %) → paliers toujours calculés",
+  L.paliersOf(L.DEFAULT_DATA, L.computeDerived(L.DEFAULT_DATA)).length === 4);
+
+// 3. Auto_fixRefUnits : détecte le mix d'unités et adopte les références EUR sans false positif
+t("v5.6: Auto_fixRefUnits — mix USD/EUR (local 149,81 vs distant 132,26) → refs EUR adoptées + paliersDone reset",
+  (function () {
+    var local = JSON.parse(JSON.stringify(L.DEFAULT_DATA));
+    local.msciHigh52 = 149.81; local.paliersDone = { p5: true, p10: true, p15: false, p20: false };
+    var remote = JSON.parse(JSON.stringify(L.DEFAULT_DATA));
+    remote.msciHigh52 = 132.26; remote.msciLow52 = 107.51;
+    var res = A.Auto_fixRefUnits(local, remote);
+    return res !== null && res.data.msciHigh52 === 132.26 && res.data.paliersDone.p5 === false && res.data.paliersDone.p10 === false;
+  })());
+t("v5.6: Auto_fixRefUnits — références cohérentes → null (aucune action)",
+  A.Auto_fixRefUnits(L.DEFAULT_DATA, L.DEFAULT_DATA) === null);
+t("v5.6: Auto_fixRefUnits — cours divergent autant que la référence (vrai crash) → null (pas de correction)",
+  (function () {
+    var local = JSON.parse(JSON.stringify(L.DEFAULT_DATA));
+    local.msciHigh52 = 149.81; local.msci = 100;   // crash réel : le cours a autant bougé que la référence
+    var remote = JSON.parse(JSON.stringify(L.DEFAULT_DATA));
+    remote.msciHigh52 = 132.26;
+    return A.Auto_fixRefUnits(local, remote) === null;  // near = 24 % > 8 % → pas un mix d'unités
+  })());
+t("v5.6: runAutoUpdate — merge hebdo corrigeant la référence ≥ 10 % → paliersDone réinitialisés (découvert par la simulation DOM)",
+  (function () {
+    var autosrc = fs.readFileSync(path.join(ROOT, "auto.js"), "utf8");
+    return autosrc.indexOf("Référence corrigée") !== -1 &&
+      autosrc.indexOf("Math.abs(highNow / highPrev - 1) >= 0.10") !== -1 &&
+      autosrc.indexOf("cur.paliersDone = { p5: false, p10: false, p15: false, p20: false };") !== -1;
+  })());
+
+// 4. Gecko : dateGecko séparée — dateData jamais écrasé par un clic or/BTC
+t("v5.6: Auto_applyGecko écrit dateGecko, jamais dateData",
+  (function () {
+    var d = JSON.parse(JSON.stringify(L.DEFAULT_DATA));
+    var out = A.Auto_applyGecko(d, { cur: 2600, high: 2700, low: 2400 }, { cur: 68000, high: 70000 }, new Date("2026-10-20").getTime());
+    return out.dateGecko === "2026-10-20" && out.dateData === L.DEFAULT_DATA.dateData;
+  })());
+t("v5.6: index.html — handler Gecko écrit dateGecko, plus de « state.data.dateData = new Date() »",
+  html.indexOf("state.data.dateGecko = new Date()") !== -1 && html.indexOf("state.data.dateData = new Date()") === -1);
+
+// 5. Import : la ligne de réassignation brute de paliersDone a disparu
+t("v5.6: index.html — plus de « state.data.paliersDone = parsed.data.paliersDone » (les 4 booléens normalisés restent)",
+  html.indexOf("state.data.paliersDone = parsed.data.paliersDone") === -1);
+
+// 6. Sources : le bloc Sources affiche celles du relevé distant quand elles existent
+t("v5.6: normalizeData sanitise « sources » (paires de chaînes, max 20)",
+  (function () {
+    var d = L.normalizeData({ sources: [["a", "b"], ["c", "d"]] });
+    return Array.isArray(d.sources) && d.sources.length === 2;
+  })() &&
+  L.normalizeData({ sources: "pas un tableau" }).sources === null);
+t("v5.6: index.html — bloc Sources branché sur state.data.sources (repli : liste codée)",
+  html.indexOf("state.data.sources") !== -1 && html.indexOf("? state.data.sources : SOURCES") !== -1);
+
+// 7. Conseil : contexte (axes lents) rendu séparément, verbes moins prescriptifs
+t("v5.6: index.html — div adviceCtx rendue (contexte axes lents, échappé)",
+  html.indexOf('id="adviceCtx"') !== -1 && html.indexOf("Contexte (axes lents)") !== -1 && html.indexOf("adv.contexte") !== -1);
+t("v5.6: stanceOf — verbe < 45 = SOUS-PONDÉRER (ALLÉGER a disparu du vocabulaire)",
+  L.stanceOf(30).verb === "SOUS-PONDÉRER" && srcLogic.indexOf("\"ALLÉGER\"") === -1);
+
+// 8. Alloc : les actifs sous 45/100 sont exclus, la somme reste exacte
+t("v5.6: allocOf — exclus de la répartition (score < 45) : euros 0, exclu true, somme exacte au €",
+  (function () {
+    var al = L.allocOf(1000, "une fois", null, L.DEFAULT_DATA, RAD0);
+    var ex = al.parts.filter(function (p) { return p.exclu; });
+    var inc = al.parts.filter(function (p) { return !p.exclu; });
+    return ex.length === 4 && ex.every(function (p) { return p.euros === 0 && p.pct === 0; }) &&
+      inc.every(function (p) { return p.pct > 0 && p.euros > 0; }) &&
+      inc.reduce(function (s, p) { return s + p.euros; }, 0) === 1000;
+  })());
+t("v5.6: allocOf — tous les scores sous 45 → tout en monétaire (repli de sécurité)",
+  (function () {
+    var d = JSON.parse(JSON.stringify(L.DEFAULT_DATA));
+    d.or = d.or - 400; // casse le score de l'or au point que seules des lignes faibles demeurent
+    d.msci = d.msciHigh52 * 0.5; d.cape = 60; d.vix = 60; d.vix5 = 55; d.pmiZE = 38; d.bceDir = "hausse";
+    var r = L.radarAll(d);
+    var al = L.allocOf(1000, "une fois", null, d, r);
+    var scored = r.list.every(function (a) { return a.score < 45; });
+    return !scored || al.parts.filter(function (p) { return !p.exclu; }).length >= 1; // si tous < 45 → monétaire seul ; sinon au moins une ligne incluse
+  })() === true);
+t("v5.6: index.html — simulateur affiche les lignes exclues (opacity .45, « exclu (score < 45) »)",
+  html.indexOf("exclu (score < 45)") !== -1 && html.indexOf("opacity:.45") !== -1);
+t("v5.6: index.html — paliers suspendus affichés quand la liste est vide (références incohérentes)",
+  html.indexOf("Paliers suspendus") !== -1);
+
+// 9. bceDirOf : direction BCE fonctionnelle (série événementielle, retour à stable)
+t("v5.6: bceDirOf — relèvement récent → hausse",
+  FD.bceDirOf([2.0, 2.0, 2.15, 2.15], ["2025-06-11", "2026-06-17", "2026-09-16", "2026-10-01"], new Date("2026-10-18").getTime()) === "hausse");
+t("v5.6: bceDirOf — dernier changement > 6 mois → stable (plus de cycle actif)",
+  FD.bceDirOf([2.0, 2.15, 2.15, 2.15], ["2025-06-11", "2026-06-17", "2026-09-16", "2026-10-01"], new Date("2027-06-01").getTime()) === "stable");
+t("v5.6: bceDirOf — baisse récente → baisse",
+  FD.bceDirOf([2.15, 2.15, 2.0, 2.0], ["2026-01-01", "2026-02-01", "2026-10-01", "2026-10-05"], new Date("2026-10-18").getTime()) === "baisse");
+t("v5.6: bceDirOf — aucun changement dans la fenêtre → stable",
+  FD.bceDirOf([2.15, 2.15], ["2026-09-16", "2026-10-01"], new Date("2026-10-18").getTime()) === "stable");
+
+// 10. Notification serveur + workflow
+t("v5.6: daily-data.yml — secret NTFY_TOPIC câblé (sujet jamais en dur, dépôt public)",
+  dailyWf.indexOf("NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}") !== -1);
+t("v5.6: index.html — carte notifications documente le canal serveur + sujet long et aléatoire",
+  html.indexOf("NTFY_TOPIC") !== -1 && html.indexOf("radar-k7m2xq9z-t4v8") !== -1 && html.indexOf("long et aléatoire") !== -1);
 
 
 // ---------- Régression v5.3 : chaque script servi doit compiler comme script navigateur ----------

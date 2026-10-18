@@ -67,9 +67,38 @@
       } else if (lv === null) {
         // champ optionnel non renseigné localement : une valeur distante valide est acceptée
         if (typeof rv === "number" && isFinite(rv)) out[k] = rv;
+      } else if (Array.isArray(lv) || k === "sources") {
+        // v5.6 : sources datées du relevé distant (paires de chaînes, sanitisation stricte)
+        if (Array.isArray(rv)) {
+          var srcs = rv.map(function (s) {
+            return (Array.isArray(s) && typeof s[0] === "string" && s[0] && typeof s[1] === "string" && s[1]) ? [s[0], s[1]] : null;
+          }).filter(Boolean).slice(0, 20);
+          if (srcs.length) out.sources = srcs;
+        }
       }
     });
     return out;
+  }
+
+  // v5.6 : garde-fou d'unité USD/EUR. Le téléphone resté en USD au passage EUR peut garder une
+  // référence 52 sem. en dollars (ex. 149,81 $) alors que le quotidien applique un cours en
+  // euros : le drawdown calculé serait faux et déclencherait des paliers à tort. Si la référence
+  // locale diverge fortement (≥ 10 %) de la référence du relevé distant (même source que le
+  // cours) alors que le cours est proche (≤ 8 %) de la référence distante → unités mélangées :
+  // on adopte les références distantes à plat et on réinitialise les paliers déployés.
+  function _n(x) { var v = parseFloat(x); return (typeof v === "number" && isFinite(v)) ? v : null; }
+  function Auto_fixRefUnits(cur, remote) {
+    var m = _n(cur.msci), ch = _n(cur.msciHigh52), rh = _n(remote.msciHigh52);
+    if (m === null || ch === null || rh === null || ch <= 0 || rh <= 0) return null;
+    var gap = Math.abs(ch / rh - 1) * 100;
+    var near = Math.abs(m / rh - 1) * 100;
+    if (gap < 10 || near > 8) return null;
+    var fixed = JSON.parse(JSON.stringify(cur));
+    fixed.msciHigh52 = rh;
+    var rl = _n(remote.msciLow52); if (rl !== null) fixed.msciLow52 = rl;
+    if (typeof remote.msciHigh52Date === "string" && remote.msciHigh52Date) fixed.msciHigh52Date = remote.msciHigh52Date;
+    fixed.paliersDone = { p5: false, p10: false, p15: false, p20: false };
+    return { data: fixed, oldHigh: ch, newHigh: rh };
   }
 
   // ---------- Relevé quotidien ----------
@@ -250,7 +279,7 @@
   }
 
   // Applique les résultats CoinGecko (or et/ou BTC) sur une copie des données.
-  function Auto_applyGecko(data, g, c) {
+  function Auto_applyGecko(data, g, c, nowMs) {
     if (!data || typeof data !== "object") return null;
     if (!g && !c) return null;
     var out = JSON.parse(JSON.stringify(data));
@@ -260,6 +289,8 @@
     if (c) {
       out.btcEUR = c.cur; out.btcHigh52 = c.high;
     }
+    // v5.6 : le relevé direct ne touche JAMAIS dateData (date des marchés) — il date or/BTC à part.
+    out.dateGecko = new Date((nowMs === null || nowMs === undefined) ? Date.now() : nowMs).toISOString().slice(0, 10);
     return out;
   }
 
@@ -281,6 +312,7 @@
       Auto_notifyCfg: Auto_notifyCfg,
       Auto_shouldGecko: Auto_shouldGecko,
       Auto_applyGecko: Auto_applyGecko,
+      Auto_fixRefUnits: Auto_fixRefUnits,
       AUTO_DAILY_FIELDS: AUTO_DAILY_FIELDS,
       AUTO_DAILY_RANGES: AUTO_DAILY_RANGES,
       AUTO_DAILY_MAX_JUMP: AUTO_DAILY_MAX_JUMP,
@@ -372,17 +404,43 @@
 
       // a) relevé hebdo vérifié
       if (weekly && Auto_isNewerDate(weekly.dateData, cur.dateData)) {
+        var fuW = Auto_fixRefUnits(cur, weekly.data);
+        if (fuW) { cur = fuW.data; msgs.push("🛠️ Références converties (" + fuW.oldHigh + " → " + fuW.newHigh + " €) — unités USD/EUR mélangées, paliers réinitialisés"); }
         if (Auto_refUnstable(cur.msciHigh52, weekly.data.msciHigh52)) {
           refAlert = { date: weekly.dateData, from: cur.msciHigh52, to: weekly.data.msciHigh52 };
         }
+        var highPrev = _n(cur.msciHigh52);
         cur = Auto_merge(cur, weekly.data);
         cur.dateData = weekly.dateData;
+        // v5.6 : si le merge a corrigé la référence de ≥ 10 % (données locales restées en USD
+        // au passage EUR, ou re-basing de source), les paliers marqués déployés sous l'ancienne
+        // référence ne veulent plus rien dire → réinitialisation, comme dans Auto_fixRefUnits.
+        var highNow = _n(cur.msciHigh52);
+        if (highPrev !== null && highNow !== null && highPrev > 0 && Math.abs(highNow / highPrev - 1) >= 0.10) {
+          cur.paliersDone = { p5: false, p10: false, p15: false, p20: false };
+          msgs.push("🛠️ Référence corrigée (" + highPrev + " → " + highNow + " €, ≥ 10 %) — paliers réinitialisés");
+          if (!refAlert) refAlert = { date: weekly.dateData, from: highPrev, to: highNow };
+        }
+        if (Array.isArray(weekly.sources)) {
+          var wsrc = weekly.sources.map(function (s) {
+            return (Array.isArray(s) && typeof s[0] === "string" && s[0] && typeof s[1] === "string" && s[1]) ? [s[0], s[1]] : null;
+          }).filter(Boolean).slice(0, 20);
+          if (wsrc.length) cur.sources = wsrc;
+        }
         msgs.push("✅ Relevé hebdo du " + weekly.dateData + (weekly.note ? " — " + weekly.note : ""));
       }
 
       // b) relevé quotidien automatique — même date acceptée (maj intraday du même jour),
       //    mais no-op strict si rien ne change effectivement.
       if (daily && Auto_isSameOrNewerDate(daily.dateData, cur.dateData)) {
+        // v5.6 : répare d'abord les références mélangées USD/EUR si le quotidien le révèle
+        // (téléphone resté en dollars au passage EUR : référence $ 149,81 vs cours € 130,55).
+        var fuD = Auto_fixRefUnits(cur, daily.data);
+        if (fuD) {
+          cur = fuD.data;
+          msgs.push("🛠️ Références converties (" + fuD.oldHigh + " → " + fuD.newHigh + " €) — unités USD/EUR mélangées, paliers réinitialisés");
+          if (!refAlert) refAlert = { date: daily.dateData, from: fuD.oldHigh, to: fuD.newHigh };
+        }
         var ov = Auto_overlayDaily(cur, daily.data);
         if (ov) {
           ov.dateData = daily.dateData;

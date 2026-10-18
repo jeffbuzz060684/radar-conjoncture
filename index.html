@@ -109,7 +109,7 @@
 <header>
   <div class="hrow">
     <h1>📡 Radar <span>Conjoncture</span></h1>
-    <span class="badge">🔄 Maj auto quotidienne · <b>v5.5</b></span>
+    <span class="badge">🔄 Maj auto quotidienne · <b>v5.6</b></span>
   </div>
   <div class="hrow" style="margin-top:6px">
     <span class="chip" id="dataChip">—</span>
@@ -143,18 +143,19 @@
     </div>
     <div class="card" id="adviceCard">
       <h2>💼 Conseil du jour — investir ou désinvestir</h2>
-      <div class="mut" style="margin-bottom:8px">Lecture d'asset manager dérivée du scoring du jour : posture de risque, stance par actif, signaux d'arbitrage. Indicatif — la stratégie PEA reste maîtresse.</div>
+      <div class="mut" style="margin-bottom:8px">Lecture d'asset manager dérivée du scoring du jour : posture pilotée par le timing (drawdown, VIX, BCE, PMI), stance par actif, contexte de valorisation. Heuristique transparente, pas un conseil financier — l'allocation dépend aussi de ton horizon et de ta tolérance au risque. La stratégie PEA reste maîtresse.</div>
       <div class="ddnow"><span class="mut">Posture de risque<br><span style="font-size:11px">score actions = pilote</span></span><b id="advicePosture">—</b></div>
       <div class="bar" style="margin-bottom:10px"><i id="advicePostureBar" style="width:0%"></i></div>
       <div class="mut" id="adviceDetail">—</div>
       <div id="adviceStances" style="margin-top:10px"></div>
       <div id="adviceSynthese" class="verdict" style="margin-top:10px">—</div>
+      <div id="adviceCtx"></div>
       <div id="adviceDesinv"></div>
     </div>
 
     <div class="card">
       <h2>🧮 Simulateur d'apport — en une fois ou DCA</h2>
-      <div class="mut" style="margin-bottom:8px">Pour un supplément quand tu veux (prime, don, virement), en plus des 1 000 €/mois du socle : indique le montant, choisis « une fois » ou « DCA » (étalé sur plusieurs mois) — la répartition suit le scoring du jour.</div>
+      <div class="mut" style="margin-bottom:8px">Pour un supplément quand tu veux (prime, don, virement), en plus des 1 000 €/mois du socle : indique le montant, choisis « une fois » ou « DCA » (étalé sur plusieurs mois) — la répartition suit le scoring du jour, et n'achète JAMAIS ce que le conseil dit de ne pas renforcer (actifs sous 45/100 exclus).</div>
       <div class="frow"><label>Montant à répartir (€)<input id="allocMontant" type="number" inputmode="decimal" step="any" min="1" placeholder="ex. 5000"></label></div>
       <div class="frow"><label>Mode d'investissement<select id="allocMode">
         <option value="une fois">En une fois (lump sum)</option>
@@ -225,12 +226,12 @@
     </div>
     <div class="card">
       <h2>🔔 Notifications palier</h2>
-      <div class="mut" style="margin-bottom:8px">Prévenu quand un palier est franchi et à déployer (une fois par jour, tant qu'il n'est pas marqué déployé). <b>ntfy (recommandé)</b> : installe l'app ntfy (Android/iOS), abonne-toi à un sujet de ton choix, colle-le ici — aucun compte, aucune clé. Ou <b>Telegram</b> : crée un bot via @BotFather, récupère ton chat id (ex. @userinfobot). La config reste <b>uniquement sur ce téléphone</b> (jamais exportée, jamais poussée sur GitHub).</div>
+      <div class="mut" style="margin-bottom:8px">Prévenu quand un palier est franchi, même si l'app est fermée. <b>Deux canaux</b> : ① <b>serveur</b> — le workflow GitHub envoie une notification ntfy après chaque mise à jour quotidienne (à configurer une fois : sujet ntfy enregistré dans les secrets GitHub Actions, variable <code>NTFY_TOPIC</code>) ; ② <b>app ouverte</b> — secours navigateur si l'app tourne au moment du franchissement. Sur ntfy.sh, <b>le nom du sujet EST la protection</b> : quiconque le connaît peut lire ou publier dessus. Choisis un sujet <b>long et aléatoire</b> (ex. <code>radar-k7m2xq9z-t4v8</code>), sans ton nom ni rien de devinable. Note : le localStorage est partagé par toutes les pages <code>jeffbuzz060684.github.io</code> — évite d'y coller des secrets sensibles.</div>
       <div class="frow"><label>Canal<select id="notifyChannel">
         <option value="ntfy">ntfy (le plus simple)</option>
         <option value="telegram">Telegram</option>
       </select></label></div>
-      <div class="frow" id="rowNtfy"><label>Sujet ntfy (ex. radar-paliers-jade)<input id="ntfyTopic" type="text" autocomplete="off" placeholder="le sujet choisi dans l'app ntfy"></label></div>
+      <div class="frow" id="rowNtfy"><label>Sujet ntfy (long et aléatoire, ex. radar-k7m2xq9z-t4v8)<input id="ntfyTopic" type="text" autocomplete="off" placeholder="sujet long et aléatoire choisi dans l'app ntfy"></label></div>
       <div class="frow" id="rowTgToken" style="display:none"><label>Token du bot (123456789:AA…)<input id="tgToken" type="password" inputmode="text" autocomplete="off" placeholder="colle le token BotFather"></label></div>
       <div class="frow" id="rowTgChat" style="display:none"><label>Chat ID<input id="tgChatId" type="text" inputmode="numeric" placeholder="ex. 123456789"></label></div>
       <div class="btnrow" style="margin-top:8px">
@@ -420,6 +421,9 @@ function renderRadar() {
       save(); renderRadar();
     });
   });
+  if (!pal.length) {
+    palEl.innerHTML = '<div class="warnbox">⛔ Paliers suspendus — références 52 sem. incohérentes avec le cours (unités mélangées ou crash majeur à vérifier). Le prochain relevé vérifié devrait corriger les références.</div>';
+  }
 
   var strat = strategyOf(d, der, pal, radar.list[0]);
   $("stratVerdict").innerHTML =
@@ -453,12 +457,16 @@ function renderRadar() {
     return '<div class="palrow"><span class="st" style="width:auto;min-width:104px">' + a.icon + " " + esc(a.stance) + '</span><span class="th">' + esc(a.name) + ' <span style="font-size:11px">· ' + esc(a.why) + "</span></span>" + '<span class="fl" style="color:' + col + '">' + a.verb + "</span></div>";
   }).join("");
   $("adviceSynthese").innerHTML = "<b>Synthèse.</b> " + esc(adv.synthese);
+  $("adviceCtx").innerHTML = adv.contexte.length
+    ? '<div class="verdict" style="opacity:.7"><b>Contexte (axes lents)</b><ul style="margin:6px 0 0 16px">' + adv.contexte.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul></div>"
+    : "";
   $("adviceDesinv").innerHTML = adv.desinv.length
     ? '<div class="warnbox">⚖️ Arbitrages / désinvestissement :<ul style="margin:6px 0 0 16px">' + adv.desinv.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul></div>"
     : "";
 
   // Chips en-tête
-  $("dataChip").innerHTML = "📅 Données du <b>" + esc(d.dateData) + "</b>";
+  var geckoTxt = (d.dateGecko && typeof d.dateGecko === "string" && d.dateGecko > d.dateData) ? " · or/BTC du " + esc(d.dateGecko) : "";
+  $("dataChip").innerHTML = "📅 Données du <b>" + esc(d.dateData) + "</b>" + geckoTxt;
   var sd = staleDays(d.dateData, Date.now());
   var sc = $("staleChip");
   if (sd === null) { sc.className = "chip warn"; sc.textContent = "date invalide"; }
@@ -589,7 +597,7 @@ $("btnGecko").addEventListener("click", function () {
     if (!g || !c) throw new Error("réponse inattendue");
     state.data.orEUR = g.cur; state.data.orHigh52 = g.high; state.data.orLow52 = g.low;
     state.data.btcEUR = c.cur; state.data.btcHigh52 = c.high;
-    state.data.dateData = new Date().toISOString().slice(0, 10);
+    state.data.dateGecko = new Date().toISOString().slice(0, 10);   // v5.6 : jamais dateData (les marchés ne bougent pas)
     save(); buildForm(); renderRadar();
     toast("Or " + g.cur + " € (52 sem. " + g.low + "–" + g.high + ") · BTC " + c.cur + " € mis à jour");
   }).catch(function (e) {
@@ -618,7 +626,7 @@ $("importFile").addEventListener("change", function (ev) {
       if (!parsed || !parsed.data) throw new Error("format");
       state.data = normalizeData(parsed.data);
       if (parsed.data.reserve !== undefined) state.data.reserve = num(parsed.data.reserve) || 0;
-      if (parsed.data.paliersDone) state.data.paliersDone = parsed.data.paliersDone;
+      // v5.6 : plus de réassignation brute de paliersDone — normalizeData l'a déjà normalisé
       var san2 = Auto_sanitizeImport(parsed); // import nettoyé (anti-injection HTML)
       state.history = san2.history;
       state.refAlert = san2.refAlert;
@@ -707,6 +715,7 @@ var NOTIFY_OLD_KEY = "radar-telegram-v1"; // configs Telegram v5.1, lues et migr
       return;
     }
     var rows = alloc.parts.map(function (p) {
+      if (p.exclu) return '<div class="palrow" style="opacity:.45"><span class="st" style="width:auto;min-width:86px">' + p.icon + ' — %</span><span class="th">' + esc(p.name) + ' <span style="font-size:11px">· exclu (score < 45)</span></span><span class="fl">' + fmtEUR(0) + "</span></div>";
       return '<div class="palrow"><span class="st" style="width:auto;min-width:86px">' + p.icon + " " + p.pct + ' %</span><span class="th">' + esc(p.name) + '</span><span class="fl">' + fmtEUR(p.euros) + "</span></div>";
     }).join("");
     var total = alloc.parts.reduce(function (s, p) { return s + p.euros; }, 0);
@@ -729,11 +738,13 @@ var NOTIFY_OLD_KEY = "radar-telegram-v1"; // configs Telegram v5.1, lues et migr
 // ---- Sources ----
 (function () {
   var ul = $("srcList");
-  ul.innerHTML = SOURCES.map(function (s) {
+  // v5.6 : les sources suivent les données — si le relevé distant apporte les siennes, on affiche celles-là (sinon la liste codée)
+  var srcs = (state.data && Array.isArray(state.data.sources) && state.data.sources.length) ? state.data.sources : SOURCES;
+  ul.innerHTML = srcs.map(function (s) {
     return "<li><b style='color:#cbd5e1'>" + esc(s[0]) + "</b><br>↳ " + esc(s[1]) + "</li>";
   }).join("") +
   "<li style='margin-top:6px'><b style='color:#cbd5e1'>Mise à jour automatique :</b> à chaque ouverture, l'app récupère le relevé hebdomadaire vérifié (data.json, mis à jour le lundi par l'assistant) puis le relevé quotidien automatique (data-daily.json : cours IWDA en euros <b>Euronext Amsterdam IWDA.AS</b> + références 52 sem. de la même source + VIX lissé + taux de dépôt BCE via l'API officielle ECB Data Portal + inflation zone euro via l'API officielle Eurostat quand sa période est récente, généré chaque soir de semaine par GitHub Actions) — les paliers réagissent donc chaque jour, pas seulement le lundi. Or & BTC en direct via l'API publique CoinGecko (or via PAXG = 1 once, ± léger premium). Un nouveau plus haut 52 sem. réinitialise automatiquement les paliers déployés (nouvel épisode, tracé dans l'onglet Suivi). Aucune saisie nécessaire.</li>" +
-  "<li style='margin-top:6px'><b style='color:#cbd5e1'>Notifications :</b> quand un palier est franchi et à déployer, l'app peut te prévenir — <b>ntfy</b> (recommandé : app gratuite, aucun compte, juste un sujet) ou Telegram (onglet Suivi, carte 🔔). La config reste sur ce téléphone, jamais exportée ni poussée sur GitHub.</li>" +
+  "<li style='margin-top:6px'><b style='color:#cbd5e1'>Notifications :</b> quand un palier est franchi et à déployer, tu peux être prévenu <b>même app fermée</b> — le workflow GitHub envoie un message ntfy après chaque relevé quotidien (sujet en secret Actions <code>NTFY_TOPIC</code>, choisi long et aléatoire car un sujet ntfy n'est pas authentifié). En secours, l'app ouverte peut notifier elle-même via ntfy ou Telegram (onglet Suivi, carte 🔔). La config navigateur reste sur ce téléphone, jamais exportée ni poussée sur GitHub.</li>" +
   "<li style='margin-top:6px'><b style='color:#cbd5e1'>Instruments exemples :</b> chaque actif de l'onglet Radar affiche un véhicule concret vérifié le 17/10/2026 — justETF, extraETF, Boursorama, DCA Tracker (éligibilité PEA), ASPIM (SCPI). Exemples indicatifs, pas des recommandations.</li>";
 })();
 

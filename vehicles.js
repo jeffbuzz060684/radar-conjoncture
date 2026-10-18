@@ -1,4 +1,4 @@
-/* Instruments exemples par actif — Radar Conjoncture v3
+/* Instruments exemples par actif — Radar Conjoncture v5
    Vérifiés le 17/10/2026 : justETF, extraETF, Boursorama, DCA Tracker (éligibilité PEA), ASPIM-IEIF (SCPI).
    Structure testée par tools/test-auto.js (Node). */
 "use strict";
