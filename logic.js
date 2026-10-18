@@ -312,7 +312,7 @@ var PATRIMOINE = {
   immo:        { ou: "AV — SCPI",                  reel: "tes SCPI en assurance vie — frais de souscription élevés : pertinent en une fois, pas idéal en DCA mensuel" },
   monetaire:   { ou: "Livret ou monétaire PEA",    reel: "ton livret (épargne de précaution) ou la réserve tactique du monétaire PEA — le livret ne compte jamais dans la capacité paliers" },
   or:          { ou: "Or détenu",                  reel: "tu détiens déjà de l'or — renfort possible à la reprise du CTO (SGLD), lecture d'ici là" },
-  crypto:      { ou: "BTC détenu",                 reel: "tu détiens déjà du Bitcoin — renfort possible sur plateforme enregistrée PSAN ou à la reprise du CTO (BITC)" }
+  crypto:      { ou: "BTC détenu",                 reel: "tu détiens déjà du Bitcoin — renfort possible sur plateforme agréée CASP (MiCA) ou à la reprise du CTO (BITC)" }   // v5.13 : le régime transitoire PSAN a pris fin le 01/07/2026 (AMF) — agrément CASP requis
 };
 var PATRIMOINE_HORS_RADAR = [
   { nom: "Private equity", reel: "illiquide — souscriptions aux fenêtres seulement, horizon long ; affiché pour couvrir tout le patrimoine, jamais alloué par le simulateur" }
@@ -331,7 +331,7 @@ var PATRIMOINE_ACTIFS = [
   { nom: "SCPI",                  enceinte: "Assurance vie",        radar: "immo",        reel: "frais de souscription élevés : pertinent en une fois, pas idéal en DCA mensuel" },
   { nom: "Livret",                enceinte: "Épargne de précaution", radar: "monetaire",  reel: "ta poche de sécurité — jamais compté dans la capacité paliers, jamais déployé en paliers" },
   { nom: "Or",                    enceinte: "Détenu",               radar: "or",          reel: "déjà détenu — renfort possible à la reprise du CTO (SGLD), lecture d'ici là" },
-  { nom: "Bitcoin",               enceinte: "Détenu",               radar: "crypto",      reel: "déjà détenu — renfort possible sur plateforme enregistrée PSAN ou à la reprise du CTO (BITC)" },
+  { nom: "Bitcoin",               enceinte: "Détenu",               radar: "crypto",      reel: "déjà détenu — renfort possible sur plateforme agréée CASP (MiCA) ou à la reprise du CTO (BITC)" },
   { nom: "Private equity",        enceinte: "Hors radar",           radar: null,          reel: "illiquide — souscriptions aux fenêtres seulement, horizon long ; jamais alloué par le simulateur" }
 ];
 

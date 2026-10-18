@@ -109,7 +109,7 @@
 <header>
   <div class="hrow">
     <h1>📡 Radar <span>Conjoncture</span></h1>
-    <span class="badge">🔄 Maj auto quotidienne · <b>v5.12.1</b></span>
+    <span class="badge">🔄 Maj auto quotidienne · <b>v5.13</b></span>
   </div>
   <div class="hrow" style="margin-top:6px">
     <span class="chip" id="dataChip">—</span>
@@ -165,7 +165,7 @@
 
     <div class="card" id="patrimoineCard">
       <h2>👤 Ton patrimoine réel — tes 7 actifs</h2>
-      <div class="mut" style="margin-bottom:10px">Tout ce que tu détiens, visible en permanence — pas seulement via le simulateur : chaque actif est relié à la ligne du radar qui le note (et à son score du jour), ou reste hors radar (private equity : illiquide, jamais alloué). Le socle des 1 000 €/mois reste PEA seul ; le livret (épargne de précaution) n'entre jamais dans la capacité paliers.</div>
+      <div class="mut" style="margin-bottom:10px">Tout ce que tu détiens, visible en permanence — pas seulement via le simulateur : chaque actif est relié à la ligne du radar qui le note — une LECTURE DU MARCHÉ du segment, pas une note du produit (le fonds euro reste à capital garanti, le livret à taux réglementé) ; la ligne Actions montre le timing, le pilote du conseil. Le private equity reste hors radar (illiquide, jamais alloué). Le socle des 1 000 €/mois reste PEA seul ; le livret (épargne de précaution) n'entre jamais dans la capacité paliers.</div>
       <div id="patrimoineList"></div>
     </div>
 
@@ -421,13 +421,30 @@ function renderPatrimoine(radar) {
   if (typeof PATRIMOINE_ACTIFS === "undefined") return;   // v5.12.1 : logic.js périmé servi par le cache SW/CDN pendant la bascule → JAMAIS bloquer la page (carte absente, tout le reste rendu ; guérit au prochain chargement complet)
   var byId = {};
   radar.list.forEach(function (a) { byId[a.id] = a; });
+  // v5.13 : la colonne de droite distingue STRICTEMENT les cas. « hors radar — jamais alloué »
+  // est réservé à radar === null (private equity). Une ligne mappée absente du relevé du jour
+  // (ou au score null) affiche « lecture indisponible », JAMAIS « jamais allé » — c'était le bug
+  // de la revue. La ligne Actions montre le TIMING (le pilote du conseil depuis la v5.8) à côté
+  // du score global : plus de contresens « score actions bas » affiché sous un conseil Offensive.
+  // Les autres lignes affichent une « lecture marché » du SEGMENT — pas une note du produit
+  // détenu (fonds euro : capital garanti ; livret : taux réglementé — pas de mark-to-market).
+  var unavail = '<span class="fl" style="color:var(--mut)">lecture indisponible (donnée manquante)</span>';
   el.innerHTML = PATRIMOINE_ACTIFS.map(function (act) {
-    var a = act.radar ? byId[act.radar] : null;
+    var a = act.radar !== null ? byId[act.radar] : null, right;
+    if (act.radar === null) right = '<span class="fl" style="color:var(--mut)">hors radar — jamais alloué</span>';
+    else if (!a) right = unavail;
+    else if (act.radar === "actions") {
+      right = (a.timingScore === null || a.timingScore === undefined || a.score === null || a.score === undefined)
+        ? unavail
+        : '<span class="fl">timing <b>' + a.timingScore + '/100</b> — pilote du conseil · global ' + a.score + "/100</span>";
+    } else {
+      right = (a.score === null || a.score === undefined)
+        ? unavail
+        : '<span class="fl">lecture marché ' + esc(a.name) + ' · <b>' + a.score + '/100</b>' + (a.partial ? " (partiel)" : "") + "</span>";
+    }
     return '<div class="palrow">' +
       '<span class="st" style="width:auto;min-width:86px"><b>' + esc(act.nom) + '</b></span>' +
-      '<span class="th">' + esc(act.enceinte) + ' <span class="mut" style="font-size:11px">— ' + esc(act.reel) + "</span></span>" +
-      (a ? '<span class="fl">radar ' + esc(a.name) + ' · <b>' + a.score + '/100</b></span>'
-         : '<span class="fl" style="color:var(--mut)">hors radar — jamais alloué</span>') +
+      '<span class="th">' + esc(act.enceinte) + ' <span class="mut" style="font-size:11px">— ' + esc(act.reel) + "</span></span>" + right +
       "</div>";
   }).join("");
 }

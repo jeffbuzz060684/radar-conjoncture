@@ -369,8 +369,8 @@ t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === 
 // ---------- index.html, logic.js, sw.js, auto.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v5.12.1", html.indexOf("<b>v5.12.1</b>") !== -1);
-t("index.html: aucun ancien badge v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
+t("index.html: badge v5.13", html.indexOf("<b>v5.13</b>") !== -1);
+t("index.html: aucun ancien badge v5.12.1/v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5.12.1</b>", "<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: logic.js chargé entre vehicles.js et le script UI inline",
   html.indexOf('<script src="vehicles.js"></script>') !== -1 &&
@@ -396,7 +396,7 @@ t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: VIX lissé utilisé dans le scoring (vixEff, désormais dans logic.js)", srcLogic.indexOf("der.vixEff") !== -1 && srcLogic.indexOf("vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v19", sw.indexOf('CACHE = "radar-v19"') !== -1);
+t("sw.js: cache v20", sw.indexOf('CACHE = "radar-v20"') !== -1);
 t("sw.js: anciens caches v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v16") === -1 && sw.indexOf("radar-v15") === -1 && sw.indexOf("radar-v14") === -1 && sw.indexOf("radar-v13") === -1 && sw.indexOf("radar-v12") === -1 && sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
 t("sw.js: logic.js dans le shell", sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
@@ -1057,10 +1057,12 @@ t("v5.12 PATRIMOINE_ACTIFS: chaque actif non vides (nom/enceinte/reel) et chaque
     A.forEach(function (a) { if (a.radar) ids[a.radar] = (ids[a.radar] || 0) + 1; });
     return ok && ["actions", "obligations", "immo", "monetaire", "or", "crypto"].every(function (k) { return ids[k] === 1; });
   })() === true);
-t("v5.12 PATRIMOINE_ACTIFS: cohérence avec PATRIMOINE (même radar → même situation, jamais de contradiction)",
+t("v5.12/v5.13 PATRIMOINE_ACTIFS: chaque actif mappé existe dans PATRIMOINE (reel non vide) + livret/monétaire cohérents sur la capacité paliers",
   L.PATRIMOINE_ACTIFS.every(function (a) {
     return a.radar === null || (L.PATRIMOINE[a.radar] && L.PATRIMOINE[a.radar].reel.length > 0);
-  }) === true);
+  }) === true &&
+  L.PATRIMOINE.monetaire.reel.indexOf("capacité paliers") !== -1 &&
+  L.PATRIMOINE_ACTIFS.filter(function (a) { return a.nom === "Livret"; })[0].reel.indexOf("capacité paliers") !== -1);
 t("v5.12 PATRIMOINE_ACTIFS: livret = actif à part entière, jamais compté dans la capacité paliers",
   (function () {
     var l = L.PATRIMOINE_ACTIFS.filter(function (a) { return a.nom === "Livret"; })[0];
@@ -1074,9 +1076,10 @@ t("v5.12 PATRIMOINE_ACTIFS: private equity = l'unique actif hors radar, jamais a
 t("v5.12 index.html: carte « Ton patrimoine réel » sur l'onglet Radar, AVANT le simulateur",
   html.indexOf('id="patrimoineCard"') !== -1 && html.indexOf('id="patrimoineList"') !== -1 &&
   html.indexOf('id="patrimoineCard"') < html.indexOf("🧮 Simulateur d'apport"));
-t("v5.12 index.html: renderPatrimoine appelé depuis renderRadar, lignes = PATRIMOINE_ACTIFS + score du radar lié (ou « hors radar — jamais alloué »)",
+t("v5.12/v5.13 index.html: renderPatrimoine appelé depuis renderRadar, lignes = PATRIMOINE_ACTIFS + lecture par ligne (« hors radar » réservé au PE, ligne absente → « lecture indisponible »)",
   html.indexOf("PATRIMOINE_ACTIFS.map") !== -1 && html.indexOf("renderPatrimoine(radar);") !== -1 &&
-  html.indexOf("hors radar — jamais alloué") !== -1 && html.indexOf("radar ' + esc(a.name)") !== -1);
+  html.indexOf("hors radar — jamais alloué") !== -1 && html.indexOf("lecture marché ' + esc(a.name)") !== -1 &&
+  html.indexOf("lecture indisponible (donnée manquante)") !== -1);
 t("v5.12 index.html: la carte cite le socle inchangé (1 000 €/mois PEA seul) et le livret hors capacité paliers",
   html.indexOf("Le socle des 1 000 €/mois reste PEA seul ; le livret (épargne de précaution) n'entre jamais dans la capacité paliers") !== -1);
 
@@ -1098,6 +1101,23 @@ t("v5.12.1: les gardes précèdent TOUTE référence nue (aucun PATRIMOINE_ACTIF
     return naked("PATRIMOINE_ACTIFS", 'typeof PATRIMOINE_ACTIFS === "undefined"') &&
            naked("PATRIMOINE_HORS_RADAR", 'typeof PATRIMOINE !== "undefined" && typeof PATRIMOINE_HORS_RADAR !== "undefined"');
   })() === true);
+
+// ---------- v5.13 : revue de la carte patrimoine — lecture honnête ligne par ligne ----------
+t("v5.13 : plus aucun « PSAN » périmé — « plateforme agréée CASP (MiCA) » partout (fin du transitoire le 01/07/2026, radiés sans agrément — AMF)",
+  L.PATRIMOINE.crypto.reel.indexOf("PSAN") === -1 && L.PATRIMOINE.crypto.reel.indexOf("CASP") !== -1 &&
+  L.PATRIMOINE_ACTIFS.filter(function (a) { return a.radar === "crypto"; })[0].reel.indexOf("CASP") !== -1 &&
+  L.PATRIMOINE_ACTIFS.filter(function (a) { return a.radar === "crypto"; })[0].reel.indexOf("PSAN") === -1 &&
+  V.crypto.reel.indexOf("CASP") !== -1 && V.crypto.reel.indexOf("PSAN") === -1 &&
+  V.crypto.note.indexOf("CASP") !== -1 && V.crypto.note.indexOf("PSAN") === -1);
+t("v5.13 : « hors radar — jamais alloué » STRICTEMENT réservé à radar === null — ligne mappée absente ou score null → « lecture indisponible »",
+  html.indexOf("act.radar === null") !== -1 &&
+  html.indexOf("lecture indisponible (donnée manquante)") !== -1 &&
+  html.indexOf("hors radar — jamais alloué") !== -1);
+t("v5.13 : ligne Actions = timing (pilote du conseil depuis la v5.8) à côté du global — plus de contresens dans la carte",
+  html.indexOf("pilote du conseil") !== -1 && html.indexOf("a.timingScore") !== -1);
+t("v5.13 : lecture du SEGMENT, pas une note du produit (fonds euro capital garanti, livret à taux réglementé)",
+  html.indexOf("lecture marché ' + esc(a.name)") !== -1 &&
+  html.indexOf("pas une note du produit") !== -1);
 
 // ---------- Bilan ----------
 var fail = results.filter(function (r) { return !r.ok; });

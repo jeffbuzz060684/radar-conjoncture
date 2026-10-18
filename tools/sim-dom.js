@@ -1,4 +1,4 @@
-/* Simulation DOM v5.12.1 (outillage) — rejoue le chargement complet de la page avec des stubs (aucun réseau).
+/* Simulation DOM v5.13 (outillage) — rejoue le chargement complet de la page avec des stubs (aucun réseau).
    Exécution : node sim.js  →  doit finir par "SIM OK" sans aucune erreur d'exécution. */
 "use strict";
 var fs = require("fs"), path = require("path"), vm = require("vm");
@@ -128,9 +128,27 @@ ck("v5.12 : la carte patrimoine affiche exactement 7 lignes",
 ck("v5.12 : livret ET private equity visibles en permanence (pas seulement via le simulateur)",
   patHtml.indexOf("Livret") !== -1 && patHtml.indexOf("Private equity") !== -1 &&
   patHtml.indexOf("Fonds euro") !== -1 && patHtml.indexOf("SCPI") !== -1);
-ck("v5.12 : chaque actif lié au score du jour de son radar (…/100) + PE « hors radar — jamais alloué »",
-  patHtml.indexOf("/100</b>") !== -1 && patHtml.indexOf("radar Or") !== -1 &&
-  patHtml.indexOf("hors radar — jamais alloué") !== -1);
+ck("v5.13 : lecture honnête — 6 scores « /100 » (timing Actions + 5 lectures marché) + 1 seul « hors radar — jamais alloué »",
+  (patHtml.match(/\/100<\/b>/g) || []).length === 6 && (patHtml.match(/hors radar — jamais alloué/g) || []).length === 1);
+ck("v5.13 : ligne Actions pilotée par le timing (44/100, pilote du conseil) + lectures marché des segments",
+  patHtml.indexOf("timing <b>44/100</b>") !== -1 && patHtml.indexOf("pilote du conseil") !== -1 && patHtml.indexOf("lecture marché ") !== -1);
+
+// 7 ter. v5.13 : cas runtime — ligne du radar absente du relevé, score partiel (revue de la carte)
+var fakeRadar = { list: [
+  { id: "actions", name: "Actions monde (MSCI World)", score: 20, timingScore: 44 },
+  { id: "obligations", name: "Obligations zone euro", score: 41 },
+  { id: "monetaire", name: "Monétaire", score: 52 },
+  { id: "crypto", name: "Crypto", score: 44, partial: true }
+] };   // « or » et « immo » ABSENTS du relevé → « lecture indisponible » ; crypto partiel → « (partiel) »
+sandbox.renderPatrimoine(fakeRadar);
+var fakeHtml = txt("patrimoineList");
+ck("v5.13 : ligne mappée absente du radar → « lecture indisponible (donnée manquante) » ×2, JAMAIS « jamais alloué »",
+  (fakeHtml.match(/lecture indisponible \(donnée manquante\)/g) || []).length === 2 && fakeHtml.indexOf("hors radar — jamais alloué") !== -1);
+ck("v5.13 : score partiel tracé « (partiel) » sur la ligne crypto",
+  fakeHtml.indexOf("(partiel)") !== -1);
+sandbox.renderRadar();   // état normal restauré
+ck("v5.13 : retour à l'état normal — 7 lignes, 6 scores, PE seul hors radar",
+  (function () { var h = txt("patrimoineList"); return (h.match(/palrow/g) || []).length === 7 && (h.match(/\/100<\/b>/g) || []).length === 6; })());
 
 // 8. Changement de posture → recalcul automatique + plancher monétaire (v5.8)
 els.postureSel.value = "Défensive";
@@ -218,4 +236,4 @@ var fail = checks.filter(function (c) { return !c.ok; });
 checks.forEach(function (c) { console.log((c.ok ? "✅ " : "❌ ") + c.name); });
 console.log("");
 if (fail.length) { console.log("SIM ÉCHECS : " + fail.length); process.exit(1); }
-console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul + synthèse à source partagée v5.10 + univers réel v5.11 + carte « Ton patrimoine réel » 7 actifs v5.12 + gardes anti-skew logic.js périmé v5.12.1).");
+console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul + synthèse à source partagée v5.10 + univers réel v5.11 + carte « Ton patrimoine réel » 7 actifs v5.12 + gardes anti-skew logic.js périmé v5.12.1 + lecture honnête ligne par ligne v5.13).");

@@ -1,8 +1,10 @@
-/* Instruments exemples par actif — Radar Conjoncture v5.11
+/* Instruments exemples par actif — Radar Conjoncture v5.13
    v3 (17/10/2026) : instruments vérifiés — justETF, extraETF, Boursorama, DCA Tracker (éligibilité PEA), ASPIM-IEIF (SCPI).
    v5.11 (18/10/2026) : chaque ligne porte « reel » = la situation RÉELLE de Jade (patrimoine déclaré
    le 18/10/2026 : actions, or, BTC, fonds euro AV, SCPI AV, livret, private equity) — affichée sous
    forme 👤 dans la carte actif, distincte de l'instrument EXEMPLE (indicatif, pas une recommandation).
+   v5.13 (18/10/2026) : crypto — « plateforme agréée CASP (MiCA) » : le régime transitoire PSAN a pris
+   fin le 01/07/2026 (AMF ; PSAN sans agrément MiCA radiés automatiquement le 02/07/2026).
    Structure testée par tools/test-auto.js (Node). */
 "use strict";
 var VEHICULES = {
@@ -51,8 +53,8 @@ var VEHICULES = {
     isin: "GB00BLD4ZL17",
     frais: "0,15 %/an",
     enceinte: "CTO",
-    reel: "Tu détiens déjà du Bitcoin. Renfort possible sur plateforme enregistrée PSAN ou à la reprise du CTO.",
-    note: "ETN adossé au BTC physique, 1,4 Md€. Pas éligible PEA. Alternative : achat direct sur plateforme enregistrée PSAN."
+    reel: "Tu détiens déjà du Bitcoin. Renfort possible sur plateforme agréée CASP (MiCA) ou à la reprise du CTO.",
+    note: "ETN adossé au BTC physique, 1,4 Md€. Pas éligible PEA. Alternative : achat direct sur plateforme agréée CASP (MiCA)."
   }
 };
 if (typeof module !== "undefined" && module.exports) { module.exports = VEHICULES; }
