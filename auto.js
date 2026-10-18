@@ -1,10 +1,13 @@
-/* Radar Conjoncture — module de mise à jour automatique (v4.1)
+/* Radar Conjoncture — module de mise à jour automatique (v5)
    1. Applique data.json (relevé hebdo vérifié, poussé sur GitHub) si plus récent que le local.
    2. Applique data-daily.json (relevé quotidien automatique via GitHub Actions) par-dessus
-      si plus récent : cours IWDA + VIX lissé — les paliers réagissent chaque jour, pas seulement le lundi.
-   3. Détecte un nouveau plus haut 52 sem. → réinitialise les paliers déployés (nouvel épisode).
-   4. Signale une référence 52 sem. instable (écart > 2 % d'un relevé à l'autre) → alerte UI.
-   5. Rafraîchit or & BTC via CoinGecko au plus 1 fois / 22 h, silencieusement.
+      si même date ou plus récent : cours IWDA en € + VIX lissé + références 52 sem. de la
+      même source (fenêtre 1 an) — les paliers réagissent chaque jour.
+   3. Recale la référence 52 sem. à la hausse si la fenêtre 1 an révèle un sommet plus haut
+      que la référence locale → nouvel épisode, paliers déployés réinitialisés.
+   4. Détecte un nouveau plus haut 52 sem. → réinitialise les paliers déployés (nouvel épisode).
+   5. Signale une référence 52 sem. instable (écart > 2 % d'un relevé à l'autre) → alerte UI.
+   6. Rafraîchit or & BTC via CoinGecko au plus 1 fois / 22 h, silencieusement.
    Les fonctions pures (Auto_*) sont testées par tools/test-auto.js (Node). */
 "use strict";
 (function () {
@@ -15,10 +18,23 @@
     return typeof a === "string" && typeof b === "string" && a > b;
   }
 
+  // Même date ou plus récent : sert pour le relevé quotidien, dont une révision peut être
+  // repoussée le soir même avec la même date de clôture (le strict-plus-récent l'ignorerait).
+  function Auto_isSameOrNewerDate(a, b) {
+    return typeof a === "string" && typeof b === "string" && a >= b;
+  }
+
+  // Date ISO qui existe VRAIMENT dans le calendrier (rejette 2026-02-31, 2026-13-01…).
+  function Auto_isValidDate(s) {
+    if (typeof s !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+    var t = Date.parse(s + "T12:00:00Z");
+    return !isNaN(t) && new Date(t).toISOString().slice(0, 10) === s;
+  }
+
   function Auto_validRemote(json) {
     if (!json || typeof json !== "object") return null;
     if (!json.data || typeof json.data !== "object") return null;
-    if (typeof json.dateData !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(json.dateData)) return null;
+    if (!Auto_isValidDate(json.dateData)) return null;
     return json;
   }
 
@@ -75,6 +91,38 @@
       applied++;
     });
     return applied ? out : null;
+  }
+
+  // ---------- v5 : recale de la référence 52 sem. (fenêtre 1 an, même source que le cours) ----------
+
+  // Le relevé quotidien embarque `refs` = sommet/bas/date du sommet de la fenêtre 1 an
+  // (même source Yahoo que le cours). La référence locale n'est JAMAIS abaissée ici :
+  // un sommet 1 an plus haut que la référence → recale à la hausse, nouvel épisode,
+  // paliers réinitialisés. Garde anti-corruption : saut ≤ +10 % comme pour les épisodes.
+  function Auto_refUpdate(data, refs, dateStr) {
+    if (!data || typeof data !== "object" || !refs || typeof refs !== "object") return null;
+    if (!Auto_isValidDate(dateStr)) return null;
+    var hi = refs.msciHigh52, lo = refs.msciLow52, hd = refs.msciHigh52Date;
+    if (typeof hi !== "number" || !isFinite(hi) || hi <= 0) return null;
+    if (typeof data.msciHigh52 !== "number" || !isFinite(data.msciHigh52) || data.msciHigh52 <= 0) return null;
+    if (hi <= data.msciHigh52) return null;                       // jamais abaissée
+    if (hi > data.msciHigh52 * (1 + AUTO_EPISODE_MAX_JUMP)) return null; // aberrant
+    var deployed = 0;
+    if (data.paliersDone) {
+      ["p5", "p10", "p15", "p20"].forEach(function (k) { if (data.paliersDone[k]) deployed++; });
+    }
+    var episode = {
+      date: dateStr,
+      oldHigh52: data.msciHigh52,
+      newHigh52: Math.round(hi * 100) / 100,
+      deployed: deployed
+    };
+    var out = JSON.parse(JSON.stringify(data));
+    out.msciHigh52 = episode.newHigh52;
+    out.msciHigh52Date = (typeof hd === "string" && Auto_isValidDate(hd)) ? hd : dateStr;
+    if (typeof lo === "number" && isFinite(lo) && lo > 0) out.msciLow52 = Math.round(lo * 100) / 100;
+    out.paliersDone = { p5: false, p10: false, p15: false, p20: false };
+    return { data: out, episode: episode, unstable: Auto_refUnstable(data.msciHigh52, hi) };
   }
 
   // ---------- v3 : nouvel épisode de paliers ----------
@@ -144,9 +192,12 @@
   if (typeof module !== "undefined" && module.exports) {
     module.exports = {
       Auto_isNewerDate: Auto_isNewerDate,
+      Auto_isSameOrNewerDate: Auto_isSameOrNewerDate,
+      Auto_isValidDate: Auto_isValidDate,
       Auto_validRemote: Auto_validRemote,
       Auto_merge: Auto_merge,
       Auto_overlayDaily: Auto_overlayDaily,
+      Auto_refUpdate: Auto_refUpdate,
       Auto_episodeUpdate: Auto_episodeUpdate,
       Auto_refUnstable: Auto_refUnstable,
       Auto_shouldGecko: Auto_shouldGecko,
@@ -192,13 +243,28 @@
         msgs.push("✅ Relevé hebdo du " + weekly.dateData + (weekly.note ? " — " + weekly.note : ""));
       }
 
-      // b) relevé quotidien automatique (jamais appliqué s'il n'est pas plus récent)
-      if (daily && Auto_isNewerDate(daily.dateData, cur.dateData)) {
+      // b) relevé quotidien automatique (même date acceptée : une révision du soir
+      //     avec la même clôture doit pouvoir passer ; jamais appliqué si plus ancien)
+      if (daily && Auto_isSameOrNewerDate(daily.dateData, cur.dateData)) {
         var ov = Auto_overlayDaily(cur, daily.data);
         if (ov) {
           ov.dateData = daily.dateData;
           cur = ov;
           msgs.push("📈 Cours du jour appliqué (" + daily.dateData + ")");
+        } else if (Auto_isNewerDate(daily.dateData, cur.dateData)) {
+          cur.dateData = daily.dateData; // relevé récent mais aucun champ valable : au moins dater l'état
+        }
+        // b2) recale la référence 52 sem. si la fenêtre 1 an révèle un sommet plus haut
+        if (daily.refs) {
+          var ru = Auto_refUpdate(cur, daily.refs, daily.dateData);
+          if (ru) {
+            cur = ru.data;
+            if (!state.episodes) state.episodes = [];
+            state.episodes.push(ru.episode);
+            if (state.episodes.length > 50) state.episodes = state.episodes.slice(-50);
+            if (ru.unstable) refAlert = { date: daily.dateData, from: ru.episode.oldHigh52, to: ru.episode.newHigh52 };
+            msgs.push("📐 Référence 52 sem. recalée sur le sommet 1 an (" + ru.episode.newHigh52 + " €) — paliers réinitialisés");
+          }
         }
       }
 
@@ -209,7 +275,7 @@
         if (!state.episodes) state.episodes = [];
         state.episodes.push(ep.episode);
         if (state.episodes.length > 50) state.episodes = state.episodes.slice(-50);
-        msgs.push("🆕 Nouveau plus haut 52 sem. (" + ep.episode.newHigh52 + " $) — paliers réinitialisés (nouvel épisode)");
+        msgs.push("🆕 Nouveau plus haut 52 sem. (" + ep.episode.newHigh52 + " €) — paliers réinitialisés (nouvel épisode)");
       }
 
       if (!msgs.length && !refAlert) return;

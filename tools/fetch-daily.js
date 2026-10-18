@@ -1,9 +1,10 @@
 /* Relevé quotidien automatique — exécuté par GitHub Actions (cron jours ouvrés).
-   Récupère le cours IWDA (USD, cotation LSE) et le VIX (courant + moyenne 5 séances)
-   via l'API publique Yahoo Finance, vérifie la cohérence vs le dernier relevé
-   quotidien accepté (fallback : relevé hebdo vérifié), puis écrit data-daily.json
-   à la racine du site, daté de la clôture du cours (pas de la date d'exécution).
-   Usage : node tools/fetch-daily.js [--dry-run] */
+   Récupère le cours IWDA en EUROS (IWDA.AS, Euronext Amsterdam) et le VIX (courant +
+   moyenne 5 séances) via l'API publique Yahoo Finance, puis les références 52 sem.
+   (sommet/bas/date du sommet) sur la même source via range=1y. Vérifie la cohérence
+   vs le dernier relevé quotidien accepté (fallback : relevé hebdo vérifié), puis
+   écrit data-daily.json à la racine du site, daté de la clôture du cours.
+   Usage : node tools/fetch-daily.js [--dry-run] [--force] */
 "use strict";
 var fs = require("fs");
 var path = require("path");
@@ -61,13 +62,21 @@ async function main() {
   var refDaily = (previous && previous.data && typeof previous.data === "object") ? previous.data : null;
   var ref = refDaily || weekly.data;
 
-  var iwdaC = closes(await fetchChart("IWDA.L", "5d")); // LSE, coté en USD
-  var vixC = closes(await fetchChart("^VIX", "10d"));   // 10 j pour garantir 5 séances
+  var iwdaC = closes(await fetchChart("IWDA.AS", "5d")); // Euronext Amsterdam, coté en EUR
+  var vixC = closes(await fetchChart("^VIX", "10d"));    // 10 j pour garantir 5 séances
+  var iwdaY = closes(await fetchChart("IWDA.AS", "1y")); // fenêtre 1 an : références 52 sem.
   var last = iwdaC[iwdaC.length - 1];
   var msci = round2(last.close);
   var vixLast = round2(vixC[vixC.length - 1].close);
   var last5 = vixC.slice(-5);
   var vix5 = round2(last5.reduce(function (s, c) { return s + c.close; }, 0) / last5.length);
+  var hi = -Infinity, hiD = "", lo = Infinity;
+  iwdaY.forEach(function (x) {
+    if (x.close > hi) { hi = x.close; hiD = x.date; }
+    if (x.close < lo) lo = x.close;
+  });
+  // Cohérence interne : le sommet 1 an doit être ≥ au cours (sinon source corrompue → pas de refs).
+  var refsOk = isFinite(hi) && isFinite(lo) && hi >= msci && lo > 0 && msci > 0;
 
   // Garde-fous : plages plausibles + écart max en UNE séance vs la dernière valeur acceptée.
   var data = {}, applied = [], skipped = [];
@@ -80,9 +89,11 @@ async function main() {
   }
 
   // dateData = date de CLÔTURE du cours (pas la date d'exécution : un run week-end reste
-  // daté de la dernière séance). No-op si le fichier existant est déjà à jour ou plus récent.
+  // daté de la dernière séance). No-op si le fichier existant est déjà à jour ou plus récent,
+  // sauf --force (régénération après changement de source, ex. bascule USD → EUR).
   var dateData = last.date;
-  if (previous && previous.dateData >= dateData) {
+  var force = process.argv.indexOf("--force") !== -1;
+  if (!force && previous && previous.dateData >= dateData) {
     console.log("data-daily.json déjà à jour (dernier relevé " + previous.dateData + " ≥ clôture " + dateData + ") — rien à faire.");
     return;
   }
@@ -90,16 +101,25 @@ async function main() {
   var out = {
     version: 1,
     dateData: dateData,
-    note: "relevé quotidien automatique (marchés)",
+    note: "relevé quotidien automatique (marchés, IWDA en €)",
     data: data,
     sources: [
-      ["MSCI World (IWDA) : " + msci + " $ — clôture du " + last.date + " (IWDA.L, LSE, cotation USD)", "Yahoo Finance"],
+      ["MSCI World (IWDA) : " + msci + " € — clôture du " + last.date + " (IWDA.AS, Euronext Amsterdam, cotation EUR)", "Yahoo Finance"],
       ["VIX : " + vixLast + " ; moyenne 5 séances : " + vix5, "Yahoo Finance (^VIX)"],
       ["Garde-fous : plausibilité + écart max une séance vs " +
        (refDaily ? "le dernier relevé quotidien accepté" : "le relevé vérifié du " + weekly.dateData) +
        " — champs écartés : " + (skipped.length ? skipped.join(", ") : "aucun"), "tools/fetch-daily.js"]
     ]
   };
+  if (refsOk) {
+    out.refs = { msciHigh52: round2(hi), msciLow52: round2(lo), msciHigh52Date: hiD };
+    out.sources.push([
+      "Références 52 sem. (même source que le cours, fenêtre 1 an) : sommet " + round2(hi) + " € le " + hiD + " ; bas " + round2(lo) + " €",
+      "Yahoo Finance (IWDA.AS, range=1y)"
+    ]);
+  } else {
+    out.sources.push(["Références 52 sem. NON recalculées : fenêtre 1 an incohérente avec le cours", "tools/fetch-daily.js"]);
+  }
   if (process.argv.indexOf("--dry-run") !== -1) {
     console.log(JSON.stringify(out, null, 2));
     return;

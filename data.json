@@ -3,10 +3,11 @@
   "dateData": "2026-10-17",
   "note": "Maj hebdo — VIX bondit, taux hauts",
   "data": {
-    "msci": 146.81,
-    "msciHigh52": 149.81,
-    "msciHigh52Date": "",
-    "msciLow52": 123.2,
+    "dateMacro": "2026-10-16",
+    "msci": 130.55,
+    "msciHigh52": 132.26,
+    "msciHigh52Date": "2026-10-12",
+    "msciLow52": 107.51,
     "cape": 40.38,
     "vix": 19.99,
     "vix5": 16.76,
@@ -26,8 +27,8 @@
   },
   "sources": [
     [
-      "MSCI World (IWDA) : 146,81 $ (17/10/2026) ; plus haut 52 sem. 149,81 $ ; plus bas 123,20 $",
-      "Investing.com"
+      "MSCI World (IWDA) : 130,55 € (clôture du 16/10/2026, Euronext Amsterdam) ; plus haut 52 sem. 132,26 € (12/10) ; plus bas 107,51 € — paliers en EUROS depuis la v5",
+      "Yahoo Finance (IWDA.AS, range=1y)"
     ],
     [
       "CAPE Shiller : 40,38 (2026-10-01, 98,9e percentile)",

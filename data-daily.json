@@ -1,15 +1,15 @@
 {
   "version": 1,
   "dateData": "2026-10-16",
-  "note": "relevé quotidien automatique (marchés)",
+  "note": "relevé quotidien automatique (marchés, IWDA en €)",
   "data": {
-    "msci": 146.81,
+    "msci": 130.55,
     "vix": 19.99,
     "vix5": 16.76
   },
   "sources": [
     [
-      "MSCI World (IWDA) : 146.81 $ — clôture du 2026-10-16 (IWDA.L, LSE, cotation USD)",
+      "MSCI World (IWDA) : 130.55 € — clôture du 2026-10-16 (IWDA.AS, Euronext Amsterdam, cotation EUR)",
       "Yahoo Finance"
     ],
     [
@@ -19,6 +19,15 @@
     [
       "Garde-fous : plausibilité + écart max une séance vs le relevé vérifié du 2026-10-17 — champs écartés : aucun",
       "tools/fetch-daily.js"
+    ],
+    [
+      "Références 52 sem. (même source que le cours, fenêtre 1 an) : sommet 132.26 € le 2026-10-12 ; bas 107.51 €",
+      "Yahoo Finance (IWDA.AS, range=1y)"
     ]
-  ]
+  ],
+  "refs": {
+    "msciHigh52": 132.26,
+    "msciLow52": 107.51,
+    "msciHigh52Date": "2026-10-12"
+  }
 }

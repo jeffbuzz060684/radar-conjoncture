@@ -1,5 +1,5 @@
-/* Harnais de tests — Radar Conjoncture v4.1 (modules auto.js & vehicles.js, fichiers livrés,
-   pipeline quotidien/épisode/référence, validateurs, workflows et régressions bugs 1/4/5).
+/* Harnais de tests — Radar Conjoncture v5 (modules auto.js, logic.js & vehicles.js, fichiers
+   livrés, pipeline quotidien/épisode/référence, scoring, validateurs, workflows et régressions).
    Exécution : node tools/test-auto.js  →  0 échec obligatoire avant publication. */
 "use strict";
 var fs = require("fs");
@@ -7,15 +7,24 @@ var path = require("path");
 var child_process = require("child_process");
 
 var A = require(path.join(__dirname, "..", "auto.js"));
+var L = require(path.join(__dirname, "..", "logic.js"));
 var results = [];
 function t(name, cond) { results.push({ name: name, ok: !!cond }); }
 
-// ---------- Auto_isNewerDate ----------
+// ---------- Auto_isNewerDate / Auto_isSameOrNewerDate / Auto_isValidDate ----------
 t("isNewerDate: date plus récente → true", A.Auto_isNewerDate("2026-10-24", "2026-10-17") === true);
 t("isNewerDate: même date → false", A.Auto_isNewerDate("2026-10-17", "2026-10-17") === false);
 t("isNewerDate: date plus ancienne → false", A.Auto_isNewerDate("2026-10-10", "2026-10-17") === false);
 t("isNewerDate: année à 4 chiffres seule → true", A.Auto_isNewerDate("2027-01-05", "2026-12-31") === true);
 t("isNewerDate: entrée non chaîne → false", A.Auto_isNewerDate(null, "2026-10-17") === false && A.Auto_isNewerDate("2026-10-17", undefined) === false);
+t("isSameOrNewerDate: même date → true (révision du quotidien, même clôture)", A.Auto_isSameOrNewerDate("2026-10-16", "2026-10-16") === true);
+t("isSameOrNewerDate: plus récent → true", A.Auto_isSameOrNewerDate("2026-10-17", "2026-10-16") === true);
+t("isSameOrNewerDate: plus ancien → false", A.Auto_isSameOrNewerDate("2026-10-15", "2026-10-16") === false);
+t("isValidDate: date réelle → true", A.Auto_isValidDate("2026-10-17") === true);
+t("isValidDate: 29 février bissextile → true", A.Auto_isValidDate("2028-02-29") === true);
+t("isValidDate: 31 février → false", A.Auto_isValidDate("2026-02-31") === false);
+t("isValidDate: 29 février non bissextile → false", A.Auto_isValidDate("2026-02-29") === false);
+t("isValidDate: 13e mois → false", A.Auto_isValidDate("2026-13-01") === false);
 
 // ---------- Auto_validRemote ----------
 var OK_REMOTE = { dateData: "2026-10-24", data: { msci: 150.2 }, note: "test" };
@@ -26,6 +35,8 @@ t("validRemote: data non objet → null", A.Auto_validRemote({ dateData: "2026-1
 t("validRemote: dateData manquant → null", A.Auto_validRemote({ data: {} }) === null);
 t("validRemote: dateData mal formé → null", A.Auto_validRemote({ dateData: "24/10/2026", data: {} }) === null);
 t("validRemote: dateData partielle → null", A.Auto_validRemote({ dateData: "2026-10", data: {} }) === null);
+t("validRemote: dateData inexistant au calendrier (31/02) → null", A.Auto_validRemote({ dateData: "2026-02-31", data: {} }) === null);
+t("validRemote: dateData mois 13 → null", A.Auto_validRemote({ dateData: "2026-13-01", data: {} }) === null);
 
 // ---------- Auto_merge (hebdo) ----------
 var LOCAL = {
@@ -110,6 +121,24 @@ t("refUnstable: valeur distante manquante → false", A.Auto_refUnstable(149.81,
 t("refUnstable: référence plus haute (nouveau sommet +8 %) → true",
   A.Auto_refUnstable(149.81, 161.35) === true);
 
+// ---------- Auto_refUpdate (v5 : référence 52 sem. recalée sur la fenêtre 1 an) ----------
+var RLOCAL = { dateData: "2026-10-16", msci: 130.55, msciHigh52: 131, msciHigh52Date: "", msciLow52: 110, paliersDone: { p5: true, p10: false, p15: false, p20: false } };
+var ru1 = A.Auto_refUpdate(RLOCAL, { msciHigh52: 132.26, msciLow52: 107.51, msciHigh52Date: "2026-10-12" }, "2026-10-16");
+t("refUpdate: sommet 1 an plus haut → référence recalée à la hausse (132,26 €, datée)",
+  !!ru1 && ru1.data.msciHigh52 === 132.26 && ru1.data.msciHigh52Date === "2026-10-12");
+t("refUpdate: bas 52 sem. mis à jour (107,51 €)", ru1.data.msciLow52 === 107.51);
+t("refUpdate: nouvel épisode + paliers réinitialisés",
+  ru1.episode.oldHigh52 === 131 && ru1.episode.newHigh52 === 132.26 && ru1.episode.deployed === 1 && ru1.data.paliersDone.p5 === false);
+t("refUpdate: mouvement < 2 % → pas d'alerte instable", ru1.unstable === false);
+t("refUpdate: référence jamais abaissée → null", A.Auto_refUpdate(RLOCAL, { msciHigh52: 130 }, "2026-10-16") === null);
+var RLOCAL2 = JSON.parse(JSON.stringify(RLOCAL)); RLOCAL2.msciHigh52 = 122;
+var ru3 = A.Auto_refUpdate(RLOCAL2, { msciHigh52: 132.26 }, "2026-10-16");
+t("refUpdate: saut > 2 % → alerte instable signalée", !!ru3 && ru3.unstable === true);
+t("refUpdate: saut > 10 % → aberrant → null", A.Auto_refUpdate(RLOCAL, { msciHigh52: 150 }, "2026-10-16") === null);
+t("refUpdate: refs invalides → null",
+  A.Auto_refUpdate(RLOCAL, { msciHigh52: "132" }, "2026-10-16") === null && A.Auto_refUpdate(RLOCAL, null, "2026-10-16") === null);
+t("refUpdate: date invalide → null", A.Auto_refUpdate(RLOCAL, { msciHigh52: 132.26 }, "2026-02-31") === null);
+
 // ---------- Auto_shouldGecko ----------
 var H = 3600 * 1000;
 t("shouldGecko: jamais interrogé → true", A.Auto_shouldGecko(Date.now(), null) === true);
@@ -161,6 +190,7 @@ t("data.json: sources présentes", Array.isArray(raw.sources) && raw.sources.len
 t("data.json: sommet 52 sem. ≥ cours", raw.data.msciHigh52 >= raw.data.msci);
 t("data.json: vix5 présent et numérique", typeof raw.data.vix5 === "number" && isFinite(raw.data.vix5));
 t("data.json: date du sommet absente ou chaîne", raw.data.msciHigh52Date === undefined || typeof raw.data.msciHigh52Date === "string");
+t("data.json: dateMacro du dernier point macro (ISO valide)", typeof raw.data.dateMacro === "string" && A.Auto_isValidDate(raw.data.dateMacro));
 var mergedDefaults = A.Auto_merge({ msci: 146.81, msciHigh52Date: "", bceDir: "hausse", btcHigh52: null, orEUR: 3729.84, vix5: null }, raw.data);
 t("data.json: fusion sur données par défaut OK", mergedDefaults.msci === raw.data.msci && mergedDefaults.bceDir === raw.data.bceDir && mergedDefaults.vix5 === raw.data.vix5);
 
@@ -171,6 +201,12 @@ t("data-daily.json: au moins un champ de marché", ["msci", "vix", "vix5", "bund
 t("data-daily.json: ni reserve ni paliersDone", !("reserve" in daily.data) && !("paliersDone" in daily.data));
 t("data-daily.json: aucun champ hors liste autorisée", Object.keys(daily.data).every(function (k) { return A.AUTO_DAILY_FIELDS.indexOf(k) !== -1; }));
 t("data-daily.json: sources présentes", Array.isArray(daily.sources) && daily.sources.length >= 2);
+t("data-daily.json: refs 52 sem. présentes et plausibles (même source que le cours)",
+  !!daily.refs && typeof daily.refs.msciHigh52 === "number" && daily.refs.msciHigh52 >= daily.data.msci &&
+  typeof daily.refs.msciLow52 === "number" && daily.refs.msciLow52 < daily.refs.msciHigh52 &&
+  A.Auto_isValidDate(daily.refs.msciHigh52Date));
+t("data-daily.json: aucune donnée perso dans refs", !("reserve" in daily.refs) && !("paliersDone" in daily.refs));
+t("data-daily.json: même devise que le relevé hebdo (EUR)", daily.data.msci === raw.data.msci);
 t("data-daily.json: overlay applicable sur le data.json du jour",
   A.Auto_overlayDaily(JSON.parse(JSON.stringify(raw.data)), daily.data) !== null);
 
@@ -197,46 +233,70 @@ t("fetch-daily: garde-fous une séance (10 % msci / 60 % VIX) présents", fd.ind
 t("fetch-daily: référence de dérive = dernier relevé quotidien accepté", fd.indexOf("refDaily") !== -1 && fd.indexOf("previous.data") !== -1);
 t("fetch-daily: dateData = date de clôture (last.date), pas la date d'exécution", fd.indexOf("dateData = last.date") !== -1 && fd.indexOf("dateData = today") === -1);
 t("fetch-daily: no-op si relevé existant ≥ clôture (jamais d'écrasement par une date plus ancienne)", fd.indexOf("previous.dateData >= dateData") !== -1);
-t("fetch-daily: sources IWDA.L (USD) et ^VIX", fd.indexOf("IWDA.L") !== -1 && fd.indexOf("^VIX") !== -1);
+t("fetch-daily: source IWDA.AS (Euronext Amsterdam, EUR) et ^VIX", fd.indexOf("IWDA.AS") !== -1 && fd.indexOf("IWDA.L") === -1 && fd.indexOf("^VIX") !== -1);
+t("fetch-daily: références 52 sem. via range=1y (même source que le cours)", fd.indexOf('\"1y\"') !== -1 && fd.indexOf("out.refs") !== -1);
+t("fetch-daily: --force pour régénérer après changement de source", fd.indexOf("--force") !== -1);
 t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === -1 && fd.indexOf("paliersDone") === -1);
 
-// ---------- index.html & sw.js livrés ----------
+// ---------- index.html & sw.js & logic.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v4.1", html.indexOf("<b>v4.1</b>") !== -1);
-t("index.html: aucun ancien badge v4/v3/v2/v1", ["<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
+t("index.html: badge v5", html.indexOf("<b>v5</b>") !== -1);
+t("index.html: aucun ancien badge v4.1/v4/v3/v2/v1",
+  ["<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: badge « Maj auto hebdo » absent", html.indexOf("Maj auto hebdo") === -1);
-t("index.html: vehicles.js référencé avant le script inline",
+t("index.html: vehicles.js puis logic.js chargés dans cet ordre",
   html.indexOf('<script src="vehicles.js"></script>') !== -1 &&
-  html.indexOf('<script src="vehicles.js"></script>') < html.indexOf("/* ===LOGIC_START=== */"));
+  html.indexOf('<script src="vehicles.js"></script>') < html.indexOf('<script src="logic.js"></script>'));
+t("index.html: plus aucun montant en dollars (paliers 100 % euros)", !/ \$[^(]/.test(html));
+t("index.html: chip fraîcheur macro séparée (macroChip)", html.indexOf('id="macroChip"') !== -1);
+t("index.html: échappement HTML des valeurs issues d'un import JSON",
+  html.indexOf("esc(String(h.topScore))") !== -1 && html.indexOf("esc(String(h.scores.actions))") !== -1 &&
+  html.indexOf("esc(String(e.oldHigh52))") !== -1 && html.indexOf("esc(String(state.refAlert.from))") !== -1);
 t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES[a.id]") !== -1);
 t("index.html: note « Instruments exemples » dans les sources", html.indexOf("Instruments exemples") !== -1);
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
-t("index.html: champ msciHigh52Date dans le formulaire", html.indexOf('"msciHigh52Date"') !== -1);
-t("index.html: champ vix5 dans le formulaire", html.indexOf('"vix5"') !== -1);
-t("index.html: VIX lissé utilisé dans le scoring (vixEff)", html.indexOf("vixEff") !== -1 && html.indexOf("der.vixEff") !== -1);
 t("index.html: alerte référence 52 sem. (id refAlert)", html.indexOf('id="refAlert"') !== -1 && html.indexOf("btnRefOk") !== -1);
 t("index.html: carte Évolution des scores par actif", html.indexOf("Évolution des scores par actif") !== -1 && html.indexOf('id="scoresWrap"') !== -1);
 t("index.html: carte Épisodes de paliers", html.indexOf("Épisodes de paliers") !== -1 && html.indexOf('id="episodesTable"') !== -1);
 t("index.html: épisodes persistés (state.episodes)", html.indexOf("state.episodes") !== -1);
 t("index.html: alerte référence persistée (state.refAlert)", html.indexOf("state.refAlert") !== -1);
 t("index.html: légende des 6 actifs du graphique (SCORE_META)", html.indexOf("SCORE_META") !== -1);
+// logic.js (v5 : logique extraite d'index.html)
+var logicSrc = fs.readFileSync(path.join(ROOT, "logic.js"), "utf8");
+t("logic.js: présent, sans mojibake", logicSrc.length > 15000 && logicSrc.indexOf("Ã") === -1);
+t("logic.js: DEFAULT_DATA en euros (IWDA.AS — 130,55 € / sommet 132,26 € du 12/10)",
+  L.DEFAULT_DATA.msci === 130.55 && L.DEFAULT_DATA.msciHigh52 === 132.26 && L.DEFAULT_DATA.msciHigh52Date === "2026-10-12" && L.DEFAULT_DATA.msciLow52 === 107.51);
+t("logic.js: dateMacro du dernier point macro", L.DEFAULT_DATA.dateMacro === "2026-10-16");
+t("logic.js: FIELDS avec dateMacro et MSCI libellés en €",
+  L.FIELDS.some(function (f) { return f.k === "dateMacro"; }) &&
+  L.FIELDS.some(function (f) { return f.k === "msci" && f.l.indexOf("€") !== -1 && f.l.indexOf("$") === -1; }));
+t("logic.js: sources EUR même source que le quotidien (IWDA.AS)", L.SOURCES[0][0].indexOf("130,55 €") !== -1 && L.SOURCES[0][1].indexOf("IWDA.AS") !== -1);
+t("logic.js: VIX lissé utilisé dans le scoring (vixEff)", logicSrc.indexOf("vixEff") !== -1 && logicSrc.indexOf("der.vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v5", sw.indexOf('CACHE = "radar-v5"') !== -1);
-t("sw.js: anciens caches v4/v3 absents", sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
-t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
+t("sw.js: cache v6", sw.indexOf('CACHE = "radar-v6"') !== -1);
+t("sw.js: anciens caches v5/v4/v3 absents", ["radar-v5", "radar-v4", "radar-v3"].every(function (c) { return sw.indexOf(c) === -1; }));
+t("sw.js: vehicles.js et logic.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1 && sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: data.json ET data-daily.json en réseau d'abord",
   sw.indexOf('url.pathname.indexOf("data.json")') !== -1 && sw.indexOf('url.pathname.indexOf("data-daily.json")') !== -1);
+t("sw.js: clé de cache sans ?v= (cleanUrl) — le secours hors ligne retrouve la copie",
+  sw.indexOf("cleanUrl") !== -1 && sw.indexOf("c.put(cleanUrl, copy)") !== -1);
 t("sw.js: auto.js dans le shell", sw.indexOf('"./auto.js"') !== -1);
 // auto.js : le câblage ne tourne pas sous Node (guard module.exports)
 t("auto.js: pas d'exception à l'import Node", true);
 var autosrc = fs.readFileSync(path.join(ROOT, "auto.js"), "utf8");
 t("auto.js: récupère data-daily.json à l'ouverture", autosrc.indexOf('"data-daily.json"') !== -1);
 t("auto.js: câble l'épisode et l'alerte référence", autosrc.indexOf("Auto_episodeUpdate(") !== -1 && autosrc.indexOf("Auto_refUnstable(") !== -1);
-t("auto.js: en-tête v4.1", autosrc.indexOf("module de mise à jour automatique (v4.1)") !== -1);
+t("auto.js: en-tête v5", autosrc.indexOf("module de mise à jour automatique (v5)") !== -1);
 t("auto.js: garde anti-corruption 50 % msci uniquement (plus de dérive 15 %)",
   autosrc.indexOf("AUTO_DAILY_MAX_JUMP") !== -1 && autosrc.indexOf("AUTO_DAILY_MAX_DRIFT") === -1);
+t("auto.js: quotidien même-date accepté (révision du soir, même clôture)",
+  autosrc.indexOf("Auto_isSameOrNewerDate(daily.dateData, cur.dateData)") !== -1);
+t("auto.js: recale la référence 52 sem. depuis daily.refs (Auto_refUpdate)",
+  autosrc.indexOf("Auto_refUpdate(cur, daily.refs") !== -1);
+t("auto.js: montant en euros dans les messages (plus aucun $)",
+  autosrc.indexOf(" €)") !== -1 && !/ \$[^(]/.test(autosrc));
 
 // ---------- workflows GitHub livrés ----------
 var pages = fs.readFileSync(path.join(ROOT, ".github", "workflows", "pages.yml"), "utf8");
@@ -252,24 +312,53 @@ t("daily-data.yml: commit seulement si changé", dailyWf.indexOf("--cached --qui
 t("daily-data.yml: sortie changed (GITHUB_OUTPUT)", dailyWf.indexOf("steps.commit.outputs.changed") !== -1);
 t("daily-data.yml: redéploie Pages après commit (gh workflow run pages.yml)", dailyWf.indexOf("gh workflow run pages.yml") !== -1);
 
-// ---------- Régressions v4.1 (bugs 1, 4, 5 signalés en revue) ----------
-// La logique pure de index.html est extraite du bloc balisé et évaluée sous Node.
-var LOGIC = html.slice(html.indexOf("/* ===LOGIC_START=== */"), html.indexOf("/* ===LOGIC_END=== */"));
-var L = new Function(LOGIC + "\nreturn { normalizeData: normalizeData, computeDerived: computeDerived, paliersOf: paliersOf, strategyOf: strategyOf, DEFAULT_DATA: DEFAULT_DATA };")();
-// Bug 1 : avec un drawdown de −2 %, le prochain palier (−5 %) doit afficher la baisse restante.
-var dFix = L.normalizeData({ dateData: "2026-10-17", msci: 146.81, msciHigh52: 149.81, reserve: 1000, paliersDone: { p5: false, p10: false, p15: false, p20: false } });
+// ---------- Scoring & stratégie (logique extraite dans logic.js, testée en CI) ----------
+// Bug 1 : avec les données du jour (DD −1,3 %), le prochain palier (−5 %) affiche la baisse restante.
+var dFix = L.normalizeData({ dateData: "2026-10-17", msci: 130.55, msciHigh52: 132.26, reserve: 1000, paliersDone: { p5: false, p10: false, p15: false, p20: false } });
 var derFix = L.computeDerived(dFix);
+t("scoring: drawdown MSCI −1,29 % sur les données du jour", derFix.ddMsci !== null && Math.abs(derFix.ddMsci + 1.2928) < 0.002);
 var palFix = L.paliersOf(dFix, derFix);
+t("paliers: seuils 125,65 / 119,03 / 112,42 / 105,81 € (base 132,26 €)",
+  palFix.length === 4 && palFix[0].seuil === 125.65 && palFix[1].seuil === 119.03 && palFix[2].seuil === 112.42 && palFix[3].seuil === 105.81);
 var stratFix = L.strategyOf(dFix, derFix, palFix, null).lines.join(" | ");
-t("régression bug 1 : prochain palier = « encore 3.1 % de baisse » (plus jamais « déjà franchi »)",
-  stratFix.indexOf("Prochain palier : −5 % à 142.32 $, soit encore 3.1 % de baisse") !== -1 && stratFix.indexOf("déjà franchi") === -1);
-t("régression bug 1 : drawdown −2 % calculé", derFix.ddMsci !== null && Math.abs(derFix.ddMsci + 2) < 0.01);
+t("régression bug 1 : prochain palier = « encore 3.8 % de baisse » (plus jamais « déjà franchi »)",
+  stratFix.indexOf("Prochain palier : −5 % à 125.65 €, soit encore 3.8 % de baisse") !== -1 && stratFix.indexOf("déjà franchi") === -1);
+var dF2 = L.normalizeData({ dateData: "2026-10-17", msci: 124, msciHigh52: 132.26, reserve: 1000, paliersDone: { p5: false, p10: false, p15: false, p20: false } });
+var derF2 = L.computeDerived(dF2);
+var stratF2 = L.strategyOf(dF2, derF2, L.paliersOf(dF2, derF2), null).lines.join(" | ");
+t("stratégie: palier −5 % franchi → déployer 25 % de la réserve (≈ 250 €)",
+  stratF2.indexOf("Palier −5 % FRANCHI") !== -1 && stratF2.indexOf("≈ 250 €") !== -1);
 // Bug 4 : un champ vidé reste manquant ; seul un champ absent retombe sur la valeur du jour.
 var ndClear = L.normalizeData({ dateData: "2026-10-17", vix5: null, cape: 41 });
 t("régression bug 4 : champ vidé (null) reste manquant, pas la valeur du 17/10", ndClear.vix5 === null);
 var ndAbsent = L.normalizeData({ dateData: "2026-10-17" });
 t("régression bug 4 : champ absent → valeur du jour", ndAbsent.vix5 === L.DEFAULT_DATA.vix5 && ndAbsent.vix5 === 16.76);
-t("régression bug 4 : régime sans panne sur données manquantes (aucune exception)", typeof L.computeDerived(ndClear) === "object");
+t("régression bug 4 : scoring et régime sans panne sur données manquantes",
+  typeof L.computeDerived(ndClear) === "object" && typeof L.regimeOf(ndClear).label === "string");
+// Radar complet sur les données du jour (structure du scoring en CI).
+var dDef = L.normalizeData(L.DEFAULT_DATA);
+var radarDef = L.radarAll(dDef);
+t("radar: 6 actifs triés par score décroissant, scores entiers bornés 0-100",
+  radarDef.list.length === 6 &&
+  radarDef.list.every(function (a, i) { return (i === 0 || radarDef.list[i - 1].score >= a.score) && a.score >= 0 && a.score <= 100 && Math.round(a.score) === a.score; }));
+t("radar: badge qualitatif sur chaque actif", radarDef.list.every(function (a) { return ["good", "mid", "bad"].indexOf(a.badge.cls) !== -1; }));
+var derDef = L.computeDerived(dDef);
+t("dérivés: VIX lissé prioritaire (vixEff 16,76)", derDef.vixEff === 16.76);
+t("dérivés: taux réel ZE −1,3 % · Bund réel −0,38 % · spread OAT 137 pb · marge immo 0,21",
+  Math.abs(derDef.tauxReelZE + 1.3) < 0.001 && Math.abs(derDef.bundReal + 0.38) < 0.001 && Math.round(derDef.spreadOat) === 137 && Math.abs(derDef.imoMarge - 0.21) < 0.001);
+t("dérivés: position or dans la fourchette 52 sem. (~28 %)", derDef.posOr !== null && derDef.posOr > 25 && derDef.posOr < 32);
+t("stepScore: CAPE 40,38 → −24 pts ; valeur manquante → 0 pts",
+  L.stepScore(40.38, [[20, 20], [25, 10], [30, 0], [35, -10], [40, -18], [Infinity, -24]]) === -24 && L.stepScore(null, [[20, 20]]) === 0);
+t("pctDD: cas limites (high manquant, high ≤ 0)", L.pctDD(100, null) === null && L.pctDD(50, 0) === null);
+t("clampScore: borné 0-100", L.clampScore(-5) === 0 && L.clampScore(104.6) === 100);
+t("staleDays: 3 jours ; date invalide → null", L.staleDays("2026-10-17", Date.parse("2026-10-20T12:00:00Z")) === 3 && L.staleDays("nawak", 0) === null);
+var geo = L.parseGecko({ prices: [[0, 5], [1, 7], [2, 6]] });
+t("parseGecko: cur/high/low extraits", !!geo && geo.cur === 6 && geo.high === 7 && geo.low === 5);
+t("régime: Expansion · inflation élevée · BCE en relèvement de taux",
+  (function () { var r = L.regimeOf(dDef); return r.label.indexOf("Expansion") !== -1 && r.label.indexOf("élevée") !== -1 && r.label.indexOf("relèvement") !== -1; })());
+var snapDef = L.snapshotOf(dDef, radarDef);
+t("snapshot: forme complète (top, score, scores des 6 actifs, ddMsci)",
+  snapDef.top === radarDef.list[0].name && snapDef.topScore === radarDef.list[0].score && snapDef.ddMsci === derDef.ddMsci && Object.keys(snapDef.scores).length === 6);
 // Bug 5 : l'export doit être symétrique avec l'import (refAlert + episodes inclus).
 t("régression bug 5 : export inclut refAlert et episodes",
   html.indexOf("history: state.history, refAlert: state.refAlert, episodes: state.episodes }, null, 2") !== -1);
