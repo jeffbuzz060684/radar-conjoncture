@@ -297,6 +297,27 @@ var ALLOC_MON_FLOOR = { "Prudente": 35, "Défensive": 50 };   // en % du montant
 // d'Object.prototype) passaient le test ALLOC_EXCL[p] !== undefined et ouvraient les seuils.
 function isPosture(p) { return typeof p === "string" && POSTURES.indexOf(p) !== -1; }
 
+// v5.11 : UNIVERS RÉEL de Jade (déclaré le 18/10/2026) — le simulateur d'apport place un
+// SUPPLÉMENT dans ce qu'il détient VRAIMENT, pas dans un univers théorique. Le socle mensuel
+// reste « 1 000 €/mois PEA seul » (stratégie maîtresse INCHANGÉE, cf. strategie-epargne) ;
+// seul le supplément (prime, don, virement) peut aller partout où il possède déjà quelque
+// chose. Chaque ligne du radar = un actif réellement détenu ; « ou » = la destination
+// concrète de l'argent, « reel » = le détail affiché dans le simulateur. Le private equity
+// (7e actif réel) est ILLIQUIDE (fenêtres de souscription, horizon long) : affiché pour
+// couvrir tout le patrimoine, jamais alloué par le simulateur. Le livret est l'épargne de
+// précaution : destination possible du monétaire, mais JAMAIS compté dans la capacité paliers.
+var PATRIMOINE = {
+  actions:     { ou: "PEA — DCAM",                 reel: "ton socle actions (Amundi PEA Monde) — exécutable en une fois ou en DCA, paliers possibles" },
+  obligations: { ou: "AV — fonds euro",            reel: "ton exposition obligataire réelle : le fonds euro de ton assurance vie (capital garanti, gains verrouillés chaque année) — l'ETF IEGA reste l'exemple marché, CTO en pause" },
+  immo:        { ou: "AV — SCPI",                  reel: "tes SCPI en assurance vie — frais de souscription élevés : pertinent en une fois, pas idéal en DCA mensuel" },
+  monetaire:   { ou: "Livret ou monétaire PEA",    reel: "ton livret (épargne de précaution) ou la réserve tactique du monétaire PEA — le livret ne compte jamais dans la capacité paliers" },
+  or:          { ou: "Or détenu",                  reel: "tu détiens déjà de l'or — renfort possible à la reprise du CTO (SGLD), lecture d'ici là" },
+  crypto:      { ou: "BTC détenu",                 reel: "tu détiens déjà du Bitcoin — renfort possible sur plateforme enregistrée PSAN ou à la reprise du CTO (BITC)" }
+};
+var PATRIMOINE_HORS_RADAR = [
+  { nom: "Private equity", reel: "illiquide — souscriptions aux fenêtres seulement, horizon long ; affiché pour couvrir tout le patrimoine, jamais alloué par le simulateur" }
+];
+
 function stanceOf(score, posture) {
   var c = isPosture(posture) ? CUTS[posture] : CUTS["Neutre"];   // inconnu/absent → base v5.6 (v5.10 : lit CUTS, plus de recalcul de rang)
   if (score >= c.sur) return { cls: "good", label: "Sur-pondérer", verb: "INVESTIR" };
@@ -506,7 +527,7 @@ function allocOf(montant, mode, months, d, radar, posture) {
     var partsVides = [], pi, pk, pa;
     for (pi = 0; pi < ALLOC_IDS.length; pi++) {
       pk = ALLOC_IDS[pi]; pa = byId[pk];
-      partsVides.push({ id: pk, icon: pa ? pa.icon : "•", name: pa ? pa.name : pk, pct: 0, euros: 0, exclu: true, manquant: true });
+      partsVides.push({ id: pk, icon: pa ? pa.icon : "•", name: pa ? pa.name : pk, pct: 0, euros: 0, exclu: true, manquant: true, ou: (PATRIMOINE[pk] ? PATRIMOINE[pk].ou : null) });   // v5.11
     }
     return {
       montant: m, mode: mode, months: n, mensualite: n ? r2(m / n) : null,
@@ -541,7 +562,7 @@ function allocOf(montant, mode, months, d, radar, posture) {
     if (!excl && firstIdx === -1) firstIdx = i;
     var eur = Math.round(m * shares[k]);
     sum += eur;
-    parts.push({ id: k, icon: a ? a.icon : "•", name: a ? a.name : k, pct: r1(shares[k] * 100), euros: eur, exclu: excl, manquant: (manquantes.indexOf(k) !== -1) });
+    parts.push({ id: k, icon: a ? a.icon : "•", name: a ? a.name : k, pct: r1(shares[k] * 100), euros: eur, exclu: excl, manquant: (manquantes.indexOf(k) !== -1), ou: (PATRIMOINE[k] ? PATRIMOINE[k].ou : null) });   // v5.11 : destination réelle de l'argent chez Jade
   }
   if (firstIdx !== -1) parts[firstIdx].euros += m - sum;   // reste d'arrondi au premier actif inclus (déterministe)
   // verdict « une fois » vs « DCA » : piloté par le TIMING actions (le CAPE, lent, pèse à part).
@@ -734,6 +755,7 @@ if (typeof module !== "undefined" && module.exports) {
     staleDays: staleDays, Auto_sanStr: Auto_sanStr, Auto_sanNum: Auto_sanNum, Auto_sanitizeImport: Auto_sanitizeImport,
     stanceOf: stanceOf, adviceOf: adviceOf, allocOf: allocOf, entryPrefOf: entryPrefOf,
     regimePostureOf: regimePostureOf, POSTURES: POSTURES, ALLOC_EXCL: ALLOC_EXCL, ALLOC_MON_FLOOR: ALLOC_MON_FLOOR, CUTS: CUTS,
-    isRealDate: isRealDate, isPosture: isPosture
+    isRealDate: isRealDate, isPosture: isPosture,
+    PATRIMOINE: PATRIMOINE, PATRIMOINE_HORS_RADAR: PATRIMOINE_HORS_RADAR   // v5.11 : univers réel de Jade
   };
 }

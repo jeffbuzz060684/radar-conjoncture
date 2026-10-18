@@ -1,6 +1,6 @@
 /* Harnais de tests — Radar Conjoncture v5.10 (logic.js, auto.js, vehicles.js, fichiers livrés,
    pipeline quotidien/épisode/référence, validateurs, workflows, notifications ntfy/Telegram,
-   sanitisation des imports, régressions v4.1/v5, compilation navigateur des scripts servis, conseil d'allocation v5.4, socle 1 000 €/mois v5.5, revue v5.6 : paliers incohérents, unités EUR, conseil non prescriptif, exclusions d'allocation, notification serveur, bceDirOf stable ; v5.7 : posture pilotable (regimePostureOf, forçage manuel) ; v5.8 : revue v5.7 — actions pilotées par le timing (CAPE = plafond, plus un verrou), auto = seuils v5.6 stricts (le forçage SEUL décale les seuils), vocabulaire risque macro séparé + avertissements, forçage daté expirant à 30 j, plancher monétaire Prudente/Défensive, affichage honnête du forçage) ; v5.9 : revue externe — dates de forçage réelles et locales (isRealDate/daysSinceLocal, future rejetée), alerte drawdown fondée sur le résultat, justification des actions = le timing, vocabulaire actions (RALENTIR), validation stricte du simulateur (entiers, montant ≥ 1 €, liste fermée des postures), traçabilité des seuils du verdict, re-vérification au retour sur l'app. ; v5.10 : lot B de la revue — seuils unifiés (CUTS : une table pour stanceOf et l'exclusion alloc), entryPrefOf partagé conseil/simulateur (fin de « sans attendre » vs « hybride »), données manquantes tracées (plus de repli 50 muet, garde division par zéro), rampe du lot C écartée — falaise binaire du seuil documentée.
+   sanitisation des imports, régressions v4.1/v5, compilation navigateur des scripts servis, conseil d'allocation v5.4, socle 1 000 €/mois v5.5, revue v5.6 : paliers incohérents, unités EUR, conseil non prescriptif, exclusions d'allocation, notification serveur, bceDirOf stable ; v5.7 : posture pilotable (regimePostureOf, forçage manuel) ; v5.8 : revue v5.7 — actions pilotées par le timing (CAPE = plafond, plus un verrou), auto = seuils v5.6 stricts (le forçage SEUL décale les seuils), vocabulaire risque macro séparé + avertissements, forçage daté expirant à 30 j, plancher monétaire Prudente/Défensive, affichage honnête du forçage) ; v5.9 : revue externe — dates de forçage réelles et locales (isRealDate/daysSinceLocal, future rejetée), alerte drawdown fondée sur le résultat, justification des actions = le timing, vocabulaire actions (RALENTIR), validation stricte du simulateur (entiers, montant ≥ 1 €, liste fermée des postures), traçabilité des seuils du verdict, re-vérification au retour sur l'app. ; v5.10 : lot B de la revue — seuils unifiés (CUTS : une table pour stanceOf et l'exclusion alloc), entryPrefOf partagé conseil/simulateur (fin de « sans attendre » vs « hybride »), données manquantes tracées (plus de repli 50 muet, garde division par zéro), rampe du lot C écartée — falaise binaire du seuil documentée. ; v5.11 : univers réel de Jade — le simulateur d'apport se lit sur le patrimoine détenu (fonds euro AV, SCPI AV, livret, or/BTC détenus, private equity hors simulateur), PATRIMOINE/PATRIMOINE_HORS_RADAR dans logic.js, destination « ou » sur chaque part, ligne 👤 dans vehicles.js.
    Exécution : node tools/test-auto.js  →  0 échec obligatoire avant publication. */
 "use strict";
 var fs = require("fs");
@@ -369,8 +369,8 @@ t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === 
 // ---------- index.html, logic.js, sw.js, auto.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v5.10", html.indexOf("<b>v5.10</b>") !== -1);
-t("index.html: aucun ancien badge v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
+t("index.html: badge v5.11", html.indexOf("<b>v5.11</b>") !== -1);
+t("index.html: aucun ancien badge v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: logic.js chargé entre vehicles.js et le script UI inline",
   html.indexOf('<script src="vehicles.js"></script>') !== -1 &&
@@ -396,8 +396,8 @@ t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: VIX lissé utilisé dans le scoring (vixEff, désormais dans logic.js)", srcLogic.indexOf("der.vixEff") !== -1 && srcLogic.indexOf("vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v16", sw.indexOf('CACHE = "radar-v16"') !== -1);
-t("sw.js: anciens caches v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v15") === -1 && sw.indexOf("radar-v14") === -1 && sw.indexOf("radar-v13") === -1 && sw.indexOf("radar-v12") === -1 && sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
+t("sw.js: cache v17", sw.indexOf('CACHE = "radar-v17"') !== -1);
+t("sw.js: anciens caches v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v16") === -1 && sw.indexOf("radar-v15") === -1 && sw.indexOf("radar-v14") === -1 && sw.indexOf("radar-v13") === -1 && sw.indexOf("radar-v12") === -1 && sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
 t("sw.js: logic.js dans le shell", sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
 t("sw.js: shell réseau d'abord + repli cache (plus aucun skew HTML frais / JS périmé)",
@@ -498,7 +498,7 @@ t("index.html: footnote stratégie 1 000 € tout compris + supplément possible
 t("index.html: simulateur = supplément en plus des 1 000 €/mois du socle", html.indexOf("en plus des 1 000 €/mois du socle") !== -1);
 t("index.html: échappement des textes du conseil (esc sur stance, synthèse, arbitrages)", html.indexOf("esc(a.stance)") !== -1 && html.indexOf("esc(adv.synthese)") !== -1 && html.indexOf("esc(x)") !== -1);
 
-// ---------- vehicles.js (inchangé) ----------
+// ---------- vehicles.js (v5.11 : univers réel de Jade) ----------
 var V = require(path.join(ROOT, "vehicles.js"));
 var VKEYS = ["actions", "obligations", "or", "monetaire", "immo", "crypto"];
 t("vehicles.js: exactement 6 clés = ids d'actifs", Object.keys(V).length === 6 && VKEYS.every(function (k) { return k in V; }));
@@ -510,6 +510,11 @@ t("vehicles.js: actions éligibles PEA (DCAM)", V.actions.enceinte === "PEA" && 
 t("vehicles.js: monétaire éligible PEA (OVNI)", V.monetaire.enceinte === "PEA" && V.monetaire.isin === "LU3215541056");
 t("vehicles.js: obligataire IEGA", V.obligations.isin === "IE00B4WXJJ64");
 t("vehicles.js: en-tête v5 (plus de mention v3)", fs.readFileSync(path.join(ROOT, "vehicles.js"), "utf8").indexOf("Radar Conjoncture v3") === -1);
+t("v5.11 vehicles.js: ligne 👤 « reel » (situation réelle) non vide pour les 6 actifs", VKEYS.every(function (k) { return typeof V[k].reel === "string" && V[k].reel.length > 10; }));
+t("v5.11 vehicles.js: obligations → fonds euro AV (l'exposition obligataire réelle de Jade)", V.obligations.reel.indexOf("fonds euro") !== -1);
+t("v5.11 vehicles.js: immo → SCPI AV + avertissement frais de souscription", V.immo.reel.indexOf("SCPI") !== -1 && V.immo.reel.indexOf("frais de souscription") !== -1);
+t("v5.11 vehicles.js: monétaire → livret (jamais dans la capacité paliers) + monétaire PEA", V.monetaire.reel.indexOf("livret") !== -1 && V.monetaire.reel.indexOf("capacité paliers") !== -1);
+t("v5.11 index.html: la carte actif affiche la ligne 👤 reel", html.indexOf('👤 \' + esc(veh.reel)') !== -1);
 
 // ---------- Régression v5.6 (revue de code) ----------
 // 1. Scores figés au 16/10/2026 — non-régression du scoring (la revue les a calculés à la main)
@@ -994,6 +999,46 @@ t("v5.10 C (écarté, documenté): la note du simulateur documente la FALAISSE b
     var al = L.allocOf(1000, "une fois", null, d, L.radarAll(d));
     return al.note.indexOf("BINAIRE") !== -1 && al.note.indexOf("falaise") !== -1 && al.note.indexOf("rampe") !== -1;
   })() === true);
+
+// ---------- v5.11 : univers réel de Jade — le simulateur place dans le patrimoine détenu ----------
+var PAT = L.PATRIMOINE;
+t("v5.11 PATRIMOINE: exactement 6 lignes = les 6 actifs du radar, ou/reel non vides",
+  Object.keys(PAT).length === 6 && ["actions", "obligations", "or", "monetaire", "immo", "crypto"].every(function (k) {
+    return PAT[k] && typeof PAT[k].ou === "string" && PAT[k].ou.length > 3 && typeof PAT[k].reel === "string" && PAT[k].reel.length > 20;
+  }));
+t("v5.11 PATRIMOINE: obligations → fonds euro AV · immo → SCPI AV · monétaire → Livret (univers réel de Jade)",
+  PAT.obligations.ou.indexOf("fonds euro") !== -1 && PAT.immo.ou.indexOf("SCPI") !== -1 &&
+  PAT.monetaire.ou.indexOf("Livret") !== -1 && PAT.actions.ou.indexOf("PEA") !== -1 &&
+  PAT.or.ou.indexOf("détenu") !== -1 && PAT.crypto.ou.indexOf("BTC") !== -1);
+t("v5.11 PATRIMOINE: le livret (épargne de précaution) n'est JAMAIS compté dans la capacité paliers",
+  PAT.monetaire.reel.indexOf("capacité paliers") !== -1);
+t("v5.11 PATRIMOINE_HORS_RADAR: private equity — affiché pour couvrir tout le patrimoine, jamais alloué",
+  Array.isArray(L.PATRIMOINE_HORS_RADAR) && L.PATRIMOINE_HORS_RADAR.length === 1 &&
+  L.PATRIMOINE_HORS_RADAR[0].nom === "Private equity" && L.PATRIMOINE_HORS_RADAR[0].reel.indexOf("jamais alloué") !== -1);
+t("v5.11 allocOf: chaque part porte sa destination réelle « ou », cohérente avec PATRIMOINE (même en Defensive où 4 lignes sont exclues)",
+  (function () {
+    var d = L.normalizeData(L.DEFAULT_DATA);
+    var radar = L.radarAll(d);
+    var al = L.allocOf(5000, "une fois", null, d, radar, "Défensive");
+    return al.parts.every(function (p) {
+      return p.ou === (PAT[p.id] ? PAT[p.id].ou : null);
+    }) && al.parts.filter(function (p) { return !p.exclu; }).length > 0;
+  })() === true);
+t("v5.11 allocOf: radar non chiffrable — parts vides portent aussi « ou » (garde division par zéro conservée)",
+  (function () {
+    var d = L.normalizeData(L.DEFAULT_DATA);
+    var radar = L.radarAll(d);
+    radar.list.forEach(function (a) { a.score = null; a.timingScore = null; });
+    var al = L.allocOf(1000, "une fois", null, d, radar);
+    return al.parts.every(function (p) { return p.exclu === true && p.euros === 0 && p.ou === (PAT[p.id] ? PAT[p.id].ou : null); });
+  })() === true);
+t("v5.11 index.html: chaque ligne du simulateur affiche sa destination (« → ou »)", html.indexOf("→ ' + esc(p.ou)") !== -1);
+t("v5.11 index.html: bloc « Concrètement chez toi » + private equity affiché mais jamais alloué",
+  html.indexOf("Concrètement chez toi") !== -1 && html.indexOf("PATRIMOINE_HORS_RADAR") !== -1 && html.indexOf("jamais alloué") !== -1);
+t("v5.11 index.html: intro du simulateur = univers réel (le supplément se lit sur ce que Jade détient)",
+  html.indexOf("ton univers réel") !== -1 && html.indexOf("où l'argent part concrètement") !== -1);
+t("v5.11: stratégie maîtresse inchangée — le socle reste 1 000 €/mois PEA seul (800 DCAM + 200 réserve)",
+  html.indexOf("1 000 €/mois tout compris") !== -1 && html.indexOf("800 € DCAM + 200 € réserve tactique") !== -1);
 
 // ---------- Bilan ----------
 var fail = results.filter(function (r) { return !r.ok; });

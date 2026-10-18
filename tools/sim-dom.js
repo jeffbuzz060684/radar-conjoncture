@@ -1,4 +1,4 @@
-/* Simulation DOM v5.10 (outillage) — rejoue le chargement complet de la page avec des stubs (aucun réseau).
+/* Simulation DOM v5.11 (outillage) — rejoue le chargement complet de la page avec des stubs (aucun réseau).
    Exécution : node sim.js  →  doit finir par "SIM OK" sans aucune erreur d'exécution. */
 "use strict";
 var fs = require("fs"), path = require("path"), vm = require("vm");
@@ -114,6 +114,12 @@ ck("posture appliquée affichée (Offensive choisie, seuil 35)", allocHtml.index
 ck("aucune ligne exclue en Offensive (actions timing 44 ≥ 35 incluses)", (allocHtml.match(/opacity:\.45/g) || []).length === 0);
 ck("actions incluses via le timing (36,5 %)", allocHtml.indexOf("36.5 %") !== -1);
 ck("somme 5 000 € affichée", allocHtml.indexOf("5 000 €") !== -1);
+ck("v5.11 : chaque ligne allouée porte sa destination réelle (« → AV — fonds euro », « → PEA — DCAM »)",
+  allocHtml.indexOf("→ AV — fonds euro") !== -1 && allocHtml.indexOf("→ PEA — DCAM") !== -1 && allocHtml.indexOf("→ AV — SCPI") !== -1);
+ck("v5.11 : bloc « Concrètement chez toi » avec le private equity affiché mais jamais alloué",
+  allocHtml.indexOf("Concrètement chez toi") !== -1 && allocHtml.indexOf("Private equity") !== -1 && allocHtml.indexOf("jamais alloué") !== -1);
+ck("v5.11 : le socle reste affiché 1 000 €/mois PEA seul (stratégie maîtresse inchangée)",
+  allocHtml.indexOf("le socle des 1 000 €/mois reste PEA seul") !== -1);
 
 // 8. Changement de posture → recalcul automatique + plancher monétaire (v5.8)
 els.postureSel.value = "Défensive";
@@ -170,4 +176,4 @@ var fail = checks.filter(function (c) { return !c.ok; });
 checks.forEach(function (c) { console.log((c.ok ? "✅ " : "❌ ") + c.name); });
 console.log("");
 if (fail.length) { console.log("SIM ÉCHECS : " + fail.length); process.exit(1); }
-console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul + synthèse à source partagée v5.10).");
+console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul + synthèse à source partagée v5.10 + univers réel v5.11).");

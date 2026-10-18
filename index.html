@@ -109,7 +109,7 @@
 <header>
   <div class="hrow">
     <h1>📡 Radar <span>Conjoncture</span></h1>
-    <span class="badge">🔄 Maj auto quotidienne · <b>v5.10</b></span>
+    <span class="badge">🔄 Maj auto quotidienne · <b>v5.11</b></span>
   </div>
   <div class="hrow" style="margin-top:6px">
     <span class="chip" id="dataChip">—</span>
@@ -165,7 +165,7 @@
 
     <div class="card">
       <h2>🧮 Simulateur d'apport — en une fois ou DCA</h2>
-      <div class="mut" style="margin-bottom:8px">Pour un supplément quand tu veux (prime, don, virement), en plus des 1 000 €/mois du socle : indique le montant, choisis « une fois » ou « DCA » (étalé sur plusieurs mois) — la répartition suit le scoring du jour et la posture appliquée, et n'achète JAMAIS ce que le conseil dit de ne pas renforcer (seuil d'exclusion selon la posture ; le monétaire reste toujours éligible).</div>
+      <div class="mut" style="margin-bottom:8px">Pour un supplément quand tu veux (prime, don, virement), en plus des 1 000 €/mois du socle : indique le montant, choisis « une fois » ou « DCA » (étalé sur plusieurs mois) — la répartition suit le scoring du jour et la posture appliquée, n'achète JAMAIS ce que le conseil dit de ne pas renforcer (seuil d'exclusion selon la posture ; le monétaire reste toujours éligible) et se lit sur <b>ton univers réel</b> (v5.11) : chaque ligne indique où l'argent part concrètement chez toi.</div>
       <div class="frow"><label>Montant à répartir (€)<input id="allocMontant" type="number" inputmode="decimal" step="any" min="1" placeholder="ex. 5000"></label></div>
       <div class="frow"><label>Mode d'investissement<select id="allocMode">
         <option value="une fois">En une fois (lump sum)</option>
@@ -422,7 +422,7 @@ function renderRadar() {
       return '<div class="part"><span class="l">' + esc(p.label) + (p.detail ? ' <em style="color:#64748b;font-style:normal">— ' + esc(p.detail) + '</em>' : "") + '</span><span class="v ' + cls + '">' + fmtPts(p.pts) + "</span></div>";
     }).join("");
     var veh = VEHICULES[a.id];
-    var vehHtml = veh ? '<div class="veh">💡 ' + esc(veh.nom) + (veh.isin ? " · ISIN " + esc(veh.isin) : "") + " · " + esc(veh.frais) + ' · <b style="color:' + (veh.enceinte === "PEA" ? "var(--good)" : "var(--mut)") + '">' + esc(veh.enceinte) + "</b>" + (veh.note ? '<br><span class="mut" style="font-size:11px">' + esc(veh.note) + "</span>" : "") + "</div>" : "";
+    var vehHtml = veh ? '<div class="veh">💡 ' + esc(veh.nom) + (veh.isin ? " · ISIN " + esc(veh.isin) : "") + " · " + esc(veh.frais) + ' · <b style="color:' + (veh.enceinte === "PEA" ? "var(--good)" : "var(--mut)") + '">' + esc(veh.enceinte) + "</b>" + (veh.reel ? '<br><span class="mut" style="font-size:11px">👤 ' + esc(veh.reel) + "</span>" : "") + (veh.note ? '<br><span class="mut" style="font-size:11px">' + esc(veh.note) + "</span>" : "") + "</div>" : "";   // v5.11 : ligne 👤 = ta situation réelle
     el.innerHTML =
       '<div class="arow">' +
       '<span class="rank">' + (i + 1) + '</span>' +
@@ -785,7 +785,7 @@ var NOTIFY_OLD_KEY = "radar-telegram-v1"; // configs Telegram v5.1, lues et migr
     }
     var rows = alloc.parts.map(function (p) {
       if (p.exclu) return '<div class="palrow" style="opacity:.45"><span class="st" style="width:auto;min-width:86px">' + p.icon + ' — %</span><span class="th">' + esc(p.name) + ' <span style="font-size:11px">' + (p.manquant ? "· données manquantes" : "· exclu (score < " + alloc.seuil + ")") + '</span></span><span class="fl">' + fmtEUR(0) + "</span></div>";
-      return '<div class="palrow"><span class="st" style="width:auto;min-width:86px">' + p.icon + " " + p.pct + ' %</span><span class="th">' + esc(p.name) + '</span><span class="fl">' + fmtEUR(p.euros) + "</span></div>";
+      return '<div class="palrow"><span class="st" style="width:auto;min-width:86px">' + p.icon + " " + p.pct + ' %</span><span class="th">' + esc(p.name) + (p.ou ? ' <span style="font-size:11px">→ ' + esc(p.ou) + "</span>" : "") + '</span><span class="fl">' + fmtEUR(p.euros) + "</span></div>";
     }).join("");
     var total = alloc.parts.reduce(function (s, p) { return s + p.euros; }, 0);
     var modeTxt = alloc.mode === "dca"
@@ -795,9 +795,20 @@ var NOTIFY_OLD_KEY = "radar-telegram-v1"; // configs Telegram v5.1, lues et migr
     var postureTxt = alloc.posture
       ? "<b>" + esc(alloc.posture) + "</b> (choisie) — actifs sous " + alloc.seuil + "/100 exclus (monétaire toujours éligible" + floorTxt + ")"
       : "<b>auto (" + esc(adv.posture) + ")</b> — seuils de base (" + alloc.seuil + "/100, inchangés en auto quelle que soit la posture du jour)";
+    // v5.11 : univers réel de Jade — chaque ligne allouée montre SA destination concrète
+    // (→ ou) ; sous le total, le détail « Concrètement chez toi » + les actifs hors simulateur
+    // (private equity : illiquide, jamais alloué ; livret = épargne de précaution).
+    var univRows = alloc.parts.filter(function (p) { return !p.exclu && p.ou; }).map(function (p) {
+      return '<div class="palrow"><span class="st" style="width:auto;min-width:86px">' + fmtEUR(p.euros) + '</span><span class="th"><b>' + esc(p.ou) + "</b> <span class=\"mut\" style=\"font-size:11px\">— " + esc(PATRIMOINE[p.id] ? PATRIMOINE[p.id].reel : "") + "</span></span></div>";
+    }).join("");
+    var univHors = PATRIMOINE_HORS_RADAR.map(function (h) {
+      return '<div class="palrow" style="opacity:.6"><span class="st" style="width:auto;min-width:86px">—</span><span class="th"><b>' + esc(h.nom) + "</b> <span class=\"mut\" style=\"font-size:11px\">— " + esc(h.reel) + "</span></span></div>";
+    }).join("");
+    var univBlock = '<div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)"><b>👤 Concrètement chez toi</b> <span class="mut" style="font-size:11px">(ton univers réel, v5.11 — le socle des 1 000 €/mois reste PEA seul ; le private equity est affiché mais jamais alloué)</span>' + univRows + univHors + "</div>";
     out.innerHTML =
       "<div class='mut' style='margin:8px 0'>" + modeTxt + " Posture appliquée : " + postureTxt + ".</div>" + rows +
       "<div class='palrow' style='border-top:1px solid var(--line)'><span class='st' style='width:auto;min-width:86px'>Total</span><span class='th'></span><span class='fl' style='font-weight:700'>" + fmtEUR(total) + "</span></div>" +
+      univBlock +
       (alloc.alerte ? '<div class="warnbox" style="margin-top:8px">⚠️ ' + esc(alloc.alerte) + "</div>" : "") +
       '<div class="verdict" style="margin-top:10px"><b>' +
       (alloc.recommande === null ? "Recommandation du jour : indisponible (données insuffisantes)" : "Recommandation du jour : " + (alloc.recommande === "une fois" ? "en une fois" : alloc.recommande === "hybride" ? "hybride (½ maintenant, ½ étalée)" : "DCA (étalé)")) +
