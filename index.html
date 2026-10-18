@@ -109,7 +109,7 @@
 <header>
   <div class="hrow">
     <h1>📡 Radar <span>Conjoncture</span></h1>
-    <span class="badge">🔄 Maj auto quotidienne · <b>v5.8</b></span>
+    <span class="badge">🔄 Maj auto quotidienne · <b>v5.9</b></span>
   </div>
   <div class="hrow" style="margin-top:6px">
     <span class="chip" id="dataChip">—</span>
@@ -296,16 +296,32 @@ function load() {
     state.postureOverrideDate = null;
   }
 }
-// v5.8 : le forçage n'est pas éternel — sans date (config v5.7 plus ancienne), date invalide
-// ou plus de 30 jours, il expire silencieusement et l'auto reprend la main.
+// v5.9 : le forçage n'est pas éternel — sans date, date IMPOSSIBLE (2026-02-30, 2026-99-99 :
+// isRealDate, venu de logic.js), date FUTURE ou plus de 30 jours, il expire silencieusement et
+// l'auto reprend la main. Le compte de jours se fait en dates LOCALES de part en part
+// (todayLocal/daysSinceLocal) : un forçage posé à 0 h 30 Paris compte 0 jour (pas −1 par
+// décalage UTC), et une date future importée ne prolonge plus jamais rien.
+function pad2(n) { return (n < 10 ? "0" : "") + n; }
+function todayLocal() { var t = new Date(); return t.getFullYear() + "-" + pad2(t.getMonth() + 1) + "-" + pad2(t.getDate()); }
+function daysSinceLocal(s) {
+  if (typeof isRealDate !== "function" || !isRealDate(s)) return null;
+  var then = new Date(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10));
+  var t = new Date();
+  return Math.round((new Date(t.getFullYear(), t.getMonth(), t.getDate()) - then) / 86400000);
+}
 function expirePostureOverride() {
   if (!state.postureOverride) { state.postureOverrideDate = null; return; }
-  var days = state.postureOverrideDate ? staleDays(state.postureOverrideDate, Date.now()) : null;
-  if (days === null || days > 30) {
+  var days = daysSinceLocal(state.postureOverrideDate);
+  if (days === null || days < 0 || days > 30) {
     state.postureOverride = null;
     state.postureOverrideDate = null;
   }
 }
+// v5.9 : la PWA peut rester ouverte des semaines — au RETOUR sur l'app, on re-vérifie
+// l'expiration (silencieux), on persiste et on rafraîchit le conseil.
+document.addEventListener("visibilitychange", function () {
+  if (!document.hidden && state.data) { expirePostureOverride(); save(); renderRadar(); }
+});
 function save() {
   try { localStorage.setItem(KEY, JSON.stringify({ data: state.data, history: state.history, refAlert: state.refAlert, episodes: state.episodes, postureOverride: state.postureOverride, postureOverrideDate: state.postureOverrideDate })); } catch (e) {}
   if (navigator.storage && navigator.storage.persist) { try { navigator.storage.persist(); } catch (e) {} }
@@ -477,9 +493,9 @@ function renderRadar() {
   var apb = $("advicePostureBar");
   var sub = $("advicePostureSub");
   if (adv.override) {
-    var oj = state.postureOverrideDate ? staleDays(state.postureOverrideDate, Date.now()) : null;
+    var oj = daysSinceLocal(state.postureOverrideDate);
     $("advicePosture").textContent = adv.posture + " — " +
-      (oj === 0 ? "choisie aujourd'hui" : (oj !== null && oj > 0 ? "choisie depuis " + oj + " j" : "choisie")) +
+      (oj === 0 ? "choisie aujourd'hui" : (oj !== null && oj > 0 ? "choisie depuis " + oj + " j · expire dans " + (30 - oj) + " j" : "choisie")) +
       " · auto : " + adv.autoPosture + " (" + adv.autoPostureScore + "/100)";
     apb.style.opacity = "0.35";   // v5.8 : la barre porte le score AUTO, grisée quand ce n'est plus lui qui pilote
     if (sub) sub.textContent = "posture choisie — l'auto ne pilote plus";
@@ -801,10 +817,9 @@ var NOTIFY_OLD_KEY = "radar-telegram-v1"; // configs Telegram v5.1, lues et migr
     var v = $("postureSel").value;
     var valid = (typeof POSTURES !== "undefined" && POSTURES.indexOf(v) !== -1);
     state.postureOverride = valid ? v : null;   // "" = auto
-    state.postureOverrideDate = valid ? new Date().toISOString().slice(0, 10) : null;   // v5.8 : date du forçage (expiration 30 j)
+    state.postureOverrideDate = valid ? todayLocal() : null;   // v5.9 : date LOCALE du forçage (expiration 30 j) — toISOString (UTC) décalait d'un jour avant 2 h du matin
     save();
-    renderRadar();
-    if (window._allocRerun) window._allocRerun();
+    renderRadar();   // (renderRadar relance déjà _allocRerun en fin de fonction — v5.8)
   });
 })();
 

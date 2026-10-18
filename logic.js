@@ -278,6 +278,9 @@ var ALLOC_EXCL = { "Défensive": 55, "Prudente": 50, "Neutre": 45, "Constructive
 // pouvait laisser la majorité du lot en or (57 %) ; en Prudente/Défensive forcées, la part de
 // préservation ne descend jamais sous ce plancher.
 var ALLOC_MON_FLOOR = { "Prudente": 35, "Défensive": 50 };   // en % du montant
+// v5.9 : liste fermée pour toute clé de posture — « constructor »/« toString » (hérités
+// d'Object.prototype) passaient le test ALLOC_EXCL[p] !== undefined et ouvraient les seuils.
+function isPosture(p) { return typeof p === "string" && POSTURES.indexOf(p) !== -1; }
 
 function stanceOf(score, posture) {
   var rank = (typeof posture === "string") ? POSTURES.indexOf(posture) : -1;
@@ -358,7 +361,7 @@ function adviceOf(d, radar, override) {
   res.synthese = syn[res.posture];
   // v5.7/v5.8 : risque macro descriptif (vocabulaire séparé du timing : Calme/Modéré/Tendu/Stress)
   var rg = regimePostureOf(d);
-  res.regime = { posture: rg.posture, risque: rg.risque, score: rg.score, drivers: rg.drivers };
+  res.regime = { risque: rg.risque, score: rg.score, drivers: rg.drivers };   // v5.9 : plus de « posture » régime — jamais affichée, vocabulaire abandonné
   radar.list.forEach(function (a) {
     // v5.8 : les seuils ne sont déplacés QUE par le FORÇAGE manuel (en auto, seuils de base v5.6) ;
     // le monétaire (préservation) garde toujours ses seuils de base ; les actions sont pilotées
@@ -367,7 +370,12 @@ function adviceOf(d, radar, override) {
     if (a.id === "monetaire") st = stanceOf(a.score);
     else if (a.id === "actions") st = stanceOf(ap, res.override);
     else st = stanceOf(a.score, res.override);
+    // v5.9 : « Sous-pondérer » sur les actions se lirait comme un conseil de VENTE, en
+    // contradiction avec la règle maison (le socle PEA ne se vend jamais sur la baisse) —
+    // vocabulaire d'apports à la place.
+    if (a.id === "actions" && st.verb === "SOUS-PONDÉRER") st = { cls: "mid", label: "Apports minimum", verb: "RALENTIR" };
     var why = a.parts.slice().sort(function (x, y) { return Math.abs(y.pts) - Math.abs(x.pts); }).slice(0, 2).map(function (p) { return p.label.split(" (")[0]; });
+    if (a.id === "actions") why = ["timing " + ap + "/100 — drawdown · VIX · BCE · PMI"];   // v5.9 : la stance actions est pilotée par le timing — la justification aussi (le CAPE reste en « contexte »)
     if (a.partial) why = ["score partiel : 52 sem. manquantes"];
     res.assets.push({ id: a.id, icon: a.icon, name: a.name, score: a.score, stance: st.label, cls: st.cls, verb: st.verb, why: why.join(" · ") });
   });
@@ -389,6 +397,8 @@ function adviceOf(d, radar, override) {
   res.warns = [];
   if (res.override && ddM !== null && ddM <= -5)
     res.warns.push("Posture forcée en plein drawdown (" + r1(ddM) + " %) : la règle maison des paliers reste maîtresse — elle achète cette faiblesse ; le forçage déplace des seuils d'entrée, il ne remplace jamais la stratégie PEA.");
+  else if (ddM !== null && ddM <= -5 && ap < (res.override ? ALLOC_EXCL[res.override] : 45))
+    res.warns.push("Le simulateur exclura les actions de tout apport (timing " + ap + " < seuil " + (res.override ? ALLOC_EXCL[res.override] : 45) + ") alors que le marché est en drawdown (" + r1(ddM) + " %) : la règle maison des paliers ACHÈTE cette faiblesse — le simulateur ne remplace jamais la stratégie PEA.");
   return res;
 }
 
@@ -398,12 +408,12 @@ var ALLOC_BASE = { actions: 40, obligations: 15, or: 12, monetaire: 13, immo: 15
 
 function allocOf(montant, mode, months, d, radar, posture) {
   var m = num(montant);
-  if (m === null || m <= 0 || m > 10000000) return null;
+  if (m === null || m < 1 || m > 10000000) return null;   // v5.9 : borne basse alignée sur le message d'erreur (« entre 1 et 10 000 000 »)
   if (mode !== "une fois" && mode !== "dca") return null;
   var n = null;
   if (mode === "dca") {
-    n = parseInt(months, 10);
-    if (n !== n || n < 2 || n > 24) return null;   // NaN ou hors bornes
+    n = Number(months);
+    if (n !== Math.floor(n) || n < 2 || n > 24) return null;   // v5.9 : ENTIER strict — « 2.9 » n'est plus silencieusement tronqué en 2 (parseInt), NaN/1/25 rejetés
   }
   var byId = {};
   radar.list.forEach(function (a) { byId[a.id] = a; });
@@ -411,7 +421,7 @@ function allocOf(montant, mode, months, d, radar, posture) {
   // 45 (comportement v5.6 strict) : la posture auto ne décale plus rien. En Défensive forcée on
   // n'achète que ce qui est solide (≥ 55), en Offensive forcée le seuil descend à 35. Le monétaire
   // reste TOUJOURS éligible : c'est l'actif de préservation, l'exclure n'a pas de sens.
-  var seuil = (typeof posture === "string" && ALLOC_EXCL[posture] !== undefined) ? ALLOC_EXCL[posture] : 45;
+  var seuil = isPosture(posture) ? ALLOC_EXCL[posture] : 45;   // v5.9 : liste fermée — « constructor » n'ouvre plus les seuils
   var cape = num(d.cape);
   var raw = {}, total = 0, i, k;
   for (i = 0; i < ALLOC_IDS.length; i++) {
@@ -432,15 +442,15 @@ function allocOf(montant, mode, months, d, radar, posture) {
     }
     total += raw[k];
   }
-  if (total <= 0) {   // tous les actifs < seuil (marché extrême) → tout au monétaire, l'actif de préservation
-    raw["monetaire"] = 1; total = 1;
-  }
+  // v5.9 : le repli « tous < seuil → tout au monétaire » était un code MORT — le monétaire est
+  // toujours éligible (base 13 × tilt ≥ ×0,4 = 5,2 > 0), donc total > 0 est garanti par
+  // construction. La propriété (somme = montant, monétaire jamais exclu) est testée au harnais.
   var shares = {};
   for (i = 0; i < ALLOC_IDS.length; i++) { k = ALLOC_IDS[i]; shares[k] = raw[k] / total; }
   // v5.8 : plancher monétaire en Prudente (35 %) et Défensive (50 %) forcées — l'exclusion
   // renormalisait les actifs restants (or jusqu'à 57 % en Défensive) : la préservation ne se
   // dilue pas. Les actifs risqués restants sont renormalisés sur (100 − plancher).
-  var floor = (typeof posture === "string" && ALLOC_MON_FLOOR[posture] !== undefined) ? ALLOC_MON_FLOOR[posture] / 100 : 0;
+  var floor = (isPosture(posture) && ALLOC_MON_FLOOR[posture] !== undefined) ? ALLOC_MON_FLOOR[posture] / 100 : 0;   // v5.9 : liste fermée
   if (floor > 0 && shares.monetaire < floor) {
     var restRaw = 0;
     for (i = 0; i < ALLOC_IDS.length; i++) { k = ALLOC_IDS[i]; if (k !== "monetaire") restRaw += raw[k]; }
@@ -462,10 +472,14 @@ function allocOf(montant, mode, months, d, radar, posture) {
     parts.push({ id: k, icon: a ? a.icon : "•", name: a ? a.name : k, pct: r1(shares[k] * 100), euros: eur, exclu: excl });
   }
   if (firstIdx !== -1) parts[firstIdx].euros += m - sum;   // reste d'arrondi au premier actif inclus (déterministe)
-  // verdict « une fois » vs « DCA » : piloté par le TIMING actions (le CAPE, lent, pèse à part)
+  // verdict « une fois » vs « DCA » : piloté par le TIMING actions (le CAPE, lent, pèse à part).
+  // v5.9 — traçabilité des seuils (heuristiques motivées point par point, NON validées
+  // historiquement — cf. note de méthode) : +8 si drawdown ≤ −10 % (marché déjà corrigé, prix
+  // bas absorbés) ; −6 à moins de 3 % du sommet 52 sem. (risque d'acheter le pic maximal) ;
+  // −5 si CAPE ≥ 30 (valorisations tendues) ; « une fois » à ≥ 60, « hybride » sur 45-59
+  // (l'indécision honnête entre regret et rendement — repère Vanguard ~2/3).
   var ddM = radar.der.ddMsci;
-  var actA = byId.actions;
-  var pref = (actA && num(actA.timingScore) !== null) ? actA.timingScore : (actA ? actA.score : 50);
+  var pref = (actA && num(actA.timingScore) !== null) ? actA.timingScore : (actA ? actA.score : 50);   // actA : réutilise la variable de la boucle ci-dessus (v5.9 : redéclaration supprimée)
   if (ddM !== null && ddM <= -10) pref += 8;     // marché déjà corrigé : moins de risque d'entrée
   if (ddM !== null && ddM > -3) pref -= 6;       // au contact du sommet : risque d'acheter le pic
   if (cape !== null && cape >= 30) pref -= 5;    // valorisations tendues : prudence sur la mise en une fois
@@ -476,19 +490,22 @@ function allocOf(montant, mode, months, d, radar, posture) {
     "hybride": "Moitié immédiate, moitié étalée — le compromis entre regret et rendement.",
     "dca": "Étaler l'apport : le contexte ne se prête pas à tout miser aujourd'hui."
   };
-  // v5.8 : contradiction explicite — Défensive forcée en plein drawdown contredit la règle
-  // maison (les paliers ACHÈTENT la faiblesse) : on l'affiche au lieu de la laisser implicite.
-  var alerte = (posture === "Défensive" && ddM !== null && ddM <= -5)
-    ? "Posture Défensive en plein drawdown (" + r1(ddM) + " %) : ta règle maison ACHÈTE cette faiblesse aux paliers (−5/−10/−15/−20 %) — le simulateur exclut ici les actions, mais la stratégie PEA prime sur le simulateur."
+  // v5.9 : alerte fondée sur le RÉSULTAT (actions réellement exclues de ce lot), plus sur la
+  // posture choisie — la contradiction avec la règle maison existe aussi en auto ou en Prudente
+  // forcée, dès que le timing passe sous le seuil pendant un drawdown.
+  var actExclues = false;
+  for (i = 0; i < parts.length; i++) if (parts[i].id === "actions" && parts[i].exclu) actExclues = true;
+  var alerte = (actExclues && ddM !== null && ddM <= -5)
+    ? "Actions exclues de ce lot alors que le marché est en drawdown (" + r1(ddM) + " %) : ta règle maison ACHÈTE cette faiblesse aux paliers (−5/−10/−15/−20 %) — le simulateur ne remplace jamais la stratégie PEA."
     : null;
   return {
     montant: m, mode: mode, months: n,
     mensualite: n ? r2(m / n) : null,
     parts: parts, pref: pref, recommande: recommande, recommandeLabel: labels[recommande],
-    posture: (typeof posture === "string" && ALLOC_EXCL[posture] !== undefined) ? posture : null,
+    posture: isPosture(posture) ? posture : null,
     seuil: seuil,
     alerte: alerte,
-    note: "Méthode : pondération de référence (actions 40 % · immo 15 % · obligations 15 % · monétaire 13 % · or 12 % · crypto 5 %) pondérée par le score du jour (× score/50, borné ×0,4 à ×1,6) — pour les actions, le TIMING du jour pilote éligibilité et tilt, avec tilt plafonné à ×1,0 si CAPE ≥ 30 ; renormalisée à 100 %. Les actifs sous le seuil de la posture CHOISIE sont exclus (en auto, seuil de base 45 quelle que soit la posture automatique ; 35 en Offensive forcée, 55 en Défensive forcée). Le monétaire reste toujours éligible (actif de préservation) avec un plancher de 35 % en Prudente et 50 % en Défensive forcées. En DCA, la répartition est recalculée à chaque échéance sur les données du jour. Repère : sur les actions US 1926-2015, l'étude Vanguard « Cost Averaging: Invest Now or Temporarily Hold Your Cash » trouve que l'investissement en une fois bat le DCA ~2 fois sur 3 — un résultat propre à cette étude, qui ne valide pas ce simulateur multi-actifs. Heuristique transparente, pas un conseil financier : l'allocation dépend aussi de ton horizon, de ton portefeuille existant et de ta tolérance au risque (non demandés ici)."
+    note: "Méthode : pondération de référence (actions 40 % · immo 15 % · obligations 15 % · monétaire 13 % · or 12 % · crypto 5 %) pondérée par le score du jour (× score/50, borné ×0,4 à ×1,6) — pour les actions, le TIMING du jour pilote éligibilité et tilt, avec tilt plafonné à ×1,0 si CAPE ≥ 30 ; renormalisée à 100 %. Les actifs sous le seuil de la posture CHOISIE sont exclus (en auto, seuil de base 45 quelle que soit la posture automatique ; 35 en Offensive forcée, 55 en Défensive forcée). Le monétaire reste toujours éligible (actif de préservation) avec un plancher de 35 % en Prudente et 50 % en Défensive forcées. En DCA, la répartition est recalculée à chaque échéance sur les données du jour. Repère : sur les actions US 1926-2015, l'étude Vanguard « Cost Averaging: Invest Now or Temporarily Hold Your Cash » trouve que l'investissement en une fois bat le DCA ~2 fois sur 3 — un résultat propre à cette étude, qui ne valide pas ce simulateur multi-actifs. Heuristique transparente, pas un conseil financier : l'allocation dépend aussi de ton horizon, de ton portefeuille existant et de ta tolérance au risque (non demandés ici). Le verdict « une fois / hybride / DCA » (seuils 60/45, ajustements +8 / −6 / −5) est une heuristique motivée point par point, non validée historiquement."
   };
 }
 
@@ -512,6 +529,15 @@ function staleDays(dateStr, nowMs) {
   var t = Date.parse(dateStr + "T12:00:00Z");
   if (isNaN(t)) return null;
   return Math.floor((nowMs - t) / 86400000);
+}
+
+// v5.9 : validité CALENDAIRE stricte d'une date YYYY-MM-DD — le regex seul acceptait 2026-02-30
+// ou 2026-99-99. Utilisée par la sanitisation d'import du forçage daté ; l'UI a son équivalent
+// en jours locaux (daysSinceLocal) pour l'expiration.
+function isRealDate(s) {
+  if (typeof s !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  var y = +s.slice(0, 4), m = +s.slice(5, 7), d = +s.slice(8, 10), t = new Date(y, m - 1, d);
+  return t.getFullYear() === y && t.getMonth() === m - 1 && t.getDate() === d;
 }
 
 function normalizeData(d) {
@@ -621,8 +647,8 @@ function Auto_sanitizeImport(raw) {
   // de forçage (YYYY-MM-DD) — le forçage expire après 30 jours (v5.8).
   if (typeof raw.postureOverride === "string" && POSTURES.indexOf(raw.postureOverride) !== -1) {
     out.postureOverride = raw.postureOverride;
-    if (typeof raw.postureOverrideDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.postureOverrideDate))
-      out.postureOverrideDate = Auto_sanStr(raw.postureOverrideDate, 10);
+    if (typeof raw.postureOverrideDate === "string" && isRealDate(raw.postureOverrideDate))
+      out.postureOverrideDate = raw.postureOverrideDate;   // v5.9 : date calendaire RÉELLE (2026-02-30 rejeté), pas seulement le format
   }
   return out;
 }
@@ -637,6 +663,7 @@ if (typeof module !== "undefined" && module.exports) {
     snapshotOf: snapshotOf, badgeOf: badgeOf, radarAll: radarAll, parseGecko: parseGecko,
     staleDays: staleDays, Auto_sanStr: Auto_sanStr, Auto_sanNum: Auto_sanNum, Auto_sanitizeImport: Auto_sanitizeImport,
     stanceOf: stanceOf, adviceOf: adviceOf, allocOf: allocOf,
-    regimePostureOf: regimePostureOf, POSTURES: POSTURES, ALLOC_EXCL: ALLOC_EXCL, ALLOC_MON_FLOOR: ALLOC_MON_FLOOR
+    regimePostureOf: regimePostureOf, POSTURES: POSTURES, ALLOC_EXCL: ALLOC_EXCL, ALLOC_MON_FLOOR: ALLOC_MON_FLOOR,
+    isRealDate: isRealDate, isPosture: isPosture
   };
 }

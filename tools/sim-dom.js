@@ -1,4 +1,4 @@
-/* Simulation DOM v5.8 (outillage) — rejoue le chargement complet de la page avec des stubs (aucun réseau).
+/* Simulation DOM v5.9 (outillage) — rejoue le chargement complet de la page avec des stubs (aucun réseau).
    Exécution : node sim.js  →  doit finir par "SIM OK" sans aucune erreur d'exécution. */
 "use strict";
 var fs = require("fs"), path = require("path"), vm = require("vm");
@@ -137,9 +137,36 @@ sandbox.renderRadar();
 ck("forçage > 30 j expiré silencieusement (retour auto)",
   sandbox.state.postureOverride === null && sandbox.state.postureOverrideDate === null && txt("advicePosture").indexOf("Prudente") !== -1);
 
+// 9 ter. v5.9 : dates hostiles — future ou impossible → expiration immédiate (isRealDate + days < 0)
+store["radar-conjoncture-v1"] = JSON.stringify({ data: {}, postureOverride: "Offensive", postureOverrideDate: "2026-12-31" });
+sandbox.load();
+sandbox.renderRadar();
+ck("forçage à date FUTURE expiré (retour auto)", sandbox.state.postureOverride === null && sandbox.state.postureOverrideDate === null);
+store["radar-conjoncture-v1"] = JSON.stringify({ data: {}, postureOverride: "Offensive", postureOverrideDate: "2026-02-30" });
+sandbox.load();
+sandbox.renderRadar();
+ck("forçage à date IMPOSSIBLE (2026-02-30) expiré (retour auto)", sandbox.state.postureOverride === null && sandbox.state.postureOverrideDate === null);
+
+// 9 quater. v5.9 : compte à rebours affiché pour un forçage de 3 jours
+var d3 = new Date(Date.now() - 3 * 86400000);
+function pad2s(n) { return (n < 10 ? "0" : "") + n; }
+var d3s = d3.getFullYear() + "-" + pad2s(d3.getMonth() + 1) + "-" + pad2s(d3.getDate());
+store["radar-conjoncture-v1"] = JSON.stringify({ data: {}, postureOverride: "Prudente", postureOverrideDate: d3s });
+sandbox.load();
+sandbox.renderRadar();
+ck("forçage de 3 j : « choisie depuis 3 j · expire dans 27 j »",
+  txt("advicePosture").indexOf("choisie depuis 3 j") !== -1 && txt("advicePosture").indexOf("expire dans 27 j") !== -1);
+
+// 9 quinquies. v5.9 : retour sur l'app (visibilitychange) → re-vérification sans erreur
+els.postureSel.value = "Offensive";
+els.postureSel.fire("change");
+(sandbox._listeners.visibilitychange || []).forEach(function (f) { f({}); });
+ck("retour sur l'app : re-vérification du forçage sans erreur, override conservé",
+  sandbox.state.postureOverride === "Offensive" && txt("advicePosture").indexOf("Offensive — choisie aujourd'hui") !== -1);
+
 // 10. Bilan
 var fail = checks.filter(function (c) { return !c.ok; });
 checks.forEach(function (c) { console.log((c.ok ? "✅ " : "❌ ") + c.name); });
 console.log("");
 if (fail.length) { console.log("SIM ÉCHECS : " + fail.length); process.exit(1); }
-console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + simulateur piloté par le forçage seul).");
+console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul).");

@@ -1,6 +1,6 @@
 /* Harnais de tests — Radar Conjoncture v5.8 (logic.js, auto.js, vehicles.js, fichiers livrés,
    pipeline quotidien/épisode/référence, validateurs, workflows, notifications ntfy/Telegram,
-   sanitisation des imports, régressions v4.1/v5, compilation navigateur des scripts servis, conseil d'allocation v5.4, socle 1 000 €/mois v5.5, revue v5.6 : paliers incohérents, unités EUR, conseil non prescriptif, exclusions d'allocation, notification serveur, bceDirOf stable ; v5.7 : posture pilotable (regimePostureOf, forçage manuel) ; v5.8 : revue v5.7 — actions pilotées par le timing (CAPE = plafond, plus un verrou), auto = seuils v5.6 stricts (le forçage SEUL décale les seuils), vocabulaire risque macro séparé + avertissements, forçage daté expirant à 30 j, plancher monétaire Prudente/Défensive, affichage honnête du forçage).
+   sanitisation des imports, régressions v4.1/v5, compilation navigateur des scripts servis, conseil d'allocation v5.4, socle 1 000 €/mois v5.5, revue v5.6 : paliers incohérents, unités EUR, conseil non prescriptif, exclusions d'allocation, notification serveur, bceDirOf stable ; v5.7 : posture pilotable (regimePostureOf, forçage manuel) ; v5.8 : revue v5.7 — actions pilotées par le timing (CAPE = plafond, plus un verrou), auto = seuils v5.6 stricts (le forçage SEUL décale les seuils), vocabulaire risque macro séparé + avertissements, forçage daté expirant à 30 j, plancher monétaire Prudente/Défensive, affichage honnête du forçage) ; v5.9 : revue externe — dates de forçage réelles et locales (isRealDate/daysSinceLocal, future rejetée), alerte drawdown fondée sur le résultat, justification des actions = le timing, vocabulaire actions (RALENTIR), validation stricte du simulateur (entiers, montant ≥ 1 €, liste fermée des postures), traçabilité des seuils du verdict, re-vérification au retour sur l'app.
    Exécution : node tools/test-auto.js  →  0 échec obligatoire avant publication. */
 "use strict";
 var fs = require("fs");
@@ -369,8 +369,8 @@ t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === 
 // ---------- index.html, logic.js, sw.js, auto.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v5.8", html.indexOf("<b>v5.8</b>") !== -1);
-t("index.html: aucun ancien badge v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
+t("index.html: badge v5.9", html.indexOf("<b>v5.9</b>") !== -1);
+t("index.html: aucun ancien badge v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: logic.js chargé entre vehicles.js et le script UI inline",
   html.indexOf('<script src="vehicles.js"></script>') !== -1 &&
@@ -396,8 +396,8 @@ t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: VIX lissé utilisé dans le scoring (vixEff, désormais dans logic.js)", srcLogic.indexOf("der.vixEff") !== -1 && srcLogic.indexOf("vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v14", sw.indexOf('CACHE = "radar-v14"') !== -1);
-t("sw.js: anciens caches v13/v12/v11/v10/v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v13") === -1 && sw.indexOf("radar-v12") === -1 && sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
+t("sw.js: cache v15", sw.indexOf('CACHE = "radar-v15"') !== -1);
+t("sw.js: anciens caches v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v14") === -1 && sw.indexOf("radar-v13") === -1 && sw.indexOf("radar-v12") === -1 && sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
 t("sw.js: logic.js dans le shell", sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
 t("sw.js: shell réseau d'abord + repli cache (plus aucun skew HTML frais / JS périmé)",
@@ -645,7 +645,7 @@ t("v5.7: regimePostureOf — contraction + BCE relèvement + stress VIX → Déf
 t("v5.7: regimePostureOf — expansion franche + inflation contenue + BCE assouplit + VIX calme → Offensive", (function () { var rg = L.regimePostureOf({ pmiZE: 56, inflZE: 1.5, bceDir: "baisse", vix5: 15 }); return rg.posture === "Offensive"; })());
 t("v5.7: adviceOf — override valide remplace la posture, l'auto reste tracée", (function () {
   var adv = L.adviceOf(L.DEFAULT_DATA, RAD0, "Offensive");
-  return adv.posture === "Offensive" && adv.autoPosture === "Prudente" && adv.override === "Offensive" && adv.postureScore === adv.timingScore && adv.regime.posture === "Neutre";
+  return adv.posture === "Offensive" && adv.autoPosture === "Prudente" && adv.override === "Offensive" && adv.postureScore === adv.timingScore && adv.regime.risque === "Modéré";   // v5.9 : regime.posture retiré (jamais affiché, vocabulaire abandonné)
 })());
 t("v5.7: adviceOf — override invalide ignoré (retour auto)", L.adviceOf(L.DEFAULT_DATA, RAD0, "Bidon").posture === ADV0.posture);
 t("v5.7: adviceOf — stances déplacées par la posture : obligations 41 « Ne pas renforcer » en auto → « Conserver » en Offensive", (function () {
@@ -771,14 +771,25 @@ t("v5.8: adviceOf — warns si forçage en plein drawdown, silence en auto ou ho
       L.adviceOf(dDD, L.radarAll(dDD), null).warns.length === 0 &&
       L.adviceOf(L.DEFAULT_DATA, RAD0, "Défensive").warns.length === 0;   // pas de drawdown → pas d'avertissement
   })());
-t("v5.8: allocOf — alerte si Défensive forcée en plein drawdown (contradiction avec la règle des paliers)",
+t("v5.9: allocOf — alerte fondée sur le RÉSULTAT : actions exclues + drawdown → alerte (auto, Prudente, Défensive) ; silence sinon",
   (function () {
-    var dDD = JSON.parse(JSON.stringify(L.DEFAULT_DATA));
-    dDD.msciHigh52 = L.r2(dDD.msci * 1.10);
-    var rDD = L.radarAll(dDD);
-    return L.allocOf(1000, "une fois", null, dDD, rDD, "Défensive").alerte !== null &&
-      L.allocOf(1000, "une fois", null, dDD, rDD, null).alerte === null &&
-      L.allocOf(1000, "une fois", null, L.DEFAULT_DATA, RAD0, "Défensive").alerte === null;
+    var RR = { der: { ddMsci: -6 }, list: [
+      { id: "or", icon: "🥇", name: "Or", score: 76 },
+      { id: "monetaire", icon: "💵", name: "Monétaire", score: 52 },
+      { id: "actions", icon: "🌍", name: "Actions", score: 20, timingScore: 44 },
+      { id: "obligations", icon: "📜", name: "Obligations", score: 41 },
+      { id: "immo", icon: "🏢", name: "Immobilier", score: 43 },
+      { id: "crypto", icon: "₿", name: "Crypto", score: 44 }
+    ] };
+    var RRC = { der: { ddMsci: -1.3 }, list: RR.list };   // même marché, hors drawdown
+    return L.allocOf(1000, "une fois", null, { cape: null }, RR, null).alerte !== null &&        // auto : timing 44 < seuil 45
+      L.allocOf(1000, "une fois", null, { cape: null }, RR, "Prudente").alerte !== null &&        // Prudente forcée : 44 < 50
+      L.allocOf(1000, "une fois", null, { cape: null }, RR, "Défensive").alerte !== null &&       // Défensive forcée : 44 < 55
+      L.allocOf(1000, "une fois", null, { cape: null }, RRC, null).alerte === null &&             // pas de drawdown → silence
+      (function () {                                                                              // actions incluses (timing 58 ≥ 55) : pas de contradiction réelle
+        var dDD = JSON.parse(JSON.stringify(L.DEFAULT_DATA)); dDD.msciHigh52 = L.r2(dDD.msci * 1.10);
+        return L.allocOf(1000, "une fois", null, dDD, L.radarAll(dDD), "Défensive").alerte === null;
+      })();
   })());
 t("v5.8: sanitizeImport — postureOverrideDate conservée (YYYY-MM-DD) seulement avec un forçage valide, format invalide ignoré",
   (function () {
@@ -787,11 +798,12 @@ t("v5.8: sanitizeImport — postureOverrideDate conservée (YYYY-MM-DD) seulemen
       L.Auto_sanitizeImport({ postureOverride: "Offensive", postureOverrideDate: "<script>x" }).postureOverrideDate === undefined &&
       L.Auto_sanitizeImport({ postureOverrideDate: "2026-10-18" }).postureOverrideDate === undefined;
   })());
-t("v5.8: index.html — forçage daté : date posée au changement, expiration à 30 j (expirePostureOverride), « choisie depuis N j » affiché",
-  html.indexOf("postureOverrideDate = valid ? new Date().toISOString().slice(0, 10) : null") !== -1 &&
+t("v5.9: index.html — forçage daté durci : date LOCALE posée au changement (todayLocal), expiration 30 j via daysSinceLocal + isRealDate, futur rejeté, « choisie depuis N j · expire dans N j »",
+  html.indexOf("postureOverrideDate = valid ? todayLocal() : null") !== -1 &&
   html.indexOf("function expirePostureOverride") !== -1 &&
-  html.indexOf("days > 30") !== -1 &&
+  html.indexOf("days === null || days < 0 || days > 30") !== -1 &&
   html.indexOf("choisie depuis") !== -1 &&
+  html.indexOf("expire dans \" + (30 - oj) + \" j") !== -1 &&
   html.indexOf("choisie aujourd'hui") !== -1);
 t("v5.8: index.html — affichage honnête du forçage : sous-titre dynamique (advicePostureSub), barre grisée, warns rendus",
   html.indexOf('id="advicePostureSub"') !== -1 &&
@@ -803,6 +815,88 @@ t("v5.8: index.html — vocabulaire macro séparé (« Risque macro (descriptif)
   html.indexOf("posture de référence") === -1 &&
   html.indexOf("if (window._allocRerun) window._allocRerun();") !== -1 &&
   html.indexOf("portefeuille existant") !== -1);
+
+// 13. v5.9 : revue externe de la v5.8 — lot A (dates de forçage, alerte sur le résultat,
+//     justification timing, vocabulaire actions, durcissement) + validation stricte du
+//     simulateur + traçabilité des seuils du verdict.
+t("v5.9: isRealDate — dates calendaires réelles uniquement (2026-02-30, 2026-99-99, 29/02 non bissextile rejetés)",
+  L.isRealDate("2026-10-18") === true && L.isRealDate("2024-02-29") === true && L.isRealDate("2026-02-29") === false &&
+  L.isRealDate("2026-02-30") === false && L.isRealDate("2026-99-99") === false && L.isRealDate("18/10/2026") === false &&
+  L.isRealDate("") === false && L.isRealDate(null) === false && L.isRealDate("<script>") === false);
+t("v5.9: sanitizeImport — date de forçage IMPOSSIBLE ignorée (le forçage survit, sans date → expiré)",
+  L.Auto_sanitizeImport({ postureOverride: "Offensive", postureOverrideDate: "2026-02-30" }).postureOverride === "Offensive" &&
+  L.Auto_sanitizeImport({ postureOverride: "Offensive", postureOverrideDate: "2026-02-30" }).postureOverrideDate === undefined &&
+  L.Auto_sanitizeImport({ postureOverride: "Offensive", postureOverrideDate: "2026-99-99" }).postureOverrideDate === undefined &&
+  L.Auto_sanitizeImport({ postureOverride: "Offensive", postureOverrideDate: "2026-10-18" }).postureOverrideDate === "2026-10-18");
+t("v5.9: allocOf — validation stricte : mensualités ENTIÈRES (« 2.9 » rejeté, plus de troncature parseInt), montant ≥ 1 €",
+  L.allocOf(1000, "dca", "2.9", L.DEFAULT_DATA, RAD0) === null &&
+  L.allocOf(1000, "dca", 2.5, L.DEFAULT_DATA, RAD0) === null &&
+  L.allocOf(1000, "dca", 2, L.DEFAULT_DATA, RAD0) !== null &&
+  L.allocOf(1000, "dca", "24", L.DEFAULT_DATA, RAD0) !== null &&
+  L.allocOf(0.5, "une fois", null, L.DEFAULT_DATA, RAD0) === null &&
+  L.allocOf(1, "une fois", null, L.DEFAULT_DATA, RAD0) !== null &&
+  L.allocOf(0, "une fois", null, L.DEFAULT_DATA, RAD0) === null);
+t("v5.9: allocOf — clés héritées d'Object.prototype (« constructor », « toString ») traitées comme l'auto",
+  (function () {
+    var c = L.allocOf(1000, "une fois", null, L.DEFAULT_DATA, RAD0, "constructor");
+    var ts = L.allocOf(1000, "une fois", null, L.DEFAULT_DATA, RAD0, "toString");
+    return c.seuil === 45 && c.posture === null && ts.seuil === 45 && ts.posture === null;
+  })());
+t("v5.9: adviceOf — warn d'exclusion en AUTO (timing sous le seuil + drawdown), warn de forçage sinon, silence sans contradiction",
+  (function () {
+    var RR = { der: { ddMsci: -6 }, list: [
+      { id: "or", icon: "🥇", name: "Or", score: 76, parts: [] },
+      { id: "monetaire", icon: "💵", name: "Monétaire", score: 52, parts: [] },
+      { id: "actions", icon: "🌍", name: "Actions", score: 20, timingScore: 44, parts: [] },
+      { id: "obligations", icon: "📜", name: "Obligations", score: 41, parts: [] },
+      { id: "immo", icon: "🏢", name: "Immobilier", score: 43, parts: [] },
+      { id: "crypto", icon: "₿", name: "Crypto", score: 44, parts: [] }
+    ] };
+    var wa = L.adviceOf({ cape: null }, RR, null);
+    var wo = L.adviceOf({ cape: null }, RR, "Défensive");
+    var wc = L.adviceOf({ cape: null }, { der: { ddMsci: -1.3 }, list: RR.list }, null);
+    return wa.warns.length === 1 && wa.warns[0].indexOf("exclura les actions") !== -1 &&
+      wo.warns.length === 1 && wo.warns[0].indexOf("Posture forcée") !== -1 &&
+      wc.warns.length === 0;
+  })());
+t("v5.9: adviceOf — justification des actions = le TIMING du jour (drawdown · VIX · BCE · PMI), le CAPE relégué en contexte",
+  (function () {
+    var a = L.adviceOf(L.DEFAULT_DATA, RAD0, null).assets.filter(function (x) { return x.id === "actions"; })[0];
+    return a.why.indexOf("timing 44/100") !== -1 && a.why.indexOf("drawdown") !== -1;
+  })());
+t("v5.9: adviceOf — timing actions < 35 : « Apports minimum / RALENTIR » (plus de « Sous-pondérer » lisible comme une vente)",
+  (function () {
+    var RR = { der: { ddMsci: -1.3 }, list: [
+      { id: "or", icon: "🥇", name: "Or", score: 76, parts: [] },
+      { id: "monetaire", icon: "💵", name: "Monétaire", score: 52, parts: [] },
+      { id: "actions", icon: "🌍", name: "Actions", score: 20, timingScore: 20, parts: [] },
+      { id: "obligations", icon: "📜", name: "Obligations", score: 41, parts: [] },
+      { id: "immo", icon: "🏢", name: "Immobilier", score: 43, parts: [] },
+      { id: "crypto", icon: "₿", name: "Crypto", score: 44, parts: [] }
+    ] };
+    var a = L.adviceOf({ cape: null }, RR, null).assets.filter(function (x) { return x.id === "actions"; })[0];
+    return a.stance === "Apports minimum" && a.verb === "RALENTIR";
+  })());
+t("v5.9: adviceOf — res.regime sans « posture » (vocabulaire régime abandonné, jamais affiché)",
+  L.adviceOf(L.DEFAULT_DATA, RAD0, null).regime.posture === undefined &&
+  L.adviceOf(L.DEFAULT_DATA, RAD0, null).regime.risque === "Modéré");
+t("v5.9: allocOf — propriétés : somme des euros = montant au €, parts ≈ 100 %, monétaire ≥ plancher en Prudente/Défensive forcées",
+  (function () {
+    function sumEur(al) { return al.parts.reduce(function (s, p) { return s + p.euros; }, 0); }
+    function sumPct(al) { return al.parts.reduce(function (s, p) { return s + p.pct; }, 0); }
+    function monPct(al) { return al.parts.filter(function (p) { return p.id === "monetaire"; })[0].pct; }
+    var pr = L.allocOf(7777, "une fois", null, L.DEFAULT_DATA, RAD0, "Prudente");
+    var df = L.allocOf(7777, "une fois", null, L.DEFAULT_DATA, RAD0, "Défensive");
+    var au = L.allocOf(7777, "dca", 7, L.DEFAULT_DATA, RAD0, null);
+    return sumEur(pr) === 7777 && sumEur(df) === 7777 && sumEur(au) === 7777 &&
+      Math.abs(sumPct(au) - 100) < 0.5 && monPct(pr) >= 35 && monPct(df) >= 50;
+  })());
+t("v5.9: index.html — re-vérification au RETOUR sur l'app (visibilitychange) ; le handler de posture ne double plus le recalcul (renderRadar s'en charge)",
+  html.indexOf('document.addEventListener("visibilitychange"') !== -1 &&
+  html.indexOf("if (!document.hidden && state.data) { expirePostureOverride(); save(); renderRadar(); }") !== -1 &&
+  html.indexOf("renderRadar();\n    if (window._allocRerun)") === -1);
+t("v5.9: allocOf — note de méthode : traçabilité du verdict (seuils 60/45, ajustements +8/−6/−5 dits heuristiques)",
+  L.allocOf(1000, "une fois", null, L.DEFAULT_DATA, RAD0).note.indexOf("heuristique motivée point par point, non validée historiquement") !== -1);
 
 // ---------- Régression v5.3 : chaque script servi doit compiler comme script navigateur ----------
 // Un `return` au niveau global est légal en CommonJS/Node mais SyntaxError dans un <script>
