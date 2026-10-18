@@ -5,6 +5,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+  actions: write   # redéclencher pages.yml : un push au GITHUB_TOKEN ne déclenche AUCUN workflow
 jobs:
   daily:
     runs-on: ubuntu-latest
@@ -16,13 +17,21 @@ jobs:
       - name: Relever les marchés (IWDA USD + VIX lissé) et valider
         run: node tools/fetch-daily.js
       - name: Commiter si changé
+        id: commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data-daily.json
           if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "data-daily.json inchangé — pas de commit."
           else
             git commit -m "Relevé quotidien $(date -u +%F) — IWDA/VIX (Yahoo Finance)"
             git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
+      - name: Redéployer GitHub Pages
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref main

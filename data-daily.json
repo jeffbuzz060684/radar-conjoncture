@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "dateData": "2026-10-17",
+  "dateData": "2026-10-16",
   "note": "relevé quotidien automatique (marchés)",
   "data": {
     "msci": 146.81,
@@ -17,7 +17,7 @@
       "Yahoo Finance (^VIX)"
     ],
     [
-      "Garde-fous appliqués vs relevé vérifié du 2026-10-17 — champs écartés : aucun",
+      "Garde-fous : plausibilité + écart max une séance vs le relevé vérifié du 2026-10-17 — champs écartés : aucun",
       "tools/fetch-daily.js"
     ]
   ]

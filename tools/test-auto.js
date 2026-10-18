@@ -1,5 +1,5 @@
-/* Harnais de tests — Radar Conjoncture v4 (modules auto.js & vehicles.js, fichiers livrés,
-   pipeline quotidien/épisode/référence, validateurs et workflows).
+/* Harnais de tests — Radar Conjoncture v4.1 (modules auto.js & vehicles.js, fichiers livrés,
+   pipeline quotidien/épisode/référence, validateurs, workflows et régressions bugs 1/4/5).
    Exécution : node tools/test-auto.js  →  0 échec obligatoire avant publication. */
 "use strict";
 var fs = require("fs");
@@ -52,15 +52,25 @@ t("merge: date du sommet 52 sem. (string) appliquée", m4b.msciHigh52Date === "2
 
 // ---------- Auto_overlayDaily (v4 : relevé quotidien) ----------
 t("dailyFields: liste exacte autorisée", JSON.stringify(A.AUTO_DAILY_FIELDS) === JSON.stringify(["msci", "vix", "vix5", "bund10", "oat10"]));
-t("dailyMaxDrift: 15 %", A.AUTO_DAILY_MAX_DRIFT === 0.15);
+t("dailyRanges: plages plausibles par champ", A.AUTO_DAILY_RANGES.msci[0] === 20 && A.AUTO_DAILY_RANGES.msci[1] === 1000 &&
+  A.AUTO_DAILY_RANGES.vix[0] === 3 && A.AUTO_DAILY_RANGES.vix[1] === 100 && A.AUTO_DAILY_RANGES.bund10[1] === 20 && A.AUTO_DAILY_RANGES.oat10[1] === 20);
+t("dailyMaxJump: 50 % (garde anti-corruption msci uniquement)", A.AUTO_DAILY_MAX_JUMP === 0.50);
 var DAILY_OK = { msci: 147.3, vix: 20.5, vix5: 17.1, bund10: 3.45, oat10: 4.8 };
 var od1 = A.Auto_overlayDaily(LOCAL, DAILY_OK);
 t("overlayDaily: champs du jour appliqués", od1 && od1.msci === 147.3 && od1.vix === 20.5 && od1.vix5 === 17.1);
 t("overlayDaily: ne touche ni reserve ni paliersDone ni référence 52 sem.",
   od1.reserve === 500 && od1.paliersDone.p5 === true && od1.msciHigh52 === 149.81 && od1.msciHigh52Date === "");
 t("overlayDaily: ne modifie pas l'objet local", LOCAL.msci === 146.81);
-var od2 = A.Auto_overlayDaily(LOCAL, { msci: 180, vix: 21 }); // +22 % vs local → aberrant
-t("overlayDaily: cours aberrant (> 15 %) écarté", od2.msci === 146.81 && od2.vix === 21);
+var od2 = A.Auto_overlayDaily(LOCAL, { msci: 180, vix: 21 }); // +22 % vs local : krach/haussé légitime → accepté
+t("overlayDaily: mouvement > 15 % (±22 %) accepté — un krach cumulé ne doit pas être bloqué", od2.msci === 180 && od2.vix === 21);
+var od2b = A.Auto_overlayDaily(LOCAL, { msci: 250 }); // +70 % vs local : impossible en une séance → corruption
+t("overlayDaily: saut > 50 % (msci) écarté (anti-corruption)", od2b === null);
+var od2c = A.Auto_overlayDaily(LOCAL, { msci: 5000 }); // hors plage plausible
+t("overlayDaily: valeur hors plage plausible écartée", od2c === null);
+t("overlayDaily: spike VIX légitime (+100 %) accepté (plage seule, pas de dérive)",
+  (function () { var l = JSON.parse(JSON.stringify(LOCAL)); l.vix = 20; var r = A.Auto_overlayDaily(l, { vix: 40 }); return r !== null && r.vix === 40; })());
+t("overlayDaily: VIX hors plage (vix 3) écarté",
+  (function () { var l = JSON.parse(JSON.stringify(LOCAL)); l.vix = 20; var r = A.Auto_overlayDaily(l, { vix: 2 }); return r === null; })());
 t("overlayDaily: champ non autorisé ignoré → rien d'appliqué", A.Auto_overlayDaily(LOCAL, { cape: 20 }) === null);
 var od3 = A.Auto_overlayDaily(LOCAL, { cape: 20 });
 t("overlayDaily: cape (hors liste) jamais appliquée", od3 === null || od3.cape === undefined || od3.cape === LOCAL.cape);
@@ -183,15 +193,18 @@ fs.unlinkSync(path.join(ROOT, "tmp-bad.json"));
 // ---------- fetch-daily.js (livré, hors réseau ici) ----------
 var fd = fs.readFileSync(path.join(ROOT, "tools", "fetch-daily.js"), "utf8");
 t("fetch-daily: fichier présent", fd.length > 1000);
-t("fetch-daily: garde-fous de plage et de dérive présents", fd.indexOf("0.12") !== -1 && fd.indexOf("0.60") !== -1);
+t("fetch-daily: garde-fous une séance (10 % msci / 60 % VIX) présents", fd.indexOf("0.10") !== -1 && fd.indexOf("0.60") !== -1);
+t("fetch-daily: référence de dérive = dernier relevé quotidien accepté", fd.indexOf("refDaily") !== -1 && fd.indexOf("previous.data") !== -1);
+t("fetch-daily: dateData = date de clôture (last.date), pas la date d'exécution", fd.indexOf("dateData = last.date") !== -1 && fd.indexOf("dateData = today") === -1);
+t("fetch-daily: no-op si relevé existant ≥ clôture (jamais d'écrasement par une date plus ancienne)", fd.indexOf("previous.dateData >= dateData") !== -1);
 t("fetch-daily: sources IWDA.L (USD) et ^VIX", fd.indexOf("IWDA.L") !== -1 && fd.indexOf("^VIX") !== -1);
 t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === -1 && fd.indexOf("paliersDone") === -1);
 
 // ---------- index.html & sw.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v4", html.indexOf("<b>v4</b>") !== -1);
-t("index.html: aucun ancien badge v3/v2/v1", html.indexOf("<b>v3</b>") === -1 && html.indexOf("<b>v2</b>") === -1 && html.indexOf("<b>v1</b>") === -1);
+t("index.html: badge v4.1", html.indexOf("<b>v4.1</b>") !== -1);
+t("index.html: aucun ancien badge v4/v3/v2/v1", ["<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: badge « Maj auto hebdo » absent", html.indexOf("Maj auto hebdo") === -1);
 t("index.html: vehicles.js référencé avant le script inline",
@@ -210,8 +223,8 @@ t("index.html: épisodes persistés (state.episodes)", html.indexOf("state.episo
 t("index.html: alerte référence persistée (state.refAlert)", html.indexOf("state.refAlert") !== -1);
 t("index.html: légende des 6 actifs du graphique (SCORE_META)", html.indexOf("SCORE_META") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v4", sw.indexOf('CACHE = "radar-v4"') !== -1);
-t("sw.js: ancien cache v3 absent", sw.indexOf("radar-v3") === -1);
+t("sw.js: cache v5", sw.indexOf('CACHE = "radar-v5"') !== -1);
+t("sw.js: anciens caches v4/v3 absents", sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
 t("sw.js: data.json ET data-daily.json en réseau d'abord",
   sw.indexOf('url.pathname.indexOf("data.json")') !== -1 && sw.indexOf('url.pathname.indexOf("data-daily.json")') !== -1);
@@ -221,7 +234,9 @@ t("auto.js: pas d'exception à l'import Node", true);
 var autosrc = fs.readFileSync(path.join(ROOT, "auto.js"), "utf8");
 t("auto.js: récupère data-daily.json à l'ouverture", autosrc.indexOf('"data-daily.json"') !== -1);
 t("auto.js: câble l'épisode et l'alerte référence", autosrc.indexOf("Auto_episodeUpdate(") !== -1 && autosrc.indexOf("Auto_refUnstable(") !== -1);
-t("auto.js: en-tête v3", autosrc.indexOf("module de mise à jour automatique (v3)") !== -1);
+t("auto.js: en-tête v4.1", autosrc.indexOf("module de mise à jour automatique (v4.1)") !== -1);
+t("auto.js: garde anti-corruption 50 % msci uniquement (plus de dérive 15 %)",
+  autosrc.indexOf("AUTO_DAILY_MAX_JUMP") !== -1 && autosrc.indexOf("AUTO_DAILY_MAX_DRIFT") === -1);
 
 // ---------- workflows GitHub livrés ----------
 var pages = fs.readFileSync(path.join(ROOT, ".github", "workflows", "pages.yml"), "utf8");
@@ -232,7 +247,32 @@ var dailyWf = fs.readFileSync(path.join(ROOT, ".github", "workflows", "daily-dat
 t("daily-data.yml: cron jours ouvrés (1-5)", dailyWf.indexOf('"45 21 * * 1-5"') !== -1);
 t("daily-data.yml: lance tools/fetch-daily.js", dailyWf.indexOf("tools/fetch-daily.js") !== -1);
 t("daily-data.yml: permission contents write", dailyWf.indexOf("contents: write") !== -1);
+t("daily-data.yml: permission actions write (le GITHUB_TOKEN ne déclenche aucun workflow)", dailyWf.indexOf("actions: write") !== -1);
 t("daily-data.yml: commit seulement si changé", dailyWf.indexOf("--cached --quiet") !== -1);
+t("daily-data.yml: sortie changed (GITHUB_OUTPUT)", dailyWf.indexOf("steps.commit.outputs.changed") !== -1);
+t("daily-data.yml: redéploie Pages après commit (gh workflow run pages.yml)", dailyWf.indexOf("gh workflow run pages.yml") !== -1);
+
+// ---------- Régressions v4.1 (bugs 1, 4, 5 signalés en revue) ----------
+// La logique pure de index.html est extraite du bloc balisé et évaluée sous Node.
+var LOGIC = html.slice(html.indexOf("/* ===LOGIC_START=== */"), html.indexOf("/* ===LOGIC_END=== */"));
+var L = new Function(LOGIC + "\nreturn { normalizeData: normalizeData, computeDerived: computeDerived, paliersOf: paliersOf, strategyOf: strategyOf, DEFAULT_DATA: DEFAULT_DATA };")();
+// Bug 1 : avec un drawdown de −2 %, le prochain palier (−5 %) doit afficher la baisse restante.
+var dFix = L.normalizeData({ dateData: "2026-10-17", msci: 146.81, msciHigh52: 149.81, reserve: 1000, paliersDone: { p5: false, p10: false, p15: false, p20: false } });
+var derFix = L.computeDerived(dFix);
+var palFix = L.paliersOf(dFix, derFix);
+var stratFix = L.strategyOf(dFix, derFix, palFix, null).lines.join(" | ");
+t("régression bug 1 : prochain palier = « encore 3.1 % de baisse » (plus jamais « déjà franchi »)",
+  stratFix.indexOf("Prochain palier : −5 % à 142.32 $, soit encore 3.1 % de baisse") !== -1 && stratFix.indexOf("déjà franchi") === -1);
+t("régression bug 1 : drawdown −2 % calculé", derFix.ddMsci !== null && Math.abs(derFix.ddMsci + 2) < 0.01);
+// Bug 4 : un champ vidé reste manquant ; seul un champ absent retombe sur la valeur du jour.
+var ndClear = L.normalizeData({ dateData: "2026-10-17", vix5: null, cape: 41 });
+t("régression bug 4 : champ vidé (null) reste manquant, pas la valeur du 17/10", ndClear.vix5 === null);
+var ndAbsent = L.normalizeData({ dateData: "2026-10-17" });
+t("régression bug 4 : champ absent → valeur du jour", ndAbsent.vix5 === L.DEFAULT_DATA.vix5 && ndAbsent.vix5 === 16.76);
+t("régression bug 4 : régime sans panne sur données manquantes (aucune exception)", typeof L.computeDerived(ndClear) === "object");
+// Bug 5 : l'export doit être symétrique avec l'import (refAlert + episodes inclus).
+t("régression bug 5 : export inclut refAlert et episodes",
+  html.indexOf("history: state.history, refAlert: state.refAlert, episodes: state.episodes }, null, 2") !== -1);
 
 // ---------- vehicles.js (inchangé) ----------
 var V = require(path.join(ROOT, "vehicles.js"));

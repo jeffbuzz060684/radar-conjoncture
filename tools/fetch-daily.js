@@ -1,7 +1,8 @@
 /* Relevé quotidien automatique — exécuté par GitHub Actions (cron jours ouvrés).
    Récupère le cours IWDA (USD, cotation LSE) et le VIX (courant + moyenne 5 séances)
    via l'API publique Yahoo Finance, vérifie la cohérence vs le dernier relevé
-   vérifié (data.json), puis écrit data-daily.json à la racine du site.
+   quotidien accepté (fallback : relevé hebdo vérifié), puis écrit data-daily.json
+   à la racine du site, daté de la clôture du cours (pas de la date d'exécution).
    Usage : node tools/fetch-daily.js [--dry-run] */
 "use strict";
 var fs = require("fs");
@@ -50,9 +51,15 @@ function check(name, val, old, min, max, maxDrift, data, applied, skipped) {
 
 async function main() {
   var weekly = JSON.parse(fs.readFileSync(path.join(ROOT, "data.json"), "utf8"));
-  var ref = weekly.data; // dernier relevé vérifié : référence de cohérence
   var previous = null;
   try { previous = JSON.parse(fs.readFileSync(path.join(ROOT, "data-daily.json"), "utf8")); } catch (e) {}
+
+  // Référence de cohérence : le DERNIER RELEVÉ QUOTIDIEN ACCEPTÉ (un écart > 10 % sur le
+  // cours en une seule séance est aberrant). Sans relevé quotidien précédent → relevé hebdo
+  // vérifié. Un krach cumulé sur plusieurs séances reste ainsi accepté : chaque relevé
+  // accepté devient la nouvelle référence.
+  var refDaily = (previous && previous.data && typeof previous.data === "object") ? previous.data : null;
+  var ref = refDaily || weekly.data;
 
   var iwdaC = closes(await fetchChart("IWDA.L", "5d")); // LSE, coté en USD
   var vixC = closes(await fetchChart("^VIX", "10d"));   // 10 j pour garantir 5 séances
@@ -62,33 +69,35 @@ async function main() {
   var last5 = vixC.slice(-5);
   var vix5 = round2(last5.reduce(function (s, c) { return s + c.close; }, 0) / last5.length);
 
-  // Garde-fous : plages plausibles + écart maximum vs le relevé vérifié.
+  // Garde-fous : plages plausibles + écart max en UNE séance vs la dernière valeur acceptée.
   var data = {}, applied = [], skipped = [];
-  check("msci", msci, ref.msci, 20, 1000, 0.12, data, applied, skipped);
+  check("msci", msci, ref.msci, 20, 1000, 0.10, data, applied, skipped);
   check("vix", vixLast, ref.vix, 3, 100, 0.60, data, applied, skipped);
-  check("vix5", vix5, ref.vix, 3, 100, 0.60, data, applied, skipped);
+  check("vix5", vix5, ref.vix5 !== undefined ? ref.vix5 : ref.vix, 3, 100, 0.60, data, applied, skipped);
   if (!applied.length) {
     console.error("Aucune valeur cohérente (" + skipped.join(", ") + ") — data-daily.json inchangé.");
     process.exit(1);
   }
 
-  var today = new Date().toISOString().slice(0, 10);
-  if (previous && previous.dateData === today &&
-      JSON.stringify(previous.data) === JSON.stringify(data)) {
-    console.log("data-daily.json déjà à jour pour " + today + " — rien à faire.");
+  // dateData = date de CLÔTURE du cours (pas la date d'exécution : un run week-end reste
+  // daté de la dernière séance). No-op si le fichier existant est déjà à jour ou plus récent.
+  var dateData = last.date;
+  if (previous && previous.dateData >= dateData) {
+    console.log("data-daily.json déjà à jour (dernier relevé " + previous.dateData + " ≥ clôture " + dateData + ") — rien à faire.");
     return;
   }
 
   var out = {
     version: 1,
-    dateData: today,
+    dateData: dateData,
     note: "relevé quotidien automatique (marchés)",
     data: data,
     sources: [
       ["MSCI World (IWDA) : " + msci + " $ — clôture du " + last.date + " (IWDA.L, LSE, cotation USD)", "Yahoo Finance"],
       ["VIX : " + vixLast + " ; moyenne 5 séances : " + vix5, "Yahoo Finance (^VIX)"],
-      ["Garde-fous appliqués vs relevé vérifié du " + weekly.dateData + " — champs écartés : " +
-       (skipped.length ? skipped.join(", ") : "aucun"), "tools/fetch-daily.js"]
+      ["Garde-fous : plausibilité + écart max une séance vs " +
+       (refDaily ? "le dernier relevé quotidien accepté" : "le relevé vérifié du " + weekly.dateData) +
+       " — champs écartés : " + (skipped.length ? skipped.join(", ") : "aucun"), "tools/fetch-daily.js"]
     ]
   };
   if (process.argv.indexOf("--dry-run") !== -1) {
@@ -96,7 +105,7 @@ async function main() {
     return;
   }
   fs.writeFileSync(path.join(ROOT, "data-daily.json"), JSON.stringify(out, null, 2) + "\n");
-  console.log("data-daily.json écrit (" + today + ") — champs : " + applied.join(", ") + ".");
+  console.log("data-daily.json écrit (clôture du " + dateData + ") — champs : " + applied.join(", ") + ".");
 }
 
 main().catch(function (e) {

@@ -1,4 +1,4 @@
-/* Radar Conjoncture — module de mise à jour automatique (v3)
+/* Radar Conjoncture — module de mise à jour automatique (v4.1)
    1. Applique data.json (relevé hebdo vérifié, poussé sur GitHub) si plus récent que le local.
    2. Applique data-daily.json (relevé quotidien automatique via GitHub Actions) par-dessus
       si plus récent : cours IWDA + VIX lissé — les paliers réagissent chaque jour, pas seulement le lundi.
@@ -48,7 +48,13 @@
   // Champs de marché autorisés dans data-daily.json (jamais les références 52 sem.
   // ni les données personnelles — la référence hebdo vérifiée reste maîtresse).
   var AUTO_DAILY_FIELDS = ["msci", "vix", "vix5", "bund10", "oat10"];
-  var AUTO_DAILY_MAX_DRIFT = 0.15; // écart max toléré vs valeur locale (donnée aberrante → ignorée)
+  // Plages plausibles par champ : une valeur hors plage est aberrante → ignorée.
+  var AUTO_DAILY_RANGES = { msci: [20, 1000], vix: [3, 100], vix5: [3, 100], bund10: [0, 20], oat10: [0, 20] };
+  // Garde anti-corruption, msci UNIQUEMENT : un saut > 50 % vs la valeur locale en place est
+  // impossible en une séance. La dérive fine est déjà filtrée côté serveur (écart max 10 %
+  // vs le dernier relevé quotidien accepté) : un krach cumulé légitime sur plusieurs séances
+  // ne doit PAS être bloqué ici — la valeur locale peut dater de plusieurs relevés.
+  var AUTO_DAILY_MAX_JUMP = 0.50;
 
   // Applique les champs du relevé quotidien sur une copie des données locales.
   // Chaque champ est filtré individuellement ; renvoie null si rien d'appliqué.
@@ -60,9 +66,11 @@
     AUTO_DAILY_FIELDS.forEach(function (k) {
       var rv = dailyData[k];
       if (typeof rv !== "number" || !isFinite(rv)) return;
+      var rng = AUTO_DAILY_RANGES[k];
+      if (rv < rng[0] || rv > rng[1]) return; // hors plage plausible → ignoré
       var lv = out[k];
-      // garde-fou : un écart > 15 % vs la valeur locale en place est aberrant → ignoré
-      if (typeof lv === "number" && isFinite(lv) && lv !== 0 && Math.abs(rv / lv - 1) > AUTO_DAILY_MAX_DRIFT) return;
+      // garde anti-corruption (msci uniquement) : saut impossible en une séance
+      if (k === "msci" && typeof lv === "number" && isFinite(lv) && lv > 0 && Math.abs(rv / lv - 1) > AUTO_DAILY_MAX_JUMP) return;
       out[k] = rv;
       applied++;
     });
@@ -144,7 +152,8 @@
       Auto_shouldGecko: Auto_shouldGecko,
       Auto_applyGecko: Auto_applyGecko,
       AUTO_DAILY_FIELDS: AUTO_DAILY_FIELDS,
-      AUTO_DAILY_MAX_DRIFT: AUTO_DAILY_MAX_DRIFT,
+      AUTO_DAILY_RANGES: AUTO_DAILY_RANGES,
+      AUTO_DAILY_MAX_JUMP: AUTO_DAILY_MAX_JUMP,
       AUTO_EPISODE_MAX_JUMP: AUTO_EPISODE_MAX_JUMP,
       AUTO_GEOCO_MIN_MS: AUTO_GEOCO_MIN_MS
     };

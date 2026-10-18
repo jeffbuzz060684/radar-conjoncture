@@ -109,7 +109,7 @@
 <header>
   <div class="hrow">
     <h1>📡 Radar <span>Conjoncture</span></h1>
-    <span class="badge">🔄 Maj auto quotidienne · <b>v4</b></span>
+    <span class="badge">🔄 Maj auto quotidienne · <b>v4.1</b></span>
   </div>
   <div class="hrow" style="margin-top:6px">
     <span class="chip" id="dataChip">—</span>
@@ -289,7 +289,7 @@ function scoreActions(d, der) {
   var parts = [];
   parts.push(mkPart("Valorisation (CAPE " + (num(d.cape) !== null ? r1(d.cape) : "?") + ")",
     stepScore(d.cape, [[20, 20], [25, 10], [30, 0], [35, -10], [40, -18], [Infinity, -24]]),
-    d.cape >= 30 ? "CAPE élevé : rendements long terme attendus faibles" : "CAPE raisonnable"));
+    num(d.cape) === null ? "donnée manquante" : d.cape >= 30 ? "CAPE élevé : rendements long terme attendus faibles" : "CAPE raisonnable"));
   var dd = der.ddMsci;
   parts.push(mkPart("Opportunité de prix (drawdown)",
     dd === null ? 0 : stepScore(-dd, [[3, -4], [5, 4], [10, 10], [15, 18], [20, 24], [Infinity, 30]]),
@@ -327,7 +327,7 @@ function scoreOr(d, der) {
   var parts = [];
   parts.push(mkPart("Inflation (" + (num(d.inflZE) !== null ? r1(d.inflZE) : "?") + " %)",
     stepScore(d.inflZE, [[2, 0], [3, 6], [Infinity, 12]]),
-    d.inflZE >= 3 ? "l'or est la couverture classique de l'inflation" : "peu de besoin de couverture"));
+    num(d.inflZE) === null ? "donnée manquante" : d.inflZE >= 3 ? "l'or est la couverture classique de l'inflation" : "peu de besoin de couverture"));
   parts.push(mkPart("Taux réels courts (" + (der.tauxReelZE !== null ? r1(der.tauxReelZE) : "?") + " %)",
     der.tauxReelZE === null ? 0 : stepScore(der.tauxReelZE, [[0, 8], [1, 3], [Infinity, 0]]),
     der.tauxReelZE !== null && der.tauxReelZE < 0 ? "taux réels négatifs = historiquement favorable à l'or" : "taux réels positifs = coût de portage pour l'or"));
@@ -379,7 +379,7 @@ function scoreCrypto(d, der) {
     d.bceDir === "hausse" ? "le resserrement monétaire prive les actifs spéculatifs de liquidité" : "la baisse des taux ravive l'appétit pour le risque"));
   parts.push(mkPart("Inflation (" + (num(d.inflZE) !== null ? r1(d.inflZE) : "?") + " %)",
     stepScore(d.inflZE, [[2, 0], [Infinity, 4]]),
-    d.inflZE >= 3 ? "thèse « réserve de valeur hors monnaie fiat » relancée" : "peu d'attrait spécifique"));
+    num(d.inflZE) === null ? "donnée manquante" : d.inflZE >= 3 ? "thèse « réserve de valeur hors monnaie fiat » relancée" : "peu d'attrait spécifique"));
   var panique = (der.vixEff !== null && der.vixEff >= 30) ? -8 : 0;
   parts.push(mkPart("Stress marché (VIX)", panique, panique ? "panique généralisée : le BTC tombe avec le marché" : "pas de stress marqué"));
   return { id: "crypto", icon: "₿", name: "Crypto (BTC)", score: clampScore(50 + parts.reduce(function (s, p) { return s + p.pts; }, 0)), parts: parts, partial: dd === null };
@@ -401,16 +401,17 @@ function radarAll(d) {
 
 function regimeOf(d) {
   var vx = (num(d.vix5) !== null) ? d.vix5 : num(d.vix);
-  var growth = d.pmiZE >= 53 ? "Expansion" : d.pmiZE >= 50 ? "Croissance modérée" : d.pmiZE >= 47 ? "Ralentissement" : "Contraction";
-  var infl = d.inflZE >= 3 ? "élevée" : d.inflZE >= 2 ? "au-dessus de la cible" : "sous contrôle";
+  var pmi = num(d.pmiZE), inf = num(d.inflZE), infUS = num(d.inflUS), dep = num(d.bceDepot), bund = num(d.bund10);
+  var growth = pmi === null ? "Données manquantes" : pmi >= 53 ? "Expansion" : pmi >= 50 ? "Croissance modérée" : pmi >= 47 ? "Ralentissement" : "Contraction";
+  var infl = inf === null ? "donnée manquante" : inf >= 3 ? "élevée" : inf >= 2 ? "au-dessus de la cible" : "sous contrôle";
   var dirTxt = d.bceDir === "hausse" ? "en relèvement de taux" : d.bceDir === "baisse" ? "en assouplissement" : "en pause";
   var label = growth + " · inflation " + infl + " · BCE " + dirTxt;
   var recs = [];
-  if (d.inflZE >= 3) recs.push("l'inflation > 3 % favorise l'or et les actifs réels (immo indexé)");
+  if (inf !== null && inf >= 3) recs.push("l'inflation > 3 % favorise l'or et les actifs réels (immo indexé)");
   if (d.bceDir === "hausse") recs.push("le resserrement monétaire pèse sur les obligations et les valorisations élevées");
-  if (d.pmiZE >= 52) recs.push("la croissance soutenue soutient les bénéfices des entreprises");
-  if (d.cape >= 35) recs.push("CAPE ≥ 35 : les actions vivent au-dessus de leurs valorisations historiques — rendements long terme attendus modestes");
-  var desc = "PMI " + r1(d.pmiZE) + " · inflation ZE " + r1(d.inflZE) + " % (US " + r1(d.inflUS) + " %) · dépôt BCE " + r1(d.bceDepot) + " % · Bund " + r1(d.bund10) + " % · VIX " + r1(vx) + (num(d.vix5) !== null ? " (lissé 5 j)" : "") + ". Historiquement dans ce régime : " + (recs.length ? recs.join(" ; ") + "." : "pas de biais marqué.");
+  if (pmi !== null && pmi >= 52) recs.push("la croissance soutenue soutient les bénéfices des entreprises");
+  if (num(d.cape) !== null && d.cape >= 35) recs.push("CAPE ≥ 35 : les actions vivent au-dessus de leurs valorisations historiques — rendements long terme attendus modestes");
+  var desc = "PMI " + (pmi === null ? "—" : r1(pmi)) + " · inflation ZE " + (inf === null ? "—" : r1(inf)) + " % (US " + (infUS === null ? "—" : r1(infUS)) + " %) · dépôt BCE " + (dep === null ? "—" : r1(dep)) + " % · Bund " + (bund === null ? "—" : r1(bund)) + " % · VIX " + (vx === null ? "—" : r1(vx)) + (num(d.vix5) !== null ? " (lissé 5 j)" : "") + ". Historiquement dans ce régime : " + (recs.length ? recs.join(" ; ") + "." : "pas de biais marqué.");
   return { label: label, desc: desc };
 }
 
@@ -440,9 +441,10 @@ function strategyOf(d, der, paliers, top) {
     }
     var nxt = null;
     for (i = 0; i < paliers.length; i++) { if (!paliers[i].atteint) { nxt = paliers[i]; break; } }
-    if (nxt && der.ddMsci !== null) {
-      var dist = nxt.seuil / d.msci - 1;
-      lines.push("Prochain palier : −" + nxt.p + " % à " + nxt.seuil + " $, soit " + (dist <= 0 ? "déjà franchi" : r1(Math.abs(dist) * 100 / 100 * 100) + " % sous le cours actuel") + ".");
+    if (nxt && num(d.msci) !== null && nxt.seuil > 0) {
+      // nxt = premier palier NON atteint → seuil toujours SOUS le cours : dist > 0 = baisse restante
+      var dist = 1 - nxt.seuil / d.msci;
+      lines.push("Prochain palier : −" + nxt.p + " % à " + nxt.seuil + " $, soit encore " + r1(dist * 100) + " % de baisse sous le cours actuel (" + d.msci + " $).");
     }
   }
   if (num(d.cape) !== null && d.cape >= 30) lines.push("Anti-accumulation : CAPE à " + r1(d.cape) + " (≥ 30) — hors paliers, la réserve reste au monétaire, pas de déploiement « par ennui ».");
@@ -475,12 +477,20 @@ function staleDays(dateStr, nowMs) {
 }
 
 function normalizeData(d) {
+  // Un champ PRÉSENT mais vidé (null / "") reste vide → « donnée manquante » (jamais la valeur
+  // par défaut du 17/10, sinon vix5 reviendrait à 16,76 pour toujours). Seule l'ABSENCE
+  // totale du champ retombe sur DEFAULT_DATA.
   var out = {};
   FIELDS.forEach(function (f) {
     if (!f.k) return;
-    if (f.t === "num") { out[f.k] = num(d[f.k]) !== null ? num(d[f.k]) : num(DEFAULT_DATA[f.k]); }
-    else if (f.t === "sel") { out[f.k] = ["hausse", "stable", "baisse"].indexOf(d[f.k]) >= 0 ? d[f.k] : DEFAULT_DATA[f.k]; }
-    else { out[f.k] = (typeof d[f.k] === "string" && d[f.k]) ? d[f.k] : DEFAULT_DATA[f.k]; }
+    var has = Object.prototype.hasOwnProperty.call(d, f.k);
+    if (f.t === "num") {
+      out[f.k] = num(d[f.k]) !== null ? num(d[f.k]) : (has ? null : num(DEFAULT_DATA[f.k]));
+    } else if (f.t === "sel") {
+      out[f.k] = ["hausse", "stable", "baisse"].indexOf(d[f.k]) >= 0 ? d[f.k] : DEFAULT_DATA[f.k];
+    } else {
+      out[f.k] = has ? (typeof d[f.k] === "string" ? d[f.k] : "") : DEFAULT_DATA[f.k];
+    }
   });
   out.paliersDone = { p5: false, p10: false, p15: false, p20: false };
   if (d.paliersDone) PALIERS.forEach(function (p) { out.paliersDone["p" + p] = !!d.paliersDone["p" + p]; });
@@ -653,7 +663,7 @@ function renderRadar() {
   $("ddVal").textContent = der.ddMsci !== null ? r1(der.ddMsci) + " %" : "—";
   $("ddSub").textContent = "cours " + (num(d.msci) !== null ? d.msci + " $" : "?") + " vs sommet 52 sem. " + (num(d.msciHigh52) !== null ? d.msciHigh52 + " $" : "?");
   $("ddBar").style.width = der.ddMsci !== null ? Math.min(100, Math.abs(der.ddMsci) / 25 * 100) + "%" : "0%";
-  $("ddBar").className = der.ddMsci <= -15 ? "bad" : der.ddMsci <= -10 ? "mid" : "good";
+  $("ddBar").className = der.ddMsci === null ? "" : der.ddMsci <= -15 ? "bad" : der.ddMsci <= -10 ? "mid" : "good";
 
   var palEl = $("palList");
   palEl.innerHTML = "";
@@ -827,7 +837,7 @@ $("btnGecko").addEventListener("click", function () {
 });
 
 $("btnExport").addEventListener("click", function () {
-  var blob = new Blob([JSON.stringify({ data: state.data, history: state.history }, null, 2)], { type: "application/json" });
+  var blob = new Blob([JSON.stringify({ data: state.data, history: state.history, refAlert: state.refAlert, episodes: state.episodes }, null, 2)], { type: "application/json" });
   var a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = "radar-conjoncture-" + new Date().toISOString().slice(0, 10) + ".json";
