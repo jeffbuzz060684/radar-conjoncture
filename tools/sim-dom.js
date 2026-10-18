@@ -1,4 +1,4 @@
-/* Simulation DOM v5.12 (outillage) — rejoue le chargement complet de la page avec des stubs (aucun réseau).
+/* Simulation DOM v5.12.1 (outillage) — rejoue le chargement complet de la page avec des stubs (aucun réseau).
    Exécution : node sim.js  →  doit finir par "SIM OK" sans aucune erreur d'exécution. */
 "use strict";
 var fs = require("fs"), path = require("path"), vm = require("vm");
@@ -182,9 +182,40 @@ els.postureSel.fire("change");
 ck("retour sur l'app : re-vérification du forçage sans erreur, override conservé",
   sandbox.state.postureOverride === "Offensive" && txt("advicePosture").indexOf("Offensive — choisie aujourd'hui") !== -1);
 
+// 9 sexies. v5.12.1 : SKEW — logic.js périmé (v5.11 : pas de PATRIMOINE_ACTIFS) servi avec
+// un index v5.12 frais (cache SW/CDN pendant la bascule) : JAMAIS de page blanche.
+var PA_SAVED = sandbox.PATRIMOINE_ACTIFS;
+sandbox.PATRIMOINE_ACTIFS = undefined;
+var skewOk = true;
+try { sandbox.renderRadar(); } catch (e) { skewOk = false; }
+ck("v5.12.1 skew : PATRIMOINE_ACTIFS absent → renderRadar NE LEVE PAS (page rendue, garde anti page blanche)",
+  skewOk && txt("adviceSynthese").length > 0 && txt("advicePosture").length > 0);
+sandbox.PATRIMOINE_ACTIFS = PA_SAVED;
+sandbox.renderRadar();
+ck("v5.12.1 : après guérison (logic.js à jour), la carte 👤 revient — 7 lignes",
+  (txt("patrimoineList").match(/palrow/g) || []).length === 7);
+
+// 9 septies. v5.12.1 : SKEW simulateur (logic.js v5.10 simulé : ni PATRIMOINE, ni parts[].ou)
+var ALLOC_SAVED = sandbox.allocOf;
+var PAT_SAVED = sandbox.PATRIMOINE, PHR_SAVED = sandbox.PATRIMOINE_HORS_RADAR;
+var dSnap = sandbox.state.data, radarSnap = sandbox.radarAll(dSnap);
+var allocSnap = ALLOC_SAVED(els.allocMontant.value, els.allocMode.value, els.allocMonths ? els.allocMonths.value : null, dSnap, radarSnap, sandbox.state.postureOverride);
+allocSnap.parts.forEach(function (p) { delete p.ou; });   // parts « v5.10 » (sans destination)
+sandbox.allocOf = function () { return allocSnap; };       // allocOf v5.10 : ne touche pas PATRIMOINE
+sandbox.PATRIMOINE = undefined; sandbox.PATRIMOINE_HORS_RADAR = undefined;
+var skewAllocOk = true;
+try { els.btnAlloc.click(); } catch (e) { skewAllocOk = false; }
+var skewAllocHtml = String(els.allocOut.innerHTML);
+ck("v5.12.1 skew : simulateur « v5.10 » (ni PATRIMOINE ni ou) → le clic Calcule SANS lever (bloc « Concrètement » omis, répartition intacte)",
+  skewAllocOk && skewAllocHtml.indexOf("Total") !== -1 && skewAllocHtml.indexOf("Concrètement chez toi") === -1);
+sandbox.allocOf = ALLOC_SAVED; sandbox.PATRIMOINE = PAT_SAVED; sandbox.PATRIMOINE_HORS_RADAR = PHR_SAVED;
+els.btnAlloc.click();
+ck("v5.12.1 : simulateur guéri — le bloc « Concrètement chez toi » revient",
+  String(els.allocOut.innerHTML).indexOf("Concrètement chez toi") !== -1);
+
 // 10. Bilan
 var fail = checks.filter(function (c) { return !c.ok; });
 checks.forEach(function (c) { console.log((c.ok ? "✅ " : "❌ ") + c.name); });
 console.log("");
 if (fail.length) { console.log("SIM ÉCHECS : " + fail.length); process.exit(1); }
-console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul + synthèse à source partagée v5.10 + univers réel v5.11 + carte « Ton patrimoine réel » 7 actifs v5.12).");
+console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul + synthèse à source partagée v5.10 + univers réel v5.11 + carte « Ton patrimoine réel » 7 actifs v5.12 + gardes anti-skew logic.js périmé v5.12.1).");

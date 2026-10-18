@@ -369,8 +369,8 @@ t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === 
 // ---------- index.html, logic.js, sw.js, auto.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v5.12", html.indexOf("<b>v5.12</b>") !== -1);
-t("index.html: aucun ancien badge v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
+t("index.html: badge v5.12.1", html.indexOf("<b>v5.12.1</b>") !== -1);
+t("index.html: aucun ancien badge v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: logic.js chargé entre vehicles.js et le script UI inline",
   html.indexOf('<script src="vehicles.js"></script>') !== -1 &&
@@ -396,7 +396,7 @@ t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: VIX lissé utilisé dans le scoring (vixEff, désormais dans logic.js)", srcLogic.indexOf("der.vixEff") !== -1 && srcLogic.indexOf("vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v18", sw.indexOf('CACHE = "radar-v18"') !== -1);
+t("sw.js: cache v19", sw.indexOf('CACHE = "radar-v19"') !== -1);
 t("sw.js: anciens caches v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v16") === -1 && sw.indexOf("radar-v15") === -1 && sw.indexOf("radar-v14") === -1 && sw.indexOf("radar-v13") === -1 && sw.indexOf("radar-v12") === -1 && sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
 t("sw.js: logic.js dans le shell", sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
@@ -1079,6 +1079,25 @@ t("v5.12 index.html: renderPatrimoine appelé depuis renderRadar, lignes = PATRI
   html.indexOf("hors radar — jamais alloué") !== -1 && html.indexOf("radar ' + esc(a.name)") !== -1);
 t("v5.12 index.html: la carte cite le socle inchangé (1 000 €/mois PEA seul) et le livret hors capacité paliers",
   html.indexOf("Le socle des 1 000 €/mois reste PEA seul ; le livret (épargne de précaution) n'entre jamais dans la capacité paliers") !== -1);
+
+// ---------- v5.12.1 : gardes anti-skew — un logic.js périmé (cache SW/CDN) ne doit JAMAIS faire de page blanche ----------
+t("v5.12.1: renderPatrimoine garde sur PATRIMOINE_ACTIFS absent (skew logic.js v5.11) — la page ne plante pas au chargement",
+  html.indexOf('typeof PATRIMOINE_ACTIFS === "undefined"') !== -1);
+t("v5.12.1: simulateur garde sur PATRIMOINE/PATRIMOINE_HORS_RADAR absents (skew logic.js v5.10) — le clic « Calculer » ne plante pas",
+  html.indexOf('typeof PATRIMOINE !== "undefined" && typeof PATRIMOINE_HORS_RADAR !== "undefined"') !== -1);
+t("v5.12.1: les gardes précèdent TOUTE référence nue (aucun PATRIMOINE_ACTIFS.map / PATRIMOINE_HORS_RADAR.map sans garde)",
+  (function () {
+    function naked(mapvar, guard) {
+      var g = html.indexOf(guard);
+      var refs = [];
+      var re = new RegExp(mapvar + "\\.(map|filter)", "g");
+      var m;
+      while ((m = re.exec(html)) !== null) refs.push(m.index);
+    return refs.length > 0 && g !== -1 && refs.every(function (i) { return i > g; });
+    }
+    return naked("PATRIMOINE_ACTIFS", 'typeof PATRIMOINE_ACTIFS === "undefined"') &&
+           naked("PATRIMOINE_HORS_RADAR", 'typeof PATRIMOINE !== "undefined" && typeof PATRIMOINE_HORS_RADAR !== "undefined"');
+  })() === true);
 
 // ---------- Bilan ----------
 var fail = results.filter(function (r) { return !r.ok; });

@@ -109,7 +109,7 @@
 <header>
   <div class="hrow">
     <h1>📡 Radar <span>Conjoncture</span></h1>
-    <span class="badge">🔄 Maj auto quotidienne · <b>v5.12</b></span>
+    <span class="badge">🔄 Maj auto quotidienne · <b>v5.12.1</b></span>
   </div>
   <div class="hrow" style="margin-top:6px">
     <span class="chip" id="dataChip">—</span>
@@ -418,6 +418,7 @@ function commitSnapshot(toastIf) {
 function renderPatrimoine(radar) {
   var el = $("patrimoineList");
   if (!el) return;
+  if (typeof PATRIMOINE_ACTIFS === "undefined") return;   // v5.12.1 : logic.js périmé servi par le cache SW/CDN pendant la bascule → JAMAIS bloquer la page (carte absente, tout le reste rendu ; guérit au prochain chargement complet)
   var byId = {};
   radar.list.forEach(function (a) { byId[a.id] = a; });
   el.innerHTML = PATRIMOINE_ACTIFS.map(function (act) {
@@ -828,13 +829,16 @@ var NOTIFY_OLD_KEY = "radar-telegram-v1"; // configs Telegram v5.1, lues et migr
     // v5.11 : univers réel de Jade — chaque ligne allouée montre SA destination concrète
     // (→ ou) ; sous le total, le détail « Concrètement chez toi » + les actifs hors simulateur
     // (private equity : illiquide, jamais alloué ; livret = épargne de précaution).
-    var univRows = alloc.parts.filter(function (p) { return !p.exclu && p.ou; }).map(function (p) {
+    // v5.12.1 : garde anti-skew — un logic.js périmé (cache SW/CDN) ne doit jamais faire
+    // planter le clic « Calculer » : sans PATRIMOINE, le bloc univers est simplement omis.
+    var univOk = (typeof PATRIMOINE !== "undefined" && typeof PATRIMOINE_HORS_RADAR !== "undefined");
+    var univRows = univOk ? alloc.parts.filter(function (p) { return !p.exclu && p.ou; }).map(function (p) {
       return '<div class="palrow"><span class="st" style="width:auto;min-width:86px">' + fmtEUR(p.euros) + '</span><span class="th"><b>' + esc(p.ou) + "</b> <span class=\"mut\" style=\"font-size:11px\">— " + esc(PATRIMOINE[p.id] ? PATRIMOINE[p.id].reel : "") + "</span></span></div>";
-    }).join("");
-    var univHors = PATRIMOINE_HORS_RADAR.map(function (h) {
+    }).join("") : "";
+    var univHors = univOk ? PATRIMOINE_HORS_RADAR.map(function (h) {
       return '<div class="palrow" style="opacity:.6"><span class="st" style="width:auto;min-width:86px">—</span><span class="th"><b>' + esc(h.nom) + "</b> <span class=\"mut\" style=\"font-size:11px\">— " + esc(h.reel) + "</span></span></div>";
-    }).join("");
-    var univBlock = '<div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)"><b>👤 Concrètement chez toi</b> <span class="mut" style="font-size:11px">(ton univers réel, v5.11 — le socle des 1 000 €/mois reste PEA seul ; le private equity est affiché mais jamais alloué)</span>' + univRows + univHors + "</div>";
+    }).join("") : "";
+    var univBlock = univOk ? '<div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)"><b>👤 Concrètement chez toi</b> <span class="mut" style="font-size:11px">(ton univers réel, v5.11 — le socle des 1 000 €/mois reste PEA seul ; le private equity est affiché mais jamais alloué)</span>' + univRows + univHors + "</div>" : "";
     out.innerHTML =
       "<div class='mut' style='margin:8px 0'>" + modeTxt + " Posture appliquée : " + postureTxt + ".</div>" + rows +
       "<div class='palrow' style='border-top:1px solid var(--line)'><span class='st' style='width:auto;min-width:86px'>Total</span><span class='th'></span><span class='fl' style='font-weight:700'>" + fmtEUR(total) + "</span></div>" +
