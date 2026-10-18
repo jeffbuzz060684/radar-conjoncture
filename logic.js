@@ -252,6 +252,118 @@ function strategyOf(d, der, paliers, top) {
   return { lines: lines, warns: warns };
 }
 
+// ---------- v5.4 : conseil d'allocation — posture, stances par actif, simulateur d'apport ----------
+// Tout dérive du scoring existant (transparence) : aucune donnée nouvelle, une lecture orientée décision.
+// Rappel maison : le socle PEA ne se vend jamais sur la baisse ; « alléger » ne concerne que l'enveloppe libre.
+
+function stanceOf(score) {
+  if (score >= 65) return { cls: "good", label: "Sur-pondérer", verb: "INVESTIR" };
+  if (score >= 55) return { cls: "good", label: "Renforcer", verb: "INVESTIR" };
+  if (score >= 45) return { cls: "mid", label: "Conserver", verb: "CONSERVER" };
+  if (score >= 35) return { cls: "mid", label: "Ne pas renforcer", verb: "ATTENDRE" };
+  return { cls: "bad", label: "Sous-pondérer / alléger", verb: "ALLÉGER" };
+}
+
+function adviceOf(d, radar) {
+  var der = radar.der;
+  var byId = {};
+  radar.list.forEach(function (a) { byId[a.id] = a; });
+  var res = { posture: "", postureScore: 0, detail: "", synthese: "", assets: [], desinv: [] };
+  var act = byId.actions || null;
+  var ap = act ? act.score : 50;
+  res.postureScore = ap;
+  if (ap >= 65) res.posture = "Offensive";
+  else if (ap >= 55) res.posture = "Constructive";
+  else if (ap >= 45) res.posture = "Neutre";
+  else if (ap >= 35) res.posture = "Prudente";
+  else res.posture = "Défensive";
+  var top = radar.list[0];
+  res.detail = "Pilotée par le score Actions (" + ap + "/100 — intègre CAPE, VIX, direction BCE, PMI et drawdown). Actif le plus favorable du jour : " + top.name + " (" + top.score + "/100).";
+  var syn = {
+    "Offensive": "Les signaux d'achat dominent : les apports peuvent aller au marché sans attendre, l'étalement n'apporte que du confort psychologique.",
+    "Constructive": "Contexte globalement favorable : investir reste la bonne trajectoire ; un gros apport se lisse pour réduire le risque d'entrée.",
+    "Neutre": "Aucun signal fort dans un sens ou l'autre : la régularité du socle prime, un apport exceptionnel se lisse plutôt qu'il ne se place d'un coup.",
+    "Prudente": "Les valorisations et le contexte dégradent les perspectives : privilégier monétaire et actifs défensifs, étaler tout apport sur les actifs risqués.",
+    "Défensive": "Préservation du capital d'abord : monétaire, or en couverture, apports sur les actifs risqués différés — aucune précipitation."
+  };
+  res.synthese = syn[res.posture];
+  radar.list.forEach(function (a) {
+    var st = stanceOf(a.score);
+    var why = a.parts.slice().sort(function (x, y) { return Math.abs(y.pts) - Math.abs(x.pts); }).slice(0, 2)
+      .map(function (p) { return p.label.split(" (")[0]; });
+    if (a.partial) why = ["score partiel : 52 sem. manquantes"];
+    res.assets.push({ id: a.id, icon: a.icon, name: a.name, score: a.score, stance: st.label, cls: st.cls, verb: st.verb, why: why.join(" · ") });
+  });
+  // ---- signaux d'arbitrage / désinvestissement (règles déclenchées, pas systématiques) ----
+  var ddM = der.ddMsci, ddO = der.ddOr, cape = num(d.cape), tr = der.tauxReelZE, marge = der.imoMarge;
+  if (act && act.score < 50 && ddM !== null && ddM > -5 && cape !== null && cape >= 30)
+    res.desinv.push("Actions : valorisations tendues (CAPE " + r1(cape) + ") à " + r1(-ddM) + " % du sommet 52 sem. — un allègement marginal peut se justifier, uniquement sur l'enveloppe libre (CTO/AV). Le socle PEA ne se touche pas.");
+  if (ddM !== null && ddM <= -5)
+    res.desinv.push("Actions en drawdown (" + r1(ddM) + " %) — règle maison absolue : on ne vend JAMAIS sur la baisse ; les paliers tactiques achètent cette faiblesse au contraire.");
+  if (byId.or && ddO !== null && ddO > -3 && tr !== null && tr > 0 && byId.or.score < 55)
+    res.desinv.push("Or : à " + r1(-ddO) + " % du sommet 52 sem. avec des taux réels positifs (" + r1(tr) + " %) — prise de profit partielle possible sur l'ETF ou le physique si besoin de liquidités.");
+  if (marge !== null && marge < 0)
+    res.desinv.push("Immobilier : rendement locatif (" + r1(num(d.imoRendement)) + " %) sous le coût du crédit (OAT " + r1(num(d.oat10)) + " %) — défavorable aux nouvelles souscriptions SCPI ; en cas de besoin, privilégier le marché secondaire plutôt que du neuf.");
+  if (d.bceDir === "hausse")
+    res.desinv.push("Obligations : BCE en relèvement — limiter la poche aux maturités courtes ou au taux variable, le segment long reste pénalisé jusqu'au retournement du cycle.");
+  return res;
+}
+
+// Simulateur d'apport : répartition d'un montant exceptionnel (hors socle mensuel).
+var ALLOC_IDS = ["actions", "obligations", "or", "monetaire", "immo", "crypto"];
+var ALLOC_BASE = { actions: 40, obligations: 15, or: 12, monetaire: 13, immo: 15, crypto: 5 };   // pondération de référence (somme 100)
+
+function allocOf(montant, mode, months, d, radar) {
+  var m = num(montant);
+  if (m === null || m <= 0 || m > 10000000) return null;
+  if (mode !== "une fois" && mode !== "dca") return null;
+  var n = null;
+  if (mode === "dca") {
+    n = parseInt(months, 10);
+    if (n !== n || n < 2 || n > 24) return null;   // NaN ou hors bornes
+  }
+  var byId = {};
+  radar.list.forEach(function (a) { byId[a.id] = a; });
+  // poids = base × (score/50), borné ×0,4 à ×1,6, puis renormalisé à 100
+  var raw = {}, total = 0, i, k;
+  for (i = 0; i < ALLOC_IDS.length; i++) {
+    k = ALLOC_IDS[i];
+    var sc = (byId[k] && num(byId[k].score) !== null) ? byId[k].score : 50;
+    var t = Math.max(0.4, Math.min(1.6, sc / 50));
+    raw[k] = ALLOC_BASE[k] * t;
+    total += raw[k];
+  }
+  var parts = [], sum = 0;
+  for (i = 0; i < ALLOC_IDS.length; i++) {
+    k = ALLOC_IDS[i];
+    var share = raw[k] / total;
+    var eur = Math.round(m * share);
+    sum += eur;
+    var a = byId[k];
+    parts.push({ id: k, icon: a ? a.icon : "•", name: a ? a.name : k, pct: r1(share * 100), euros: eur });
+  }
+  parts[0].euros += m - sum;   // reste d'arrondi au premier actif (déterministe)
+  // verdict « une fois » vs « DCA » : préférence pilotée par le score actions et le contexte d'entrée
+  var ddM = radar.der.ddMsci, cape = num(d.cape);
+  var pref = (byId.actions ? byId.actions.score : 50);
+  if (ddM !== null && ddM <= -10) pref += 8;     // marché déjà corrigé : moins de risque d'entrée
+  if (ddM !== null && ddM > -3) pref -= 6;       // au contact du sommet : risque d'acheter le pic
+  if (cape !== null && cape >= 30) pref -= 6;    // valorisations tendues
+  pref = clampScore(pref);
+  var recommande = (pref >= 60) ? "une fois" : (pref >= 45) ? "hybride" : "dca";
+  var labels = {
+    "une fois": "Les signaux d'opportunité suffisent, inutile d'attendre un point d'entrée meilleur.",
+    "hybride": "Moitié immédiate, moitié étalée — le compromis entre regret et rendement.",
+    "dca": "Étaler l'apport : le contexte ne se prête pas à tout miser aujourd'hui."
+  };
+  return {
+    montant: m, mode: mode, months: n,
+    mensualite: n ? r2(m / n) : null,
+    parts: parts, pref: pref, recommande: recommande, recommandeLabel: labels[recommande],
+    note: "Méthode : pondération de référence (actions 40 % · immo 15 % · obligations 15 % · monétaire 13 % · or 12 % · crypto 5 %) pondérée par le score du jour (× score/50, borné ×0,4 à ×1,6), renormalisée à 100 %. En DCA, la répartition est recalculée à chaque échéance sur les données du jour. Repère : investir en une fois gagne historiquement ~2 fois sur 3 en marché actions haussier ; le DCA achète surtout de la sérénité."
+  };
+}
+
 function parseGecko(json) {
   try {
     var prices = json && json.prices;
@@ -379,6 +491,7 @@ if (typeof module !== "undefined" && module.exports) {
     stepScore: stepScore, computeDerived: computeDerived, regimeOf: regimeOf,
     paliersOf: paliersOf, strategyOf: strategyOf, normalizeData: normalizeData,
     snapshotOf: snapshotOf, badgeOf: badgeOf, radarAll: radarAll, parseGecko: parseGecko,
-    staleDays: staleDays, Auto_sanStr: Auto_sanStr, Auto_sanNum: Auto_sanNum, Auto_sanitizeImport: Auto_sanitizeImport
+    staleDays: staleDays, Auto_sanStr: Auto_sanStr, Auto_sanNum: Auto_sanNum, Auto_sanitizeImport: Auto_sanitizeImport,
+    stanceOf: stanceOf, adviceOf: adviceOf, allocOf: allocOf
   };
 }

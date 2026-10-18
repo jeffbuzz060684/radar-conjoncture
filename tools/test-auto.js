@@ -1,6 +1,6 @@
-/* Harnais de tests — Radar Conjoncture v5.3 (logic.js, auto.js, vehicles.js, fichiers livrés,
+/* Harnais de tests — Radar Conjoncture v5.4 (logic.js, auto.js, vehicles.js, fichiers livrés,
    pipeline quotidien/épisode/référence, validateurs, workflows, notifications ntfy/Telegram,
-   sanitisation des imports, régressions v4.1/v5 et compilation navigateur des scripts servis).
+   sanitisation des imports, régressions v4.1/v5, compilation navigateur des scripts servis et conseil d'allocation v5.4).
    Exécution : node tools/test-auto.js  →  0 échec obligatoire avant publication. */
 "use strict";
 var fs = require("fs");
@@ -360,8 +360,8 @@ t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === 
 // ---------- index.html, logic.js, sw.js, auto.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v5.3", html.indexOf("<b>v5.3</b>") !== -1);
-t("index.html: aucun ancien badge v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
+t("index.html: badge v5.4", html.indexOf("<b>v5.4</b>") !== -1);
+t("index.html: aucun ancien badge v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: logic.js chargé entre vehicles.js et le script UI inline",
   html.indexOf('<script src="vehicles.js"></script>') !== -1 &&
@@ -387,8 +387,8 @@ t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: VIX lissé utilisé dans le scoring (vixEff, désormais dans logic.js)", srcLogic.indexOf("der.vixEff") !== -1 && srcLogic.indexOf("vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v9", sw.indexOf('CACHE = "radar-v9"') !== -1);
-t("sw.js: anciens caches v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
+t("sw.js: cache v10", sw.indexOf('CACHE = "radar-v10"') !== -1);
+t("sw.js: anciens caches v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
 t("sw.js: logic.js dans le shell", sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
 t("sw.js: shell en stale-while-revalidate (cache d'abord, réseau en arrière-plan)", sw.indexOf("stale-while-revalidate") !== -1 && sw.indexOf("m || net") !== -1);
@@ -435,6 +435,52 @@ t("daily-data.yml: redéploie Pages après commit (gh workflow run pages.yml)", 
 var ciWf = fs.readFileSync(path.join(ROOT, ".github", "workflows", "ci.yml"), "utf8");
 t("ci.yml: présent et câblé sur push/PR", ciWf.indexOf("on:") !== -1 && ciWf.indexOf("push") !== -1 && ciWf.indexOf("pull_request") !== -1);
 t("ci.yml: lance le harnais (0 échec) + la validation des données", ciWf.indexOf("tools/test-auto.js") !== -1 && ciWf.indexOf("tools/validate-data.js") !== -1);
+
+// ---------- v5.4 : conseil d'allocation (adviceOf / allocOf) ----------
+t("logic.js: exports adviceOf/allocOf/stanceOf", typeof L.adviceOf === "function" && typeof L.allocOf === "function" && typeof L.stanceOf === "function");
+var RAD0 = L.radarAll(L.DEFAULT_DATA);
+var ADV0 = L.adviceOf(L.DEFAULT_DATA, RAD0);
+t("adviceOf: posture + score pilote 0-100", typeof ADV0.posture === "string" && ADV0.posture.length > 2 && ADV0.postureScore >= 0 && ADV0.postureScore <= 100);
+t("adviceOf: 6 stances avec verbes valides et justifications", ADV0.assets.length === 6 && ADV0.assets.every(function (a) { return ["INVESTIR", "CONSERVER", "ATTENDRE", "ALLÉGER"].indexOf(a.verb) >= 0 && a.why.length > 0; }));
+t("adviceOf: synthèse non vide, dérivée de la posture", typeof ADV0.synthese === "string" && ADV0.synthese.length > 20);
+t("adviceOf: données du jour (CAPE 40, à 1,3 % du sommet) → allègement marginal signalé, CTO/AV uniquement", ADV0.desinv.some(function (x) { return x.indexOf("CTO/AV") !== -1; }));
+t("adviceOf: BCE en hausse → poche obligations limitée aux maturités courtes", ADV0.desinv.some(function (x) { return x.indexOf("Obligations") !== -1 && x.indexOf("courtes") !== -1; }));
+t("adviceOf: actions très attractives → posture Offensive et verbe INVESTIR", (function () {
+  var d = JSON.parse(JSON.stringify(L.DEFAULT_DATA));
+  d.cape = 15; d.vix = 30; d.vix5 = 28; d.bceDir = "baisse"; d.pmiZE = 55; d.msciHigh52 = L.r2(d.msci * 1.2);
+  var adv = L.adviceOf(d, L.radarAll(d));
+  var a = adv.assets.filter(function (x) { return x.id === "actions"; })[0];
+  return adv.posture === "Offensive" && a.verb === "INVESTIR";
+})());
+t("adviceOf: drawdown ≥ 5 % → on ne vend jamais sur la baisse", (function () {
+  var d = JSON.parse(JSON.stringify(L.DEFAULT_DATA));
+  d.msciHigh52 = L.r2(d.msci * 1.12);
+  return L.adviceOf(d, L.radarAll(d)).desinv.some(function (x) { return x.indexOf("JAMAIS") !== -1; });
+})());
+var AL0 = L.allocOf(5000, "une fois", null, L.DEFAULT_DATA, RAD0);
+t("allocOf: somme des parts = montant exact au € près", AL0 && AL0.parts.reduce(function (s, p) { return s + p.euros; }, 0) === 5000);
+t("allocOf: 6 lignes, pourcentages sommant à ~100", AL0.parts.length === 6 && Math.abs(AL0.parts.reduce(function (s, p) { return s + p.pct; }, 0) - 100) < 0.6);
+t("allocOf: DCA 6 mois → mensualité = montant/6 et mois mémorisés", (function () { var a = L.allocOf(9000, "dca", 6, L.DEFAULT_DATA, RAD0); return a && a.mensualite === 1500 && a.months === 6; })());
+t("allocOf: entrées invalides → null (0, négatif, texte, mode inconnu, mois 1/25, montant délirant)", L.allocOf(0, "une fois", null, L.DEFAULT_DATA, RAD0) === null && L.allocOf(-5, "une fois", null, L.DEFAULT_DATA, RAD0) === null && L.allocOf("abc", "une fois", null, L.DEFAULT_DATA, RAD0) === null && L.allocOf(1000, "bidon", null, L.DEFAULT_DATA, RAD0) === null && L.allocOf(1000, "dca", 1, L.DEFAULT_DATA, RAD0) === null && L.allocOf(1000, "dca", 25, L.DEFAULT_DATA, RAD0) === null && L.allocOf(100000001, "une fois", null, L.DEFAULT_DATA, RAD0) === null);
+t("allocOf: le tilt suit le score (monétaire favorisé → part plus grosse)", (function () {
+  var d = JSON.parse(JSON.stringify(L.DEFAULT_DATA));
+  d.bceDepot = 4;
+  var mon = L.allocOf(10000, "une fois", null, d, L.radarAll(d)).parts.filter(function (p) { return p.id === "monetaire"; })[0];
+  var mon0 = AL0.parts.filter(function (p) { return p.id === "monetaire"; })[0];
+  return mon.euros > mon0.euros;
+})());
+t("allocOf: déterministe (2 appels identiques → même sortie)", (function () { var a = JSON.stringify(L.allocOf(1234, "dca", 3, L.DEFAULT_DATA, RAD0)); var b = JSON.stringify(L.allocOf(1234, "dca", 3, L.DEFAULT_DATA, RAD0)); return a === b; })());
+t("allocOf: recommandation ∈ {une fois, hybride, dca} avec label", ["une fois", "hybride", "dca"].indexOf(AL0.recommande) >= 0 && AL0.recommandeLabel.length > 20);
+t("allocOf: données du jour (CAPE 40 au contact du sommet) → DCA ou hybride, jamais « une fois »", AL0.recommande !== "une fois");
+t("allocOf: actions bon marché + corrigées → « une fois » recommandé", (function () {
+  var d = JSON.parse(JSON.stringify(L.DEFAULT_DATA));
+  d.cape = 18; d.vix = 30; d.vix5 = 28; d.bceDir = "baisse"; d.pmiZE = 54; d.msciHigh52 = L.r2(d.msci * 1.15);
+  return L.allocOf(10000, "dca", 6, d, L.radarAll(d)).recommande === "une fois";
+})());
+t("index.html: carte conseil du jour (v5.4) rendue depuis adviceOf", html.indexOf('id="adviceCard"') !== -1 && html.indexOf('id="advicePosture"') !== -1 && html.indexOf("adviceOf(d, radar)") !== -1);
+t("index.html: simulateur d'apport complet (montant, mode, mois, bouton, allocOf)", html.indexOf('id="allocMontant"') !== -1 && html.indexOf('id="allocMode"') !== -1 && html.indexOf('id="allocMonths"') !== -1 && html.indexOf('id="btnAlloc"') !== -1 && html.indexOf("allocOf(") !== -1);
+t("index.html: méthode d'allocation documentée (transparence)", srcLogic.indexOf("pondération de référence") !== -1);
+t("index.html: échappement des textes du conseil (esc sur stance, synthèse, arbitrages)", html.indexOf("esc(a.stance)") !== -1 && html.indexOf("esc(adv.synthese)") !== -1 && html.indexOf("esc(x)") !== -1);
 
 // ---------- vehicles.js (inchangé) ----------
 var V = require(path.join(ROOT, "vehicles.js"));
