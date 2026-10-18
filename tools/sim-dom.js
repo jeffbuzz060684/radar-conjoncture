@@ -1,0 +1,131 @@
+/* Simulation DOM v5.7 (outillage) — rejoue le chargement complet de la page avec des stubs (aucun réseau).
+   Exécution : node sim.js  →  doit finir par "SIM OK" sans aucune erreur d'exécution. */
+"use strict";
+var fs = require("fs"), path = require("path"), vm = require("vm");
+var ROOT = path.join(__dirname, "..");
+
+function mkEl() {
+  var el = {
+    style: {}, children: [], handlers: {},
+    value: "", textContent: "", innerHTML: "", className: "", href: "", files: null,
+    dataset: {}, tagName: "INPUT", type: "text", checked: false, disabled: false,
+    classList: { add: function () {}, remove: function () {}, contains: function () { return false; }, toggle: function () {} },
+    addEventListener: function (t, f) { (el.handlers[t] = el.handlers[t] || []).push(f); },
+    removeEventListener: function () {},
+    appendChild: function (c) { el.children.push(c); return c; },
+    remove: function () {}, setAttribute: function () {}, getAttribute: function () { return null; },
+    querySelectorAll: function () { return []; }, querySelector: function () { return mkEl(); },
+    click: function () { (el.handlers.click || []).forEach(function (f) { f({ target: el }); }); },
+    fire: function (t, ev) { (el.handlers[t] || []).forEach(function (f) { f(ev || {}); }); }
+  };
+  return el;
+}
+var els = {};
+var document = {
+  getElementById: function (id) { if (!els[id]) els[id] = mkEl(); return els[id]; },
+  querySelectorAll: function () { return []; },
+  querySelector: function () { return mkEl(); },
+  createElement: function () { return mkEl(); },
+  documentElement: mkEl(),
+  addEventListener: function (t, f) { (sandbox._listeners[t] = sandbox._listeners[t] || []).push(f); }
+};
+var store = {};
+var localStorage = {
+  getItem: function (k) { return store[k] === undefined ? null : store[k]; },
+  setItem: function (k, v) { store[k] = String(v); },
+  removeItem: function (k) { delete store[k]; }
+};
+var sandbox = {
+  document: document, localStorage: localStorage, console: console,
+  navigator: {
+    storage: { persist: function () {} },
+    serviceWorker: { register: function () { return Promise.resolve({}); }, controller: null, addEventListener: function () {} },
+    onLine: true, userAgent: "sim"
+  },
+  setTimeout: function () { return 0; }, clearTimeout: function () {}, setInterval: function () { return 0; }, clearInterval: function () {},
+  fetch: function () { return Promise.reject(new Error("sim hors ligne")); },
+  Blob: function () {}, FileReader: function () { this.readAsText = function () {}; },
+  URL: { createObjectURL: function () { return "blob:x"; }, revokeObjectURL: function () {} },
+  location: { reload: function () {}, hash: "" },
+  _listeners: {},
+  addEventListener: function (t, f) { (sandbox._listeners[t] = sandbox._listeners[t] || []).push(f); },
+  removeEventListener: function () {}
+};
+sandbox.window = sandbox;
+sandbox.self = sandbox;
+sandbox.globalThis = sandbox;
+vm.createContext(sandbox);
+
+function run(src, name) {
+  try { vm.runInContext(src, sandbox, { filename: name }); return null; }
+  catch (e) { return name + " ⛔ " + e.message; }
+}
+
+// 1. Scripts servis dans l'ordre du document
+["vehicles.js", "logic.js"].forEach(function (f) {
+  var err = run(fs.readFileSync(path.join(ROOT, f), "utf8"), f);
+  if (err) { console.log(err); process.exit(1); }
+});
+
+// 2. Blocs <script> inline d'index.html, dans l'ordre
+var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+var re = /<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g, m, i = 0;
+while ((m = re.exec(html))) {
+  var err = run(m[1], "index.html#inline" + (i++));
+  if (err) { console.log(err); process.exit(1); }
+}
+
+// 3. auto.js (après le script UI, comme dans la page)
+var errA = run(fs.readFileSync(path.join(ROOT, "auto.js"), "utf8"), "auto.js");
+if (errA) { console.log(errA); process.exit(1); }
+
+// 4. Événement load (les listeners enregistrés)
+(sandbox._listeners.load || []).forEach(function (f) { f(); });
+
+// 5. Vérifications d'état
+function txt(id) { return (els[id] ? String(els[id].textContent || els[id].innerHTML || "") : ""); }
+var checks = [];
+function ck(name, cond) { checks.push({ name: name, ok: !!cond }); }
+
+ck("page rendue : posture affichée", /\/100\)/.test(txt("advicePosture")));
+ck("conseil situation économique affiché", /posture de référence/.test(txt("adviceRegime")));
+ck("auto (pas d'override) : pas de « choisie »", txt("advicePosture").indexOf("choisie") === -1);
+ck("state.data chargé (dateData)", sandbox.state && sandbox.state.data && sandbox.state.data.dateData);
+ck("pas d'override au départ", sandbox.state.postureOverride === null);
+
+// 6. Override manuel → conseil + persistance
+els.postureSel.value = "Offensive";
+els.postureSel.fire("change");
+ck("override Offensive : posture affichée « choisie »", txt("advicePosture").indexOf("Offensive") !== -1 && txt("advicePosture").indexOf("choisie (auto : Prudente)") !== -1);
+ck("override persisté dans localStorage", (store["radar-conjoncture-v1"] || store[Object.keys(store)[0] || ""] || "").indexOf("\"Offensive\"") !== -1);
+
+// 7. Simulateur piloté par la posture
+els.allocMontant.value = "5000";
+els.allocMode.value = "une fois";
+els.btnAlloc.click();
+var allocHtml = String(els.allocOut.innerHTML);
+ck("répartition calculée", allocHtml.indexOf("Total") !== -1);
+ck("posture appliquée affichée (Offensive, seuil 35)", allocHtml.indexOf("Posture appliquée") !== -1 && allocHtml.indexOf("35/100") !== -1);
+ck("obligations/immo/crypto incluses en Offensive (seul actions 20 exclue)", (allocHtml.match(/opacity:\.45/g) || []).length === 1);
+ck("somme 5 000 € affichée", allocHtml.indexOf("5 000 €") !== -1);
+
+// 8. Changement de posture → recalcul automatique de la répartition affichée
+els.postureSel.value = "Défensive";
+els.postureSel.fire("change");
+var allocHtml2 = String(els.allocOut.innerHTML);
+ck("recalcul auto : seuil 55 en Défensive", allocHtml2.indexOf("55/100") !== -1);
+ck("recalcul auto : 4 lignes exclues (actions, obligations, immo, crypto), or + monétaire inclus", (allocHtml2.match(/opacity:\.45/g) || []).length === 4);
+ck("recalcul auto : total 5 000 € toujours", allocHtml2.indexOf("5 000 €") !== -1);
+ck("conseil éco inchangé + forçage prime", txt("adviceRegime").indexOf("forçage manuel prime") !== -1);
+
+// 9. Retour auto
+els.postureSel.value = "";
+els.postureSel.fire("change");
+ck("retour auto : plus de « choisie »", txt("advicePosture").indexOf("choisie") === -1 && sandbox.state.postureOverride === null);
+
+// 10. Bilan
+var fail = checks.filter(function (c) { return !c.ok; });
+checks.forEach(function (c) { console.log((c.ok ? "✅ " : "❌ ") + c.name); });
+console.log("");
+if (fail.length) { console.log("SIM ÉCHECS : " + fail.length); process.exit(1); }
+console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override + simulateur).");

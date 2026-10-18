@@ -1,6 +1,6 @@
-/* Harnais de tests — Radar Conjoncture v5.6 (logic.js, auto.js, vehicles.js, fichiers livrés,
+/* Harnais de tests — Radar Conjoncture v5.7 (logic.js, auto.js, vehicles.js, fichiers livrés,
    pipeline quotidien/épisode/référence, validateurs, workflows, notifications ntfy/Telegram,
-   sanitisation des imports, régressions v4.1/v5, compilation navigateur des scripts servis, conseil d'allocation v5.4, socle 1 000 €/mois v5.5, revue v5.6 : paliers incohérents, unités EUR, conseil non prescriptif, exclusions d'allocation, notification serveur, bceDirOf stable).
+   sanitisation des imports, régressions v4.1/v5, compilation navigateur des scripts servis, conseil d'allocation v5.4, socle 1 000 €/mois v5.5, revue v5.6 : paliers incohérents, unités EUR, conseil non prescriptif, exclusions d'allocation, notification serveur, bceDirOf stable ; v5.7 : posture pilotable — conseil selon la situation économique (regimePostureOf), forçage manuel impactant stances et simulateur).
    Exécution : node tools/test-auto.js  →  0 échec obligatoire avant publication. */
 "use strict";
 var fs = require("fs");
@@ -369,8 +369,8 @@ t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === 
 // ---------- index.html, logic.js, sw.js, auto.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v5.6", html.indexOf("<b>v5.6</b>") !== -1);
-t("index.html: aucun ancien badge v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
+t("index.html: badge v5.7", html.indexOf("<b>v5.7</b>") !== -1);
+t("index.html: aucun ancien badge v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: logic.js chargé entre vehicles.js et le script UI inline",
   html.indexOf('<script src="vehicles.js"></script>') !== -1 &&
@@ -381,7 +381,7 @@ t("index.html: logique pure extraite (définitions absentes de l'inline)",
 t("index.html: la logique reste appelée par l'UI", html.indexOf("radarAll(state.data)") !== -1 && html.indexOf("strategyOf(") !== -1);
 t("index.html: carte notifications ntfy + Telegram (canal, sujet, token, chat id, test, oubli)",
   html.indexOf('id="notifyChannel"') !== -1 && html.indexOf('id="ntfyTopic"') !== -1 && html.indexOf('id="tgToken"') !== -1 && html.indexOf('id="tgChatId"') !== -1 && html.indexOf('id="btnTgTest"') !== -1 && html.indexOf('id="btnTgForget"') !== -1);
-t("index.html: config notification jamais incluse dans l'export (données persos)", html.indexOf("NOTIFY_KEY") !== -1 && html.indexOf("data: state.data, history: state.history, refAlert: state.refAlert, episodes: state.episodes }, null, 2") !== -1);
+t("index.html: config notification jamais incluse dans l'export (données persos)", html.indexOf("NOTIFY_KEY") !== -1 && html.indexOf("data: state.data, history: state.history, refAlert: state.refAlert, episodes: state.episodes, postureOverride: state.postureOverride }, null, 2") !== -1);
 t("index.html: rétrocompat config Telegram v5.1 lue (NOTIFY_OLD_KEY)", html.indexOf("NOTIFY_OLD_KEY") !== -1);
 t("index.html: chip macro séparée + fraîcheur mensuelle", html.indexOf('id="macroChip"') !== -1 && html.indexOf("dateMacro") !== -1 && html.indexOf("macro fraîche") !== -1);
 t("index.html: alerte référence échappée (anti-injection)", html.indexOf("esc(String(state.refAlert.from))") !== -1);
@@ -396,8 +396,8 @@ t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: VIX lissé utilisé dans le scoring (vixEff, désormais dans logic.js)", srcLogic.indexOf("der.vixEff") !== -1 && srcLogic.indexOf("vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v12", sw.indexOf('CACHE = "radar-v12"') !== -1);
-t("sw.js: anciens caches v11/v10/v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
+t("sw.js: cache v13", sw.indexOf('CACHE = "radar-v13"') !== -1);
+t("sw.js: anciens caches v12/v11/v10/v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v12") === -1 && sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
 t("sw.js: logic.js dans le shell", sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
 t("sw.js: shell réseau d'abord + repli cache (plus aucun skew HTML frais / JS périmé)",
@@ -491,7 +491,7 @@ t("allocOf: actions bon marché + corrigées → « une fois » recommandé", (f
   d.cape = 18; d.vix = 30; d.vix5 = 28; d.bceDir = "baisse"; d.pmiZE = 54; d.msciHigh52 = L.r2(d.msci * 1.15);
   return L.allocOf(10000, "dca", 6, d, L.radarAll(d)).recommande === "une fois";
 })());
-t("index.html: carte conseil du jour (v5.4) rendue depuis adviceOf", html.indexOf('id="adviceCard"') !== -1 && html.indexOf('id="advicePosture"') !== -1 && html.indexOf("adviceOf(d, radar)") !== -1);
+t("index.html: carte conseil du jour (v5.4) rendue depuis adviceOf", html.indexOf('id="adviceCard"') !== -1 && html.indexOf('id="advicePosture"') !== -1 && html.indexOf("adviceOf(d, radar, state.postureOverride)") !== -1);
 t("index.html: simulateur d'apport complet (montant, mode, mois, bouton, allocOf)", html.indexOf('id="allocMontant"') !== -1 && html.indexOf('id="allocMode"') !== -1 && html.indexOf('id="allocMonths"') !== -1 && html.indexOf('id="btnAlloc"') !== -1 && html.indexOf("allocOf(") !== -1);
 t("index.html: méthode d'allocation documentée (transparence)", srcLogic.indexOf("pondération de référence") !== -1);
 t("index.html: footnote stratégie 1 000 € tout compris + supplément possible", html.indexOf("1 000 €/mois tout compris (800 € DCAM + 200 € réserve tactique)") !== -1 && html.indexOf("supplément quand tu veux reste possible") !== -1);
@@ -614,8 +614,8 @@ t("v5.6: allocOf — tous les scores sous 45 → tout en monétaire (repli de s�
     var scored = r.list.every(function (a) { return a.score < 45; });
     return !scored || al.parts.filter(function (p) { return !p.exclu; }).length >= 1; // si tous < 45 → monétaire seul ; sinon au moins une ligne incluse
   })() === true);
-t("v5.6: index.html — simulateur affiche les lignes exclues (opacity .45, « exclu (score < 45) »)",
-  html.indexOf("exclu (score < 45)") !== -1 && html.indexOf("opacity:.45") !== -1);
+t("v5.6+v5.7: index.html — simulateur affiche les lignes exclues (opacity .45, seuil dynamique)",
+  html.indexOf("exclu (score < ' + alloc.seuil + ')") !== -1 && html.indexOf("opacity:.45") !== -1);
 t("v5.6: index.html — paliers suspendus affichés quand la liste est vide (références incohérentes)",
   html.indexOf("Paliers suspendus") !== -1);
 
@@ -635,6 +635,58 @@ t("v5.6: daily-data.yml — secret NTFY_TOPIC câblé (sujet jamais en dur, dép
 t("v5.6: index.html — carte notifications documente le canal serveur + sujet long et aléatoire",
   html.indexOf("NTFY_TOPIC") !== -1 && html.indexOf("radar-k7m2xq9z-t4v8") !== -1 && html.indexOf("long et aléatoire") !== -1);
 
+
+// 11. v5.7 : posture pilotable — conseil selon la situation économique + forçage manuel (conseil ET simulateur)
+t("v5.7: logic.js: exports regimePostureOf/POSTURES/ALLOC_EXCL", typeof L.regimePostureOf === "function" && Array.isArray(L.POSTURES) && L.POSTURES.length === 5 && L.ALLOC_EXCL.Neutre === 45);
+t("v5.7: regimePostureOf — données du jour (PMI 53,1 · infl 3,8 · BCE hausse · VIX 16,8) → Neutre (52)",
+  (function () { var rg = L.regimePostureOf(L.DEFAULT_DATA); return rg.posture === "Neutre" && rg.score === 52 && rg.drivers.length > 10; })());
+t("v5.7: regimePostureOf — données vides → Neutre 50, jamais d'erreur", L.regimePostureOf({}).posture === "Neutre" && L.regimePostureOf({}).score === 50);
+t("v5.7: regimePostureOf — contraction + BCE relèvement + stress VIX → Défensive", (function () { var rg = L.regimePostureOf({ pmiZE: 46, inflZE: 3.8, bceDir: "hausse", vix5: 28 }); return rg.posture === "Défensive"; })());
+t("v5.7: regimePostureOf — expansion franche + inflation contenue + BCE assouplit + VIX calme → Offensive", (function () { var rg = L.regimePostureOf({ pmiZE: 56, inflZE: 1.5, bceDir: "baisse", vix5: 15 }); return rg.posture === "Offensive"; })());
+t("v5.7: adviceOf — override valide remplace la posture, l'auto reste tracée", (function () {
+  var adv = L.adviceOf(L.DEFAULT_DATA, RAD0, "Offensive");
+  return adv.posture === "Offensive" && adv.autoPosture === "Prudente" && adv.override === "Offensive" && adv.postureScore === adv.timingScore && adv.regime.posture === "Neutre";
+})());
+t("v5.7: adviceOf — override invalide ignoré (retour auto)", L.adviceOf(L.DEFAULT_DATA, RAD0, "Bidon").posture === ADV0.posture);
+t("v5.7: adviceOf — stances déplacées par la posture : obligations 41 « Ne pas renforcer » en auto → « Conserver » en Offensive", (function () {
+  var auto = L.adviceOf(L.DEFAULT_DATA, RAD0).assets.filter(function (a) { return a.id === "obligations"; })[0];
+  var off = L.adviceOf(L.DEFAULT_DATA, RAD0, "Offensive").assets.filter(function (a) { return a.id === "obligations"; })[0];
+  return auto.stance === "Ne pas renforcer" && off.stance === "Conserver";
+})());
+t("v5.7: adviceOf — en Défensive l'or 76 reste Sur-pondérer (seuils durcis) et le monétaire 52 garde ses seuils de base (Conserver)", (function () {
+  var def = L.adviceOf(L.DEFAULT_DATA, RAD0, "Défensive");
+  var or = def.assets.filter(function (a) { return a.id === "or"; })[0];
+  var mon = def.assets.filter(function (a) { return a.id === "monetaire"; })[0];
+  return or.stance === "Sur-pondérer" && mon.stance === "Conserver";
+})());
+t("v5.7: stanceOf — seuils inchangés sans posture (régression v5.6 : 30 → SOUS-PONDÉRER, 52 → Conserver)",
+  L.stanceOf(30).verb === "SOUS-PONDÉRER" && L.stanceOf(52).label === "Conserver" && L.stanceOf(45).label === "Conserver" && L.stanceOf(55).label === "Renforcer");
+t("v5.7: allocOf — seuil d'exclusion suit la posture (35 Offensive / 45 défaut / 55 Défensive)", (function () {
+  var off = L.allocOf(1000, "une fois", null, L.DEFAULT_DATA, RAD0, "Offensive");
+  var neu = L.allocOf(1000, "une fois", null, L.DEFAULT_DATA, RAD0);
+  var dfn = L.allocOf(1000, "une fois", null, L.DEFAULT_DATA, RAD0, "Défensive");
+  return off.seuil === 35 && neu.seuil === 45 && dfn.seuil === 55 && off.posture === "Offensive" && dfn.posture === "Défensive" && neu.posture === null;
+})());
+t("v5.7: allocOf Défensive — monétaire TOUJOURS éligible (préservation), actions/obligations/immo/crypto exclues, somme exacte", (function () {
+  var al = L.allocOf(1000, "une fois", null, L.DEFAULT_DATA, RAD0, "Défensive");
+  var ex = al.parts.filter(function (p) { return p.exclu; }).map(function (p) { return p.id; }).sort().join(",");
+  var inc = al.parts.filter(function (p) { return !p.exclu; }).map(function (p) { return p.id; }).sort().join(",");
+  return ex === "actions,crypto,immo,obligations" && inc === "monetaire,or" && al.parts.reduce(function (s, p) { return s + p.euros; }, 0) === 1000;
+})());
+t("v5.7: allocOf Offensive — obligations 41 et crypto 44 redeviennent éligibles (seuil 35), somme exacte", (function () {
+  var al = L.allocOf(1000, "une fois", null, L.DEFAULT_DATA, RAD0, "Offensive");
+  var ob = al.parts.filter(function (p) { return p.id === "obligations"; })[0];
+  var cr = al.parts.filter(function (p) { return p.id === "crypto"; })[0];
+  return !ob.exclu && !cr.exclu && al.parts.reduce(function (s, p) { return s + p.euros; }, 0) === 1000;
+})());
+t("v5.7: sanitizeImport — postureOverride valide conservée, invalide ignorée",
+  L.Auto_sanitizeImport({ postureOverride: "Offensive" }).postureOverride === "Offensive" && L.Auto_sanitizeImport({ postureOverride: "Hack<script>" }).postureOverride === undefined);
+t("v5.7: index.html — sélecteur de posture + override passé à adviceOf + conseil situation éco affiché",
+  html.indexOf('id="postureSel"') !== -1 && html.indexOf('id="adviceRegime"') !== -1 && html.indexOf("adviceOf(d, radar, state.postureOverride)") !== -1 && html.indexOf("regime") !== -1);
+t("v5.7: index.html — override persisté (save/export) et importé via la liste blanche, simulateur piloté par la posture effective",
+  html.indexOf("postureOverride: state.postureOverride") !== -1 && html.indexOf("state.postureOverride = san.postureOverride || null") !== -1 && html.indexOf("state.postureOverride = san2.postureOverride || null") !== -1 && html.indexOf("allocOf(mt.value, mode.value, months.value, d, radar, effPosture)") !== -1);
+t("v5.7: index.html — changer la posture recalcule une répartition déjà affichée (window._allocRerun)",
+  html.indexOf("window._allocRerun") !== -1 && html.indexOf("if (window._allocRerun) window._allocRerun()") !== -1);
 
 // ---------- Régression v5.3 : chaque script servi doit compiler comme script navigateur ----------
 // Un `return` au niveau global est légal en CommonJS/Node mais SyntaxError dans un <script>

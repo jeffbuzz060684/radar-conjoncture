@@ -109,7 +109,7 @@
 <header>
   <div class="hrow">
     <h1>📡 Radar <span>Conjoncture</span></h1>
-    <span class="badge">🔄 Maj auto quotidienne · <b>v5.6</b></span>
+    <span class="badge">🔄 Maj auto quotidienne · <b>v5.7</b></span>
   </div>
   <div class="hrow" style="margin-top:6px">
     <span class="chip" id="dataChip">—</span>
@@ -143,10 +143,19 @@
     </div>
     <div class="card" id="adviceCard">
       <h2>💼 Conseil du jour — investir ou désinvestir</h2>
-      <div class="mut" style="margin-bottom:8px">Lecture d'asset manager dérivée du scoring du jour : posture pilotée par le timing (drawdown, VIX, BCE, PMI), stance par actif, contexte de valorisation. Heuristique transparente, pas un conseil financier — l'allocation dépend aussi de ton horizon et de ta tolérance au risque. La stratégie PEA reste maîtresse.</div>
+      <div class="mut" style="margin-bottom:8px">Lecture d'asset manager dérivée du scoring du jour : posture pilotée par le timing (drawdown, VIX, BCE, PMI) — ou forcée manuellement ci-dessous, ce qui déplace les seuils des stances ET du simulateur ; une ligne conseil selon la situation économique (PMI, inflation, direction BCE) est affichée à titre de référence. Heuristique transparente, pas un conseil financier — l'allocation dépend aussi de ton horizon et de ta tolérance au risque. La stratégie PEA reste maîtresse.</div>
       <div class="ddnow"><span class="mut">Posture de risque<br><span style="font-size:11px">score actions = pilote</span></span><b id="advicePosture">—</b></div>
       <div class="bar" style="margin-bottom:10px"><i id="advicePostureBar" style="width:0%"></i></div>
       <div class="mut" id="adviceDetail">—</div>
+      <div class="mut" id="adviceRegime" style="margin:6px 0 8px"></div>
+      <div class="frow"><label>Posture appliquée (conseil + simulateur)<select id="postureSel">
+        <option value="">Auto — pilotée par le timing du jour</option>
+        <option value="Offensive">Offensive (plus d'appétit risque)</option>
+        <option value="Constructive">Constructive</option>
+        <option value="Neutre">Neutre</option>
+        <option value="Prudente">Prudente</option>
+        <option value="Défensive">Défensive (préservation d'abord)</option>
+      </select></label></div>
       <div id="adviceStances" style="margin-top:10px"></div>
       <div id="adviceSynthese" class="verdict" style="margin-top:10px">—</div>
       <div id="adviceCtx"></div>
@@ -155,7 +164,7 @@
 
     <div class="card">
       <h2>🧮 Simulateur d'apport — en une fois ou DCA</h2>
-      <div class="mut" style="margin-bottom:8px">Pour un supplément quand tu veux (prime, don, virement), en plus des 1 000 €/mois du socle : indique le montant, choisis « une fois » ou « DCA » (étalé sur plusieurs mois) — la répartition suit le scoring du jour, et n'achète JAMAIS ce que le conseil dit de ne pas renforcer (actifs sous 45/100 exclus).</div>
+      <div class="mut" style="margin-bottom:8px">Pour un supplément quand tu veux (prime, don, virement), en plus des 1 000 €/mois du socle : indique le montant, choisis « une fois » ou « DCA » (étalé sur plusieurs mois) — la répartition suit le scoring du jour et la posture appliquée, et n'achète JAMAIS ce que le conseil dit de ne pas renforcer (seuil d'exclusion selon la posture ; le monétaire reste toujours éligible).</div>
       <div class="frow"><label>Montant à répartir (€)<input id="allocMontant" type="number" inputmode="decimal" step="any" min="1" placeholder="ex. 5000"></label></div>
       <div class="frow"><label>Mode d'investissement<select id="allocMode">
         <option value="une fois">En une fois (lump sum)</option>
@@ -256,7 +265,7 @@
 <script>
 // ================== Couche UI ==================
 var KEY = "radar-conjoncture-v1";
-var state = { data: null, history: [], refAlert: null, episodes: [] };
+var state = { data: null, history: [], refAlert: null, episodes: [], postureOverride: null };
 
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
@@ -274,15 +283,17 @@ function load() {
     state.history = san.history;
     state.refAlert = san.refAlert;
     state.episodes = san.episodes;
+    state.postureOverride = san.postureOverride || null;   // v5.7 : forçage de posture persisté (liste blanche)
   } else {
     state.data = normalizeData(DEFAULT_DATA);
     state.history = [];
     state.refAlert = null;
     state.episodes = [];
+    state.postureOverride = null;
   }
 }
 function save() {
-  try { localStorage.setItem(KEY, JSON.stringify({ data: state.data, history: state.history, refAlert: state.refAlert, episodes: state.episodes })); } catch (e) {}
+  try { localStorage.setItem(KEY, JSON.stringify({ data: state.data, history: state.history, refAlert: state.refAlert, episodes: state.episodes, postureOverride: state.postureOverride })); } catch (e) {}
   if (navigator.storage && navigator.storage.persist) { try { navigator.storage.persist(); } catch (e) {} }
 }
 
@@ -445,9 +456,13 @@ function renderRadar() {
     ra.innerHTML = "";
   }
 
-  // v5.4 : conseil du jour (lecture asset manager du scoring)
-  var adv = adviceOf(d, radar);
-  $("advicePosture").textContent = adv.posture + " (" + adv.postureScore + "/100)";
+  // v5.4 : conseil du jour (lecture asset manager du scoring) — v5.7 : posture forçable, conseil selon la situation éco
+  var adv = adviceOf(d, radar, state.postureOverride);
+  $("advicePosture").textContent = adv.posture + " (" + adv.postureScore + "/100)" + (adv.override ? " — choisie (auto : " + adv.autoPosture + ")" : "");
+  var pSel = $("postureSel");
+  if (pSel) pSel.value = state.postureOverride || "";
+  var rg = adv.regime;
+  $("adviceRegime").innerHTML = "🧭 Situation économique → posture de référence : <b>" + esc(rg.posture) + "</b> (" + rg.score + "/100) — " + esc(rg.drivers) + (adv.override ? ". Ton forçage manuel prime sur tout le conseil." : ".");
   var apb = $("advicePostureBar");
   apb.style.width = adv.postureScore + "%";
   apb.className = adv.postureScore >= 55 ? "good" : adv.postureScore >= 45 ? "mid" : "bad";
@@ -607,7 +622,7 @@ $("btnGecko").addEventListener("click", function () {
 });
 
 $("btnExport").addEventListener("click", function () {
-  var blob = new Blob([JSON.stringify({ data: state.data, history: state.history, refAlert: state.refAlert, episodes: state.episodes }, null, 2)], { type: "application/json" });
+  var blob = new Blob([JSON.stringify({ data: state.data, history: state.history, refAlert: state.refAlert, episodes: state.episodes, postureOverride: state.postureOverride }, null, 2)], { type: "application/json" });
   var a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = "radar-conjoncture-" + new Date().toISOString().slice(0, 10) + ".json";
@@ -631,6 +646,7 @@ $("importFile").addEventListener("change", function (ev) {
       state.history = san2.history;
       state.refAlert = san2.refAlert;
       state.episodes = san2.episodes;
+      state.postureOverride = san2.postureOverride || null;   // v5.7 : posture importée seulement si valide
       save(); buildForm(); renderRadar();
       toast("Import réussi");
     } catch (e) { toast("Import impossible : fichier invalide"); }
@@ -707,15 +723,17 @@ var NOTIFY_OLD_KEY = "radar-telegram-v1"; // configs Telegram v5.1, lues et migr
 (function () {
   var mt = $("allocMontant"), mode = $("allocMode"), monthsRow = $("allocMonthsRow"), months = $("allocMonths"), out = $("allocOut");
   mode.addEventListener("change", function () { monthsRow.style.display = mode.value === "dca" ? "" : "none"; });
-  $("btnAlloc").addEventListener("click", function () {
+  function runAlloc() {
     var d = state.data;
-    var alloc = allocOf(mt.value, mode.value, months.value, d, radarAll(d));
+    var radar = radarAll(d);
+    var effPosture = adviceOf(d, radar, state.postureOverride).posture;   // v5.7 : posture effective (choisie ou auto) pilote le seuil
+    var alloc = allocOf(mt.value, mode.value, months.value, d, radar, effPosture);
     if (!alloc) {
       out.innerHTML = '<div class="warnbox">⚠️ Montant invalide — indique un montant en euros entre 1 et 10 000 000' + (mode.value === "dca" ? " (et un nombre de mensualités entre 2 et 24)" : "") + ".</div>";
       return;
     }
     var rows = alloc.parts.map(function (p) {
-      if (p.exclu) return '<div class="palrow" style="opacity:.45"><span class="st" style="width:auto;min-width:86px">' + p.icon + ' — %</span><span class="th">' + esc(p.name) + ' <span style="font-size:11px">· exclu (score < 45)</span></span><span class="fl">' + fmtEUR(0) + "</span></div>";
+      if (p.exclu) return '<div class="palrow" style="opacity:.45"><span class="st" style="width:auto;min-width:86px">' + p.icon + ' — %</span><span class="th">' + esc(p.name) + ' <span style="font-size:11px">· exclu (score < ' + alloc.seuil + ')</span></span><span class="fl">' + fmtEUR(0) + "</span></div>";
       return '<div class="palrow"><span class="st" style="width:auto;min-width:86px">' + p.icon + " " + p.pct + ' %</span><span class="th">' + esc(p.name) + '</span><span class="fl">' + fmtEUR(p.euros) + "</span></div>";
     }).join("");
     var total = alloc.parts.reduce(function (s, p) { return s + p.euros; }, 0);
@@ -723,7 +741,7 @@ var NOTIFY_OLD_KEY = "radar-telegram-v1"; // configs Telegram v5.1, lues et migr
       ? "DCA : " + alloc.months + " mensualités de " + fmtEUR2(alloc.mensualite) + " — la répartition ci-dessous est la projection totale à données du jour, recalculée à chaque échéance."
       : "En une fois, dès aujourd'hui.";
     out.innerHTML =
-      "<div class='mut' style='margin:8px 0'>" + modeTxt + "</div>" + rows +
+      "<div class='mut' style='margin:8px 0'>" + modeTxt + " Posture appliquée : <b>" + esc(effPosture) + "</b> — actifs sous " + alloc.seuil + "/100 exclus (monétaire toujours éligible).</div>" + rows +
       "<div class='palrow' style='border-top:1px solid var(--line)'><span class='st' style='width:auto;min-width:86px'>Total</span><span class='th'></span><span class='fl' style='font-weight:700'>" + fmtEUR(total) + "</span></div>" +
       '<div class="verdict" style="margin-top:10px"><b>Recommandation du jour : ' +
       (alloc.recommande === "une fois" ? "en une fois" : alloc.recommande === "hybride" ? "hybride (½ maintenant, ½ étalée)" : "DCA (étalé)") +
@@ -732,8 +750,23 @@ var NOTIFY_OLD_KEY = "radar-telegram-v1"; // configs Telegram v5.1, lues et migr
         ? " <i>(ton choix « " + (mode.value === "une fois" ? "en une fois" : "DCA") + " » reste valide — mais à données du jour, l'app aurait orienté autrement.)</i>"
         : "") + "</div>" +
       '<div class="mut" style="margin-top:8px;font-size:11.5px">' + esc(alloc.note) + "</div>";
+  }
+  $("btnAlloc").addEventListener("click", runAlloc);
+  window._allocRerun = function () { if (out.innerHTML) runAlloc(); };   // v5.7 : recalcul auto si une répartition est affichée quand la posture change
+})();
+
+// ---- v5.7 : forçage manuel de la posture (conseil + simulateur), persisté sur ce téléphone, jamais poussé sur GitHub ----
+(function () {
+  $("postureSel").addEventListener("change", function () {
+    var v = $("postureSel").value;
+    state.postureOverride = (typeof POSTURES !== "undefined" && POSTURES.indexOf(v) !== -1) ? v : null;   // "" = auto
+    save();
+    renderRadar();
+    if (window._allocRerun) window._allocRerun();
   });
 })();
+
+// ---- Sources ----
 
 // ---- Sources ----
 (function () {

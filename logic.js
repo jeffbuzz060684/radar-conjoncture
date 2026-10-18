@@ -269,15 +269,53 @@ function strategyOf(d, der, paliers, top) {
 // Tout dérive du scoring existant (transparence) : aucune donnée nouvelle, une lecture orientée décision.
 // Rappel maison : le socle PEA ne se vend jamais sur la baisse ; « alléger » ne concerne que l'enveloppe libre.
 
-function stanceOf(score) {
-  if (score >= 65) return { cls: "good", label: "Sur-pondérer", verb: "INVESTIR" };
-  if (score >= 55) return { cls: "good", label: "Renforcer", verb: "INVESTIR" };
-  if (score >= 45) return { cls: "mid", label: "Conserver", verb: "CONSERVER" };
-  if (score >= 35) return { cls: "mid", label: "Ne pas renforcer", verb: "ATTENDRE" };
+// v5.7 : la posture devient PILOTABLE — auto (timing), conseil selon la situation économique
+// (regimePostureOf), ou forçage manuel par Jade. Chaque poste déplace les seuils :
+// Offensive libère l'achat plus tôt, Défensive n'accepte que les scores élevés.
+var POSTURES = ["Défensive", "Prudente", "Neutre", "Constructive", "Offensive"];   // rang 0 → 4
+var ALLOC_EXCL = { "Défensive": 55, "Prudente": 50, "Neutre": 45, "Constructive": 40, "Offensive": 35 };   // seuil d'exclusion du simulateur
+
+function stanceOf(score, posture) {
+  var rank = (typeof posture === "string") ? POSTURES.indexOf(posture) : -1;
+  if (rank < 0) rank = 2;                       // inconnu/absent → Neutre (seuils historiques v5.6)
+  var sh = (2 - rank) * 5;                      // décalage des seuils : Offensive abaisse (achète plus tôt), Défensive durcit
+  if (score >= 65 + sh) return { cls: "good", label: "Sur-pondérer", verb: "INVESTIR" };
+  if (score >= 55 + sh) return { cls: "good", label: "Renforcer", verb: "INVESTIR" };
+  if (score >= 45 + sh) return { cls: "mid", label: "Conserver", verb: "CONSERVER" };
+  if (score >= 35 + sh) return { cls: "mid", label: "Ne pas renforcer", verb: "ATTENDRE" };
   return { cls: "bad", label: "Sous-pondérer", verb: "SOUS-PONDÉRER" };
 }
 
-function adviceOf(d, radar) {
+// v5.7 : posture de référence SELON LA SITUATION ÉCONOMIQUE (axes du régime conjoncturel,
+// indépendants du timing du jour) : croissance (PMI), inflation, direction BCE, stress de marché.
+// Heuristique transparente (base 50, déplacements motivés un par un), mêmes seuils de posture que le timing.
+function regimePostureOf(d) {
+  var pmi = num(d.pmiZE), inf = num(d.inflZE), vx = (num(d.vix5) !== null) ? num(d.vix5) : num(d.vix);
+  var sc = 50, drv = [];
+  if (pmi !== null) {
+    if (pmi >= 53) { sc += 8; drv.push("PMI " + r1(pmi) + " (expansion franche)"); }
+    else if (pmi >= 50) { sc += 4; drv.push("PMI " + r1(pmi) + " (croissance modérée)"); }
+    else if (pmi >= 47) { sc -= 6; drv.push("PMI " + r1(pmi) + " (ralentissement)"); }
+    else { sc -= 12; drv.push("PMI " + r1(pmi) + " (contraction)"); }
+  }
+  if (inf !== null) {
+    if (inf >= 3) { sc -= 4; drv.push("inflation " + r1(inf) + " % (élevée)"); }
+    else if (inf < 2) { sc += 4; drv.push("inflation " + r1(inf) + " % (sous contrôle)"); }
+    else drv.push("inflation " + r1(inf) + " % (au-dessus de la cible)");
+  }
+  if (d.bceDir === "hausse") { sc -= 6; drv.push("BCE en relèvement"); }
+  else if (d.bceDir === "baisse") { sc += 6; drv.push("BCE en assouplissement"); }
+  else if (d.bceDir === "stable") { drv.push("BCE en pause"); }
+  if (vx !== null) {
+    if (vx >= 25) { sc -= 8; drv.push("VIX lissé " + r1(vx) + " (stress)"); }
+    else if (vx < 18) { sc += 4; drv.push("VIX lissé " + r1(vx) + " (calme)"); }
+  }
+  sc = clampScore(sc);
+  var posture = (sc >= 65) ? "Offensive" : (sc >= 55) ? "Constructive" : (sc >= 45) ? "Neutre" : (sc >= 35) ? "Prudente" : "Défensive";
+  return { score: sc, posture: posture, drivers: drv.join(" · ") };
+}
+
+function adviceOf(d, radar, override) {
   var der = radar.der;
   var byId = {};
   radar.list.forEach(function (a) { byId[a.id] = a; });
@@ -293,8 +331,16 @@ function adviceOf(d, radar) {
   else if (ap >= 45) res.posture = "Neutre";
   else if (ap >= 35) res.posture = "Prudente";
   else res.posture = "Défensive";
+  // v5.7 : forçage manuel — une posture choisie prime sur l'auto (tracée), stances et simulateur alignés.
+  res.autoPosture = res.posture;
+  res.autoPostureScore = ap;
+  res.override = (typeof override === "string" && POSTURES.indexOf(override) !== -1) ? override : null;
+  if (res.override) res.posture = res.override;
   var top = radar.list[0];
-  res.detail = "Pilotée par le timing actions (" + ap + "/100 — drawdown, VIX, direction BCE, PMI). Actif le plus favorable du jour : " + top.name + " (" + top.score + "/100).";
+  if (res.override)
+    res.detail = "Posture choisie : " + res.override + " — l'auto (timing actions " + ap + "/100) aurait dit " + res.autoPosture + ". Stances et simulateur alignés sur ta posture ; l'auto reste affichée pour comparaison.";
+  else
+    res.detail = "Pilotée par le timing actions (" + ap + "/100 — drawdown, VIX, direction BCE, PMI). Actif le plus favorable du jour : " + top.name + " (" + top.score + "/100).";
   var syn = {
     "Offensive": "Le timing domine à l'achat : les apports peuvent aller au marché sans attendre, l'étalement n'apporte que du confort psychologique.",
     "Constructive": "Contexte globalement favorable : investir reste la bonne trajectoire ; un gros apport se lisse pour réduire le risque d'entrée.",
@@ -303,8 +349,12 @@ function adviceOf(d, radar) {
     "Défensive": "Préservation du capital d'abord : monétaire, or en couverture, apports sur les actifs risqués différés — aucune précipitation."
   };
   res.synthese = syn[res.posture];
+  // v5.7 : posture de référence selon la situation économique (axes du régime, indépendants du timing)
+  var rg = regimePostureOf(d);
+  res.regime = { posture: rg.posture, score: rg.score, drivers: rg.drivers };
   radar.list.forEach(function (a) {
-    var st = stanceOf(a.score);
+    // v5.7 : le monétaire (actif de préservation) garde ses seuils de base quelle que soit la posture
+    var st = (a.id === "monetaire") ? stanceOf(a.score) : stanceOf(a.score, res.posture);
     var why = a.parts.slice().sort(function (x, y) { return Math.abs(y.pts) - Math.abs(x.pts); }).slice(0, 2).map(function (p) { return p.label.split(" (")[0]; });
     if (a.partial) why = ["score partiel : 52 sem. manquantes"];
     res.assets.push({ id: a.id, icon: a.icon, name: a.name, score: a.score, stance: st.label, cls: st.cls, verb: st.verb, why: why.join(" · ") });
@@ -329,7 +379,7 @@ function adviceOf(d, radar) {
 var ALLOC_IDS = ["actions", "obligations", "or", "monetaire", "immo", "crypto"];
 var ALLOC_BASE = { actions: 40, obligations: 15, or: 12, monetaire: 13, immo: 15, crypto: 5 };   // pondération de référence (somme 100)
 
-function allocOf(montant, mode, months, d, radar) {
+function allocOf(montant, mode, months, d, radar, posture) {
   var m = num(montant);
   if (m === null || m <= 0 || m > 10000000) return null;
   if (mode !== "une fois" && mode !== "dca") return null;
@@ -340,13 +390,15 @@ function allocOf(montant, mode, months, d, radar) {
   }
   var byId = {};
   radar.list.forEach(function (a) { byId[a.id] = a; });
-  // v5.6 : les actifs « Ne pas renforcer » (score < 45) sont EXCLUS de l'apport —
-  // le simulateur ne doit jamais acheter ce que le conseil déconseille de renforcer.
+  // v5.7 : le seuil d'exclusion suit la POSTURE appliquée (choisie ou auto) — en Défensive on
+  // n'achète que ce qui est solide (≥ 55), en Offensive le seuil descend à 35. Le monétaire
+  // reste TOUJOURS éligible : c'est l'actif de préservation, l'exclure n'a pas de sens.
+  var seuil = (typeof posture === "string" && ALLOC_EXCL[posture] !== undefined) ? ALLOC_EXCL[posture] : 45;
   var raw = {}, total = 0, i, k;
   for (i = 0; i < ALLOC_IDS.length; i++) {
     k = ALLOC_IDS[i];
     var sc = (byId[k] && num(byId[k].score) !== null) ? byId[k].score : 50;
-    raw[k] = (sc < 45) ? 0 : ALLOC_BASE[k] * Math.max(0.4, Math.min(1.6, sc / 50));
+    raw[k] = (k === "monetaire" || sc >= seuil) ? ALLOC_BASE[k] * Math.max(0.4, Math.min(1.6, sc / 50)) : 0;
     total += raw[k];
   }
   if (total <= 0) {   // tous les actifs < 45 (marché extrême) → tout au monétaire, l'actif de préservation
@@ -382,7 +434,9 @@ function allocOf(montant, mode, months, d, radar) {
     montant: m, mode: mode, months: n,
     mensualite: n ? r2(m / n) : null,
     parts: parts, pref: pref, recommande: recommande, recommandeLabel: labels[recommande],
-    note: "Méthode : pondération de référence (actions 40 % · immo 15 % · obligations 15 % · monétaire 13 % · or 12 % · crypto 5 %) pondérée par le score du jour (× score/50, borné ×0,4 à ×1,6), renormalisée à 100 % — les actifs sous 45/100 sont exclus. En DCA, la répartition est recalculée à chaque échéance sur les données du jour. Repère : sur les actions US 1926-2015, l'étude Vanguard « Cost Averaging: Invest Now or Temporarily Hold Your Cash » trouve que l'investissement en une fois bat le DCA ~2 fois sur 3 — un résultat propre à cette étude, qui ne valide pas ce simulateur multi-actifs. Heuristique transparente, pas un conseil financier : l'allocation dépend aussi de ton horizon et de ta tolérance au risque."
+    posture: (typeof posture === "string" && ALLOC_EXCL[posture] !== undefined) ? posture : null,
+    seuil: seuil,
+    note: "Méthode : pondération de référence (actions 40 % · immo 15 % · obligations 15 % · monétaire 13 % · or 12 % · crypto 5 %) pondérée par le score du jour (× score/50, borné ×0,4 à ×1,6), renormalisée à 100 % — les actifs sous le seuil de la posture appliquée sont exclus (45/100 en Neutre, 35 en Offensive, 55 en Défensive ; le monétaire reste toujours éligible, c'est l'actif de préservation). En DCA, la répartition est recalculée à chaque échéance sur les données du jour. Repère : sur les actions US 1926-2015, l'étude Vanguard « Cost Averaging: Invest Now or Temporarily Hold Your Cash » trouve que l'investissement en une fois bat le DCA ~2 fois sur 3 — un résultat propre à cette étude, qui ne valide pas ce simulateur multi-actifs. Heuristique transparente, pas un conseil financier : l'allocation dépend aussi de ton horizon et de ta tolérance au risque."
   };
 }
 
@@ -511,6 +565,8 @@ function Auto_sanitizeImport(raw) {
     var ra = { date: Auto_sanStr(raw.refAlert.date, 10), from: Auto_sanNum(raw.refAlert.from), to: Auto_sanNum(raw.refAlert.to) };
     out.refAlert = (ra.date && ra.from !== null && ra.to !== null) ? ra : null;
   }
+  // v5.7 : forçage de posture importé seulement s'il est dans la liste (anti-injection)
+  if (typeof raw.postureOverride === "string" && POSTURES.indexOf(raw.postureOverride) !== -1) out.postureOverride = raw.postureOverride;
   return out;
 }
 
@@ -523,6 +579,7 @@ if (typeof module !== "undefined" && module.exports) {
     paliersOf: paliersOf, strategyOf: strategyOf, normalizeData: normalizeData,
     snapshotOf: snapshotOf, badgeOf: badgeOf, radarAll: radarAll, parseGecko: parseGecko,
     staleDays: staleDays, Auto_sanStr: Auto_sanStr, Auto_sanNum: Auto_sanNum, Auto_sanitizeImport: Auto_sanitizeImport,
-    stanceOf: stanceOf, adviceOf: adviceOf, allocOf: allocOf
+    stanceOf: stanceOf, adviceOf: adviceOf, allocOf: allocOf,
+    regimePostureOf: regimePostureOf, POSTURES: POSTURES, ALLOC_EXCL: ALLOC_EXCL
   };
 }
