@@ -1,4 +1,4 @@
-var CACHE = "radar-v7";
+var CACHE = "radar-v8";
 var SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png", "./logic.js", "./auto.js", "./vehicles.js"];
 
 self.addEventListener("install", function (e) {
@@ -16,7 +16,7 @@ self.addEventListener("activate", function (e) {
 self.addEventListener("fetch", function (e) {
   if (e.request.method !== "GET") return;
   var url = new URL(e.request.url);
-  if (url.origin !== self.location.origin) return; // jamais de cache pour les API externes (CoinGecko, Telegram)
+  if (url.origin !== self.location.origin) return; // jamais de cache pour les API externes (CoinGecko, ntfy, Telegram)
   // data.json & data-daily.json : toujours le réseau d'abord (maj), cache en secours hors ligne
   if (url.pathname.indexOf("data.json") !== -1 || url.pathname.indexOf("data-daily.json") !== -1) {
     e.respondWith(fetch(e.request).then(function (r) {

@@ -14,7 +14,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Relever les marchés (IWDA USD + VIX lissé) et valider
+      - name: Relever les marchés (IWDA EUR + VIX lissé + macro BCE/Eurostat) et valider
         run: node tools/fetch-daily.js
       - name: Commiter si changé
         id: commit

@@ -109,7 +109,7 @@
 <header>
   <div class="hrow">
     <h1>📡 Radar <span>Conjoncture</span></h1>
-    <span class="badge">🔄 Maj auto quotidienne · <b>v5.1</b></span>
+    <span class="badge">🔄 Maj auto quotidienne · <b>v5.2</b></span>
   </div>
   <div class="hrow" style="margin-top:6px">
     <span class="chip" id="dataChip">—</span>
@@ -193,10 +193,15 @@
       <div class="btnrow"><button class="btn danger" id="btnClearHist" type="button">🗑️ Vider l'historique</button></div>
     </div>
     <div class="card">
-      <h2>🔔 Notifications Telegram</h2>
-      <div class="mut" style="margin-bottom:8px">Prévenu quand un palier est franchi et à déployer (une fois par jour, tant qu'il n'est pas marqué déployé). Crée un bot via @BotFather, récupère ton chat id (ex. @userinfobot), colle ici. Le token reste <b>uniquement sur ce téléphone</b> (jamais exporté, jamais poussé sur GitHub).</div>
-      <div class="frow"><label>Token du bot (123456789:AA…)<input id="tgToken" type="password" inputmode="text" autocomplete="off" placeholder="colle le token BotFather"></label></div>
-      <div class="frow"><label>Chat ID<input id="tgChatId" type="text" inputmode="numeric" placeholder="ex. 123456789"></label></div>
+      <h2>🔔 Notifications palier</h2>
+      <div class="mut" style="margin-bottom:8px">Prévenu quand un palier est franchi et à déployer (une fois par jour, tant qu'il n'est pas marqué déployé). <b>ntfy (recommandé)</b> : installe l'app ntfy (Android/iOS), abonne-toi à un sujet de ton choix, colle-le ici — aucun compte, aucune clé. Ou <b>Telegram</b> : crée un bot via @BotFather, récupère ton chat id (ex. @userinfobot). La config reste <b>uniquement sur ce téléphone</b> (jamais exportée, jamais poussée sur GitHub).</div>
+      <div class="frow"><label>Canal<select id="notifyChannel">
+        <option value="ntfy">ntfy (le plus simple)</option>
+        <option value="telegram">Telegram</option>
+      </select></label></div>
+      <div class="frow" id="rowNtfy"><label>Sujet ntfy (ex. radar-paliers-jade)<input id="ntfyTopic" type="text" autocomplete="off" placeholder="le sujet choisi dans l'app ntfy"></label></div>
+      <div class="frow" id="rowTgToken" style="display:none"><label>Token du bot (123456789:AA…)<input id="tgToken" type="password" inputmode="text" autocomplete="off" placeholder="colle le token BotFather"></label></div>
+      <div class="frow" id="rowTgChat" style="display:none"><label>Chat ID<input id="tgChatId" type="text" inputmode="numeric" placeholder="ex. 123456789"></label></div>
       <div class="btnrow" style="margin-top:8px">
         <button class="btn" id="btnTgSave" type="button">💾 Enregistrer</button>
         <button class="btn ghost" id="btnTgTest" type="button">📤 Tester l'envoi</button>
@@ -393,7 +398,7 @@ function renderRadar() {
   if (state.refAlert && num(d.msciHigh52) !== null && state.refAlert.to === d.msciHigh52) {
     var raPct = r1((state.refAlert.to / state.refAlert.from - 1) * 100);
     ra.innerHTML = '<div class="warnbox">⚠️ Référence 52 sem. déplacée au relevé du ' + esc(state.refAlert.date) + " : " +
-      esc(String(state.refAlert.from)) + " → " + esc(String(state.refAlert.to)) + " (" + (raPct > 0 ? "+" : "") + raPct +
+      esc(String(state.refAlert.from)) + " € → " + esc(String(state.refAlert.to)) + " € (" + (raPct > 0 ? "+" : "") + raPct +
       " %). Seuils des paliers recalculés — vérifie la cohérence de la source. " +
       '<button class="toggle" id="btnRefOk">compris ✓</button></div>';
     $("btnRefOk").addEventListener("click", function () {
@@ -583,33 +588,58 @@ $("btnClearHist").addEventListener("click", function () {
   toast("Historique vidé");
 });
 
-// ---- Notifications Telegram (le token reste sur ce téléphone, jamais exporté) ----
-var TG_KEY = "radar-telegram-v1";
+// ---- Notifications palier : ntfy (recommandé) ou Telegram — la config reste sur ce téléphone ----
+var NOTIFY_KEY = "radar-notify-v1";
+var NOTIFY_OLD_KEY = "radar-telegram-v1"; // configs Telegram v5.1, lues et migrées à l'enregistrement
 (function () {
-  var tok = $("tgToken"), chat = $("tgChatId"), st = $("tgStatus");
-  function loadCfg() { try { return JSON.parse(localStorage.getItem(TG_KEY) || "null"); } catch (e) { return null; } }
+  var ch = $("notifyChannel"), topic = $("ntfyTopic"), tok = $("tgToken"), chat = $("tgChatId"), st = $("tgStatus");
+  function loadCfg() {
+    try { return JSON.parse(localStorage.getItem(NOTIFY_KEY) || "null") || null; } catch (e) {}
+    try { return JSON.parse(localStorage.getItem(NOTIFY_OLD_KEY) || "null") || null; } catch (e) {}
+    return null;
+  }
+  function showRows() {
+    var isNtfy = ch.value === "ntfy";
+    $("rowNtfy").style.display = isNtfy ? "" : "none";
+    $("rowTgToken").style.display = isNtfy ? "none" : "";
+    $("rowTgChat").style.display = isNtfy ? "none" : "";
+  }
+  ch.addEventListener("change", showRows);
   function showState(cfg) {
-    if (cfg && Auto_tgValid(cfg.token, cfg.chatId)) {
-      st.textContent = "✅ Configuré — un message partira à chaque palier à déployer.";
-      tok.value = cfg.token; chat.value = String(cfg.chatId);
-    } else st.textContent = "Non configuré.";
+    var n = Auto_notifyCfg(cfg);
+    if (!n) { st.textContent = "Non configuré."; return; }
+    ch.value = n.channel; showRows();
+    if (n.channel === "ntfy") { topic.value = n.topic; st.textContent = "✅ ntfy configuré — sujet « " + esc(n.topic) + " »."; }
+    else { tok.value = n.token; chat.value = String(n.chatId); st.textContent = "✅ Telegram configuré — un message partira à chaque palier à déployer."; }
   }
   $("btnTgSave").addEventListener("click", function () {
-    var cfg = { token: tok.value.trim(), chatId: chat.value.trim() };
-    if (!Auto_tgValid(cfg.token, cfg.chatId)) { st.textContent = "❌ Format invalide (token « 123456789:AA… », chat id numérique)."; return; }
-    try { localStorage.setItem(TG_KEY, JSON.stringify(cfg)); } catch (e) {}
-    st.textContent = "✅ Enregistré — le token reste sur ce téléphone.";
+    var cfg = (ch.value === "ntfy")
+      ? { channel: "ntfy", topic: topic.value.trim() }
+      : { channel: "telegram", token: tok.value.trim(), chatId: chat.value.trim() };
+    if (!Auto_notifyCfg(cfg)) {
+      st.textContent = (ch.value === "ntfy")
+        ? "❌ Sujet invalide (lettres, chiffres, tirets, soulignés — ni espace ni slash)."
+        : "❌ Format invalide (token « 123456789:AA… », chat id numérique).";
+      return;
+    }
+    try { localStorage.setItem(NOTIFY_KEY, JSON.stringify(cfg)); localStorage.removeItem(NOTIFY_OLD_KEY); } catch (e) {}
+    st.textContent = "✅ Enregistré — la config reste sur ce téléphone.";
   });
   $("btnTgForget").addEventListener("click", function () {
-    try { localStorage.removeItem(TG_KEY); } catch (e) {}
-    tok.value = ""; chat.value = ""; st.textContent = "Oublié.";
+    try { localStorage.removeItem(NOTIFY_KEY); localStorage.removeItem(NOTIFY_OLD_KEY); } catch (e) {}
+    topic.value = ""; tok.value = ""; chat.value = ""; st.textContent = "Oublié.";
   });
   $("btnTgTest").addEventListener("click", function () {
-    var cfg = loadCfg() || { token: tok.value.trim(), chatId: chat.value.trim() };
-    if (!Auto_tgValid(cfg.token, cfg.chatId)) { st.textContent = "❌ Configure d'abord un token et un chat id valides."; return; }
+    var cfg = Auto_notifyCfg(loadCfg()) || Auto_notifyCfg((ch.value === "ntfy")
+      ? { channel: "ntfy", topic: topic.value.trim() }
+      : { channel: "telegram", token: tok.value.trim(), chatId: chat.value.trim() });
+    if (!cfg) { st.textContent = "❌ Configure d'abord un canal valide puis enregistre."; return; }
     st.textContent = "⏳ Envoi du message de test…";
-    Auto_sendTelegram(cfg.token, cfg.chatId, "📡 Radar Conjoncture — test de notification ✅ (les alertes palier arriveront ici)").then(function (ok) {
-      st.textContent = ok ? "✅ Reçu — notifications opérationnelles." : "❌ Échec — vérifie le token et le chat id.";
+    var send = (cfg.channel === "ntfy")
+      ? Auto_sendNtfy(cfg.topic, "📡 Radar Conjoncture", "Test de notification ✅ — les alertes palier arriveront ici.")
+      : Auto_sendTelegram(cfg.token, cfg.chatId, "📡 Radar Conjoncture — test de notification ✅ (les alertes palier arriveront ici)");
+    send.then(function (ok) {
+      st.textContent = ok ? "✅ Reçu — notifications opérationnelles." : "❌ Échec — vérifie le sujet ntfy (ou le token et le chat id Telegram).";
     });
   });
   // auto.js se charge après le script UI : l'état s'affiche une fois tout chargé.
@@ -623,7 +653,7 @@ var TG_KEY = "radar-telegram-v1";
     return "<li><b style='color:#cbd5e1'>" + esc(s[0]) + "</b><br>↳ " + esc(s[1]) + "</li>";
   }).join("") +
   "<li style='margin-top:6px'><b style='color:#cbd5e1'>Mise à jour automatique :</b> à chaque ouverture, l'app récupère le relevé hebdomadaire vérifié (data.json, mis à jour le lundi par l'assistant) puis le relevé quotidien automatique (data-daily.json : cours IWDA en euros <b>Euronext Amsterdam IWDA.AS</b> + références 52 sem. de la même source + VIX lissé + taux de dépôt BCE via l'API officielle ECB Data Portal + inflation zone euro via l'API officielle Eurostat quand sa période est récente, généré chaque soir de semaine par GitHub Actions) — les paliers réagissent donc chaque jour, pas seulement le lundi. Or & BTC en direct via l'API publique CoinGecko (or via PAXG = 1 once, ± léger premium). Un nouveau plus haut 52 sem. réinitialise automatiquement les paliers déployés (nouvel épisode, tracé dans l'onglet Suivi). Aucune saisie nécessaire.</li>" +
-  "<li style='margin-top:6px'><b style='color:#cbd5e1'>Notifications :</b> quand un palier est franchi et à déployer, l'app peut te prévenir sur Telegram (onglet Suivi, carte 🔔) — le token reste sur ce téléphone, jamais exporté ni poussé sur GitHub.</li>" +
+  "<li style='margin-top:6px'><b style='color:#cbd5e1'>Notifications :</b> quand un palier est franchi et à déployer, l'app peut te prévenir — <b>ntfy</b> (recommandé : app gratuite, aucun compte, juste un sujet) ou Telegram (onglet Suivi, carte 🔔). La config reste sur ce téléphone, jamais exportée ni poussée sur GitHub.</li>" +
   "<li style='margin-top:6px'><b style='color:#cbd5e1'>Instruments exemples :</b> chaque actif de l'onglet Radar affiche un véhicule concret vérifié le 17/10/2026 — justETF, extraETF, Boursorama, DCA Tracker (éligibilité PEA), ASPIM (SCPI). Exemples indicatifs, pas des recommandations.</li>";
 })();
 

@@ -1,4 +1,4 @@
-/* Radar Conjoncture — module de mise à jour automatique (v5.1)
+/* Radar Conjoncture — module de mise à jour automatique (v5.2)
    1. Applique data.json (relevé hebdo vérifié, poussé sur GitHub) si plus récent que le local.
    2. Applique data-daily.json (relevé quotidien automatique via GitHub Actions) par-dessus
       si même date ou plus récent : cours IWDA en EUR (IWDA.AS), VIX lissé, taux de dépôt BCE
@@ -9,8 +9,8 @@
    4. Signale une référence 52 sem. instable (écart > 2 % d'un relevé à l'autre) → alerte UI,
       y compris quand c'est le quotidien qui la déplace.
    5. Rafraîchit or & BTC via CoinGecko au plus 1 fois / 22 h, silencieusement.
-   6. Envoie une notification Telegram quand un palier est franchi et à déployer
-      (config stockée sur le téléphone, jamais poussée sur GitHub).
+   6. Envoie une notification — ntfy (recommandé, aucun compte) ou Telegram — quand un palier
+      est franchi et à déployer (config stockée sur le téléphone, jamais poussée sur GitHub).
    Les fonctions pures (Auto_*) sont testées par tools/test-auto.js (Node). */
 "use strict";
 (function () {
@@ -219,6 +219,28 @@
     return false;
   }
 
+  // ---------- Notifications multi-canal : ntfy (recommandé) ou Telegram ----------
+
+  // Sujet ntfy : lettres, chiffres, tirets, soulignés (1-64) — ni espace ni slash.
+  // ntfy.sh : aucun compte, aucune clé — on s'abonne au sujet dans l'app et c'est tout.
+  function Auto_ntfyValid(topic) {
+    return typeof topic === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(topic);
+  }
+
+  // Normalise une config de notification (localStorage) en canal validé :
+  //   {channel:"ntfy", topic} | {channel:"telegram", token, chatId} | null.
+  // Rétrocompatible v5.1 : {token, chatId} sans channel → telegram ; {topic} sans channel → ntfy.
+  function Auto_notifyCfg(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    if (raw.channel === "ntfy" || (raw.channel === undefined && raw.topic !== undefined)) {
+      return Auto_ntfyValid(raw.topic) ? { channel: "ntfy", topic: raw.topic } : null;
+    }
+    if (raw.channel === "telegram" || (raw.channel === undefined && raw.token !== undefined)) {
+      return Auto_tgValid(raw.token, raw.chatId) ? { channel: "telegram", token: raw.token, chatId: raw.chatId } : null;
+    }
+    return null;
+  }
+
   var AUTO_GEOCO_MIN_MS = 22 * 3600 * 1000; // max 1 rafraîchissement CoinGecko / 22 h
 
   function Auto_shouldGecko(nowMs, lastMs) {
@@ -255,6 +277,8 @@
       Auto_refUnstable: Auto_refUnstable,
       Auto_palierToDeploy: Auto_palierToDeploy,
       Auto_tgValid: Auto_tgValid,
+      Auto_ntfyValid: Auto_ntfyValid,
+      Auto_notifyCfg: Auto_notifyCfg,
       Auto_shouldGecko: Auto_shouldGecko,
       Auto_applyGecko: Auto_applyGecko,
       AUTO_DAILY_FIELDS: AUTO_DAILY_FIELDS,
@@ -272,8 +296,10 @@
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 
   var GECKO_LAST_KEY = "radar-conjoncture-gecko-last";
-  var TG_KEY = "radar-telegram-v1";
-  var TG_NOTIFY_KEY = "radar-telegram-last-notify";
+  var NOTIFY_KEY = "radar-notify-v1";            // config v5.2 : {channel:"ntfy"|"telegram", …}
+  var NOTIFY_OLD_KEY = "radar-telegram-v1";     // config Telegram v5.1 (rétrocompatible)
+  var NOTIFY_SENT_KEY = "radar-notify-last";    // anti-spam : une notification par palier et par jour
+  var TG_NOTIFY_KEY = "radar-telegram-last-notify"; // anti-spam v5.1 (lu aussi)
 
   function fetchRemote(file) {
     // Pas de paramètre anti-cache à version variable : le service worker sert
@@ -294,27 +320,45 @@
   }
   function Auto_sendTelegram(token, chatId, text) { return sendTelegram(token, chatId, text); }
 
-  // Mini-API exposée à la page : la carte Telegram de l'onglet Suivi (script inline UI)
+  // ntfy.sh : POST JSON {topic, title, message} — aucun compte, aucune clé.
+  function sendNtfy(topic, title, text) {
+    return fetch("https://ntfy.sh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topic: topic, title: title, message: text, tags: ["chart_with_downwards_trend"] })
+    }).then(function (r) { return r.ok; }).catch(function () { return false; });
+  }
+  function Auto_sendNtfy(topic, title, text) { return sendNtfy(topic, title, text); }
+
+  // Mini-API exposée à la page : la carte Notifications de l'onglet Suivi (script inline UI)
   // utilise la validation et l'envoi définis ici.
   if (typeof window !== "undefined") {
     window.Auto_tgValid = Auto_tgValid;
     window.Auto_sendTelegram = Auto_sendTelegram;
+    window.Auto_ntfyValid = Auto_ntfyValid;
+    window.Auto_notifyCfg = Auto_notifyCfg;
+    window.Auto_sendNtfy = Auto_sendNtfy;
   }
 
   function notifyPalier(data) {
     try {
-      var cfg = JSON.parse(lsGet(TG_KEY) || "null");
-      if (!cfg || !Auto_tgValid(cfg.token, cfg.chatId)) return;
+      var raw = null;
+      try { raw = JSON.parse(lsGet(NOTIFY_KEY) || "null") || null; } catch (e) {}
+      if (raw === null) { try { raw = JSON.parse(lsGet(NOTIFY_OLD_KEY) || "null") || null; } catch (e) {} }
+      var cfg = Auto_notifyCfg(raw);
+      if (!cfg) return;
       var p = Auto_palierToDeploy(data);
       if (!p) return;
       var key = "p" + p + "@" + data.dateData; // une notification par palier et par jour
-      if (lsGet(TG_NOTIFY_KEY) === key) return;
+      if (lsGet(NOTIFY_SENT_KEY) === key || lsGet(TG_NOTIFY_KEY) === key) return;
       var seuil = Math.round(data.msciHigh52 * (1 - p / 100) * 100) / 100;
-      sendTelegram(cfg.token, cfg.chatId,
-        "📡 Radar Conjoncture — palier −" + p + " % FRANCHI\nCours " + data.msci + " € (relevé du " + data.dateData +
-        "), seuil " + seuil + " €.\n➡️ À déployer : 25 % de la réserve sur DCAM, une seule fois cet épisode. " +
-        "Ouvre l'app pour marquer le palier comme déployé.")
-        .then(function (ok) { if (ok) lsSet(TG_NOTIFY_KEY, key); }).catch(function () {});
+      var text = "Cours " + data.msci + " € (relevé du " + data.dateData + "), seuil " + seuil + " €.\n" +
+        "➡️ À déployer : 25 % de la réserve sur DCAM, une seule fois cet épisode. " +
+        "Ouvre l'app pour marquer le palier comme déployé.";
+      var send = (cfg.channel === "ntfy")
+        ? sendNtfy(cfg.topic, "📡 Palier −" + p + " % franchi", text)
+        : sendTelegram(cfg.token, cfg.chatId, "📡 Radar Conjoncture — palier −" + p + " % FRANCHI\n" + text);
+      send.then(function (ok) { if (ok) lsSet(NOTIFY_SENT_KEY, key); }).catch(function () {});
     } catch (e) { /* notification = bonus, jamais bloquante */ }
   }
 

@@ -1,5 +1,5 @@
-/* Harnais de tests — Radar Conjoncture v5.1 (logic.js, auto.js, vehicles.js, fichiers livrés,
-   pipeline quotidien/épisode/référence, validateurs, workflows, notifications Telegram,
+/* Harnais de tests — Radar Conjoncture v5.2 (logic.js, auto.js, vehicles.js, fichiers livrés,
+   pipeline quotidien/épisode/référence, validateurs, workflows, notifications ntfy/Telegram,
    sanitisation des imports et régressions v4.1/v5).
    Exécution : node tools/test-auto.js  →  0 échec obligatoire avant publication. */
 "use strict";
@@ -186,6 +186,22 @@ t("tgValid: token sans deux points → false", A.Auto_tgValid("123456789AAEhBOwe
 t("tgValid: token trop court → false", A.Auto_tgValid("12345:abc", "123") === false);
 t("tgValid: chat id non numérique → false", A.Auto_tgValid("123456789:AAEhBOweik6ad9r_QXMENQjcr7q6hRLTfF", "abc") === false);
 
+// ---------- Auto_ntfyValid / Auto_notifyCfg (v5.2 : ntfy recommandé, Telegram en option) ----------
+t("ntfyValid: sujet simple → true", A.Auto_ntfyValid("radar-paliers-jade") === true);
+t("ntfyValid: lettres/chiffres/tirets/soulignés → true", A.Auto_ntfyValid("Radar_2026-x") === true);
+t("ntfyValid: sujet à 64 caractères → true", A.Auto_ntfyValid(new Array(65).join("a")) === true);
+t("ntfyValid: espace → false", A.Auto_ntfyValid("radar paliers") === false);
+t("ntfyValid: slash → false (pas une URL)", A.Auto_ntfyValid("ntfy.sh/radar") === false);
+t("ntfyValid: vide → false", A.Auto_ntfyValid("") === false);
+t("ntfyValid: trop long (> 64) → false", A.Auto_ntfyValid(new Array(67).join("a")) === false);
+t("ntfyValid: non-chaîne → false", A.Auto_ntfyValid(null) === false && A.Auto_ntfyValid(42) === false);
+t("notifyCfg: ntfy avec channel → {channel:ntfy, topic}", JSON.stringify(A.Auto_notifyCfg({ channel: "ntfy", topic: "radar-paliers-jade" })) === JSON.stringify({ channel: "ntfy", topic: "radar-paliers-jade" }));
+t("notifyCfg: telegram avec channel → {channel:telegram, token, chatId}", A.Auto_notifyCfg({ channel: "telegram", token: "123456789:AAEhBOweik6ad9r_QXMENQjcr7q6hRLTfF", chatId: "123456789" }).channel === "telegram");
+t("notifyCfg: rétrocompat v5.1 {token, chatId} sans channel → telegram", A.Auto_notifyCfg({ token: "123456789:AAEhBOweik6ad9r_QXMENQjcr7q6hRLTfF", chatId: "123456789" }).channel === "telegram");
+t("notifyCfg: rétrocompat {topic} sans channel → ntfy", A.Auto_notifyCfg({ topic: "radar-paliers-jade" }).channel === "ntfy");
+t("notifyCfg: config invalide → null", A.Auto_notifyCfg({ channel: "ntfy", topic: "avec espace" }) === null && A.Auto_notifyCfg({ channel: "smtp" }) === null);
+t("notifyCfg: null/entrée non objet → null", A.Auto_notifyCfg(null) === null && A.Auto_notifyCfg("ntfy") === null);
+
 // ---------- Auto_shouldGecko ----------
 var H = 3600 * 1000;
 t("shouldGecko: jamais interrogé → true", A.Auto_shouldGecko(Date.now(), null) === true);
@@ -284,6 +300,7 @@ var ROOT = path.join(__dirname, "..");
 var raw = JSON.parse(fs.readFileSync(path.join(ROOT, "data.json"), "utf8"));
 t("data.json: structure valide pour auto.js", A.Auto_validRemote(raw) === raw);
 t("data.json: dateData au format ISO", /^\d{4}-\d{2}-\d{2}$/.test(raw.dateData));
+t("data.json: dateData ≥ 2026-10-18 (le switch EUR doit se propager sur les téléphones déjà au 17/10 — jamais de re-datage en arrière)", raw.dateData >= "2026-10-18");
 t("data.json: msci numérique en EUR plausible (50–500)", typeof raw.data.msci === "number" && raw.data.msci >= 50 && raw.data.msci <= 500);
 t("data.json: bceDir parmi les 3 valeurs autorisées", ["hausse", "stable", "baisse"].indexOf(raw.data.bceDir) >= 0);
 t("data.json: ni reserve ni paliersDone (jamais poussés)", !("reserve" in raw.data) && !("paliersDone" in raw.data));
@@ -343,8 +360,8 @@ t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === 
 // ---------- index.html, logic.js, sw.js, auto.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v5.1", html.indexOf("<b>v5.1</b>") !== -1);
-t("index.html: aucun ancien badge v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
+t("index.html: badge v5.2", html.indexOf("<b>v5.2</b>") !== -1);
+t("index.html: aucun ancien badge v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: logic.js chargé entre vehicles.js et le script UI inline",
   html.indexOf('<script src="vehicles.js"></script>') !== -1 &&
@@ -353,8 +370,10 @@ t("index.html: logic.js chargé entre vehicles.js et le script UI inline",
 t("index.html: logique pure extraite (définitions absentes de l'inline)",
   html.indexOf("var DEFAULT_DATA") === -1 && html.indexOf("function strategyOf") === -1 && html.indexOf("function radarAll") === -1 && html.indexOf("===LOGIC_START===") === -1);
 t("index.html: la logique reste appelée par l'UI", html.indexOf("radarAll(state.data)") !== -1 && html.indexOf("strategyOf(") !== -1);
-t("index.html: carte Telegram (token, chat id, test, oubli)", html.indexOf('id="tgToken"') !== -1 && html.indexOf('id="tgChatId"') !== -1 && html.indexOf('id="btnTgTest"') !== -1 && html.indexOf('id="btnTgForget"') !== -1);
-t("index.html: chat id/token jamais inclus dans l'export (données persos)", html.indexOf("TG_KEY") !== -1 && html.indexOf("data: state.data, history: state.history, refAlert: state.refAlert, episodes: state.episodes }, null, 2") !== -1 && html.indexOf("tgToken") !== html.indexOf("data: state.data"));
+t("index.html: carte notifications ntfy + Telegram (canal, sujet, token, chat id, test, oubli)",
+  html.indexOf('id="notifyChannel"') !== -1 && html.indexOf('id="ntfyTopic"') !== -1 && html.indexOf('id="tgToken"') !== -1 && html.indexOf('id="tgChatId"') !== -1 && html.indexOf('id="btnTgTest"') !== -1 && html.indexOf('id="btnTgForget"') !== -1);
+t("index.html: config notification jamais incluse dans l'export (données persos)", html.indexOf("NOTIFY_KEY") !== -1 && html.indexOf("data: state.data, history: state.history, refAlert: state.refAlert, episodes: state.episodes }, null, 2") !== -1);
+t("index.html: rétrocompat config Telegram v5.1 lue (NOTIFY_OLD_KEY)", html.indexOf("NOTIFY_OLD_KEY") !== -1);
 t("index.html: chip macro séparée + fraîcheur mensuelle", html.indexOf('id="macroChip"') !== -1 && html.indexOf("dateMacro") !== -1 && html.indexOf("macro fraîche") !== -1);
 t("index.html: alerte référence échappée (anti-injection)", html.indexOf("esc(String(state.refAlert.from))") !== -1);
 t("index.html: seuils affichés en euros", html.indexOf("p.seuil + \" €") !== -1);
@@ -368,8 +387,8 @@ t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: VIX lissé utilisé dans le scoring (vixEff, désormais dans logic.js)", srcLogic.indexOf("der.vixEff") !== -1 && srcLogic.indexOf("vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v7", sw.indexOf('CACHE = "radar-v7"') !== -1);
-t("sw.js: anciens caches v6/v5/v4/v3 absents", sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
+t("sw.js: cache v8", sw.indexOf('CACHE = "radar-v8"') !== -1);
+t("sw.js: anciens caches v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
 t("sw.js: logic.js dans le shell", sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
 t("sw.js: shell en stale-while-revalidate (cache d'abord, réseau en arrière-plan)", sw.indexOf("stale-while-revalidate") !== -1 && sw.indexOf("m || net") !== -1);
@@ -379,7 +398,7 @@ t("sw.js: auto.js dans le shell", sw.indexOf('"./auto.js"') !== -1);
 // auto.js : le câblage ne tourne pas sous Node (guard module.exports)
 t("auto.js: pas d'exception à l'import Node", true);
 var autosrc = fs.readFileSync(path.join(ROOT, "auto.js"), "utf8");
-t("auto.js: en-tête v5.1", autosrc.indexOf("module de mise à jour automatique (v5.1)") !== -1);
+t("auto.js: en-tête v5.2", autosrc.indexOf("module de mise à jour automatique (v5.2)") !== -1);
 t("auto.js: récupère data-daily.json à l'ouverture", autosrc.indexOf('"data-daily.json"') !== -1);
 t("auto.js: câble l'épisode et l'alerte référence", autosrc.indexOf("Auto_episodeUpdate(") !== -1 && autosrc.indexOf("Auto_refUnstable(") !== -1);
 t("auto.js: garde anti-corruption 50 % msci uniquement (plus de dérive 15 %)",
@@ -391,9 +410,14 @@ t("auto.js: recale la référence via Auto_refUpdate (nouvel épisode, paliers r
   autosrc.indexOf("Auto_refUpdate(cur, daily.data, daily.dateData)") !== -1 &&
   autosrc.indexOf("ru.unstable") !== -1 &&
   autosrc.indexOf("Référence 52 sem. recalée") !== -1);
-t("auto.js: notifications Telegram branchées (palier à déployer, 1/jour)",
-  autosrc.indexOf("notifyPalier") !== -1 && autosrc.indexOf("Auto_palierToDeploy") !== -1 && autosrc.indexOf("TG_NOTIFY_KEY") !== -1);
-t("auto.js: mini-API Telegram exposée à la page (carte Suivi)", autosrc.indexOf("window.Auto_tgValid") !== -1 && autosrc.indexOf("window.Auto_sendTelegram") !== -1);
+t("auto.js: notifications ntfy + Telegram branchées (palier à déployer, 1/jour)",
+  autosrc.indexOf("notifyPalier") !== -1 && autosrc.indexOf("Auto_palierToDeploy") !== -1 &&
+  autosrc.indexOf("NOTIFY_SENT_KEY") !== -1 && autosrc.indexOf("ntfy.sh") !== -1 &&
+  autosrc.indexOf("Auto_notifyCfg(raw)") !== -1);
+t("auto.js: mini-API notifications exposée à la page (carte Suivi)",
+  autosrc.indexOf("window.Auto_tgValid") !== -1 && autosrc.indexOf("window.Auto_sendTelegram") !== -1 &&
+  autosrc.indexOf("window.Auto_ntfyValid") !== -1 && autosrc.indexOf("window.Auto_notifyCfg") !== -1 &&
+  autosrc.indexOf("window.Auto_sendNtfy") !== -1);
 
 // ---------- workflows GitHub livrés ----------
 var pages = fs.readFileSync(path.join(ROOT, ".github", "workflows", "pages.yml"), "utf8");
