@@ -1,4 +1,4 @@
-/* Simulation DOM v5.9 (outillage) — rejoue le chargement complet de la page avec des stubs (aucun réseau).
+/* Simulation DOM v5.10 (outillage) — rejoue le chargement complet de la page avec des stubs (aucun réseau).
    Exécution : node sim.js  →  doit finir par "SIM OK" sans aucune erreur d'exécution. */
 "use strict";
 var fs = require("fs"), path = require("path"), vm = require("vm");
@@ -91,6 +91,7 @@ ck("page rendue : posture affichée", /\/100\)/.test(txt("advicePosture")));
 ck("risque macro descriptif affiché (vocabulaire v5.8)", /Risque macro/.test(txt("adviceRegime")) && /Modéré/.test(txt("adviceRegime")));
 ck("auto (pas d'override) : pas de « choisie »", txt("advicePosture").indexOf("choisie") === -1);
 ck("sous-titre auto : « score actions (timing) = pilote »", txt("advicePostureSub") === "score actions (timing) = pilote");
+ck("synthèse v5.10 : la phrase d'entrée d'apport est celle du verdict partagé (« Entrée : … »)", /Entrée :/.test(txt("adviceSynthese")));
 ck("state.data chargé (dateData)", sandbox.state && sandbox.state.data && sandbox.state.data.dateData);
 ck("pas d'override au départ", sandbox.state.postureOverride === null);
 
@@ -169,4 +170,4 @@ var fail = checks.filter(function (c) { return !c.ok; });
 checks.forEach(function (c) { console.log((c.ok ? "✅ " : "❌ ") + c.name); });
 console.log("");
 if (fail.length) { console.log("SIM ÉCHECS : " + fail.length); process.exit(1); }
-console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul).");
+console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul + synthèse à source partagée v5.10).");

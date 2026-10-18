@@ -1,6 +1,6 @@
-/* Harnais de tests — Radar Conjoncture v5.8 (logic.js, auto.js, vehicles.js, fichiers livrés,
+/* Harnais de tests — Radar Conjoncture v5.10 (logic.js, auto.js, vehicles.js, fichiers livrés,
    pipeline quotidien/épisode/référence, validateurs, workflows, notifications ntfy/Telegram,
-   sanitisation des imports, régressions v4.1/v5, compilation navigateur des scripts servis, conseil d'allocation v5.4, socle 1 000 €/mois v5.5, revue v5.6 : paliers incohérents, unités EUR, conseil non prescriptif, exclusions d'allocation, notification serveur, bceDirOf stable ; v5.7 : posture pilotable (regimePostureOf, forçage manuel) ; v5.8 : revue v5.7 — actions pilotées par le timing (CAPE = plafond, plus un verrou), auto = seuils v5.6 stricts (le forçage SEUL décale les seuils), vocabulaire risque macro séparé + avertissements, forçage daté expirant à 30 j, plancher monétaire Prudente/Défensive, affichage honnête du forçage) ; v5.9 : revue externe — dates de forçage réelles et locales (isRealDate/daysSinceLocal, future rejetée), alerte drawdown fondée sur le résultat, justification des actions = le timing, vocabulaire actions (RALENTIR), validation stricte du simulateur (entiers, montant ≥ 1 €, liste fermée des postures), traçabilité des seuils du verdict, re-vérification au retour sur l'app.
+   sanitisation des imports, régressions v4.1/v5, compilation navigateur des scripts servis, conseil d'allocation v5.4, socle 1 000 €/mois v5.5, revue v5.6 : paliers incohérents, unités EUR, conseil non prescriptif, exclusions d'allocation, notification serveur, bceDirOf stable ; v5.7 : posture pilotable (regimePostureOf, forçage manuel) ; v5.8 : revue v5.7 — actions pilotées par le timing (CAPE = plafond, plus un verrou), auto = seuils v5.6 stricts (le forçage SEUL décale les seuils), vocabulaire risque macro séparé + avertissements, forçage daté expirant à 30 j, plancher monétaire Prudente/Défensive, affichage honnête du forçage) ; v5.9 : revue externe — dates de forçage réelles et locales (isRealDate/daysSinceLocal, future rejetée), alerte drawdown fondée sur le résultat, justification des actions = le timing, vocabulaire actions (RALENTIR), validation stricte du simulateur (entiers, montant ≥ 1 €, liste fermée des postures), traçabilité des seuils du verdict, re-vérification au retour sur l'app. ; v5.10 : lot B de la revue — seuils unifiés (CUTS : une table pour stanceOf et l'exclusion alloc), entryPrefOf partagé conseil/simulateur (fin de « sans attendre » vs « hybride »), données manquantes tracées (plus de repli 50 muet, garde division par zéro), rampe du lot C écartée — falaise binaire du seuil documentée.
    Exécution : node tools/test-auto.js  →  0 échec obligatoire avant publication. */
 "use strict";
 var fs = require("fs");
@@ -369,8 +369,8 @@ t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === 
 // ---------- index.html, logic.js, sw.js, auto.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v5.9", html.indexOf("<b>v5.9</b>") !== -1);
-t("index.html: aucun ancien badge v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
+t("index.html: badge v5.10", html.indexOf("<b>v5.10</b>") !== -1);
+t("index.html: aucun ancien badge v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: logic.js chargé entre vehicles.js et le script UI inline",
   html.indexOf('<script src="vehicles.js"></script>') !== -1 &&
@@ -396,8 +396,8 @@ t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: VIX lissé utilisé dans le scoring (vixEff, désormais dans logic.js)", srcLogic.indexOf("der.vixEff") !== -1 && srcLogic.indexOf("vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v15", sw.indexOf('CACHE = "radar-v15"') !== -1);
-t("sw.js: anciens caches v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v14") === -1 && sw.indexOf("radar-v13") === -1 && sw.indexOf("radar-v12") === -1 && sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
+t("sw.js: cache v16", sw.indexOf('CACHE = "radar-v16"') !== -1);
+t("sw.js: anciens caches v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v15") === -1 && sw.indexOf("radar-v14") === -1 && sw.indexOf("radar-v13") === -1 && sw.indexOf("radar-v12") === -1 && sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
 t("sw.js: logic.js dans le shell", sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
 t("sw.js: shell réseau d'abord + repli cache (plus aucun skew HTML frais / JS périmé)",
@@ -614,8 +614,8 @@ t("v5.6: allocOf — tous les scores sous 45 → tout en monétaire (repli de s�
     var scored = r.list.every(function (a) { return a.score < 45; });
     return !scored || al.parts.filter(function (p) { return !p.exclu; }).length >= 1; // si tous < 45 → monétaire seul ; sinon au moins une ligne incluse
   })() === true);
-t("v5.6+v5.7: index.html — simulateur affiche les lignes exclues (opacity .45, seuil dynamique)",
-  html.indexOf("exclu (score < ' + alloc.seuil + ')") !== -1 && html.indexOf("opacity:.45") !== -1);
+t("v5.6+v5.7: index.html — simulateur affiche les lignes exclues (opacity .45, seuil dynamique) et « données manquantes » v5.10",
+  html.indexOf("exclu (score < \" + alloc.seuil + \")") !== -1 && html.indexOf("opacity:.45") !== -1 && html.indexOf("· données manquantes") !== -1);
 t("v5.6: index.html — paliers suspendus affichés quand la liste est vide (références incohérentes)",
   html.indexOf("Paliers suspendus") !== -1);
 
@@ -915,6 +915,85 @@ var reInline = /<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g, mInline;
 while ((mInline = reInline.exec(html))) inlineBlocks.push(mInline[1]);
 t("browser-compile: les " + inlineBlocks.length + " blocs <script> inline d'index.html compilent",
   inlineBlocks.length > 0 && inlineBlocks.every(function (blk, i) { return compilesAsBrowserScript("index.html#inline" + i, blk); }));
+
+// 14. v5.10 : lot B de la revue externe — B1 seuils unifiés (CUTS, une seule table pour
+//     stanceOf ET l'exclusion alloc), B2 entryPrefOf partagé conseil/simulateur (fin de la
+//     contradiction « sans attendre » vs « hybride » le même jour), B3 données manquantes
+//     traitées explicitement (plus de repli 50 muet, plus de division par zéro) ; lot C
+//     écarté (auto = v5.6 strict) — falaise binaire du seuil documentée dans la note.
+t("v5.10 B1: CUTS table unique — ALLOC_EXCL dérivé (plus de 2e table), ligne Neutre = seuils v5.6 stricts (65/55/45/35, excl 45), exportée",
+  typeof L.CUTS === "object" && Object.keys(L.CUTS).length === 5 &&
+  L.POSTURES.every(function (p) { return L.ALLOC_EXCL[p] === L.CUTS[p].excl; }) &&
+  L.CUTS.Neutre.sur === 65 && L.CUTS.Neutre.ren === 55 && L.CUTS.Neutre.con === 45 && L.CUTS.Neutre.npr === 35 && L.CUTS.Neutre.excl === 45);
+t("v5.10 B1: stanceOf lit CUTS — sorties IDENTIQUES aux décalages v5.7/v5.8 (±5 par rang, inconnu/absent → Neutre)",
+  L.stanceOf(80, "Défensive").label === "Sur-pondérer" && L.stanceOf(74, "Défensive").label === "Renforcer" &&
+  L.stanceOf(60, "Prudente").label === "Renforcer" && L.stanceOf(56, "Offensive").label === "Sur-pondérer" &&
+  L.stanceOf(44).label === "Ne pas renforcer" && L.stanceOf(52, "Neutre").label === "Conserver" &&
+  L.stanceOf(30, "Prudente").label === "Sous-pondérer" && L.stanceOf(30, "Offensive").verb === "ATTENDRE" &&
+  L.stanceOf(999, "constructor").label === L.stanceOf(999, null).label);
+t("v5.10 B2: entryPrefOf exportée — mêmes seuils qu'avant (une fois ≥ 60, hybride 45-59, DCA < 45), base 50 si donnée absente",
+  typeof L.entryPrefOf === "function" &&
+  L.entryPrefOf({ cape: 20 }, { ddMsci: -12 }, 62).recommande === "une fois" &&
+  L.entryPrefOf({ cape: 20 }, { ddMsci: -12 }, 50).recommande === "hybride" &&
+  L.entryPrefOf({ cape: 40 }, { ddMsci: 0 }, 50).recommande === "dca" &&
+  L.entryPrefOf({ cape: null }, { ddMsci: null }, 45).recommande === "hybride" &&
+  L.entryPrefOf({ cape: 20 }, { ddMsci: null }, null).pref === 50 &&
+  L.entryPrefOf({ cape: 40 }, { ddMsci: 0 }, 50).label.length > 20 && L.entryPrefOf({ cape: 40 }, { ddMsci: 0 }, 50).phrase.length > 10);
+t("v5.10 B2: allocOf ET adviceOf lisent la MÊME source — verdicts identiques, la synthèse du conseil affiche la phrase d'entrée du verdict partagé",
+  (function () {
+    var d = L.normalizeData(L.DEFAULT_DATA);
+    var radar = L.radarAll(d);
+    var act = radar.list.filter(function (a) { return a.id === "actions"; })[0];
+    var al = L.allocOf(10000, "une fois", null, d, radar);
+    var adv = L.adviceOf(d, radar);
+    var ep = L.entryPrefOf(d, radar.der, act.timingScore);
+    return al.pref === ep.pref && al.recommande === ep.recommande && al.recommandeLabel === ep.label &&
+      adv.manquantes === false && adv.synthese.indexOf("Entrée :") !== -1 && adv.synthese.indexOf(ep.phrase) !== -1;
+  })() === true);
+t("v5.10 B2: fin de la contradiction — la synthèse Offensive ne promet « sans attendre » QUE si le verdict partagé dit « une fois »",
+  (function () {
+    var d = L.normalizeData(L.DEFAULT_DATA);
+    var radar = L.radarAll(d);
+    var adv = L.adviceOf(d, radar, "Offensive");
+    var al = L.allocOf(10000, "une fois", null, d, radar, "Offensive");
+    var sansAttendre = adv.synthese.indexOf("sans attendre") !== -1;
+    return sansAttendre === (al.recommande === "une fois") && adv.synthese.indexOf("Entrée :") !== -1;
+  })() === true);
+t("v5.10 B3: allocOf — un actif au score manquant : exclu et TRACÉ « manquant » (plus de repli 50 inventé), somme toujours = montant",
+  (function () {
+    var d = L.normalizeData(L.DEFAULT_DATA);
+    var radar = L.radarAll(d);
+    radar.list.forEach(function (a) { if (a.id === "or") a.score = null; });
+    var al = L.allocOf(1000, "une fois", null, d, radar);
+    var or = al.parts.filter(function (p) { return p.id === "or"; })[0];
+    var sum = al.parts.reduce(function (s, p) { return s + p.euros; }, 0);
+    return or.exclu === true && or.manquant === true && or.euros === 0 &&
+      Array.isArray(al.manquantes) && al.manquantes.indexOf("or") !== -1 && sum === 1000;
+  })() === true);
+t("v5.10 B3: allocOf — radar entièrement non chiffrable : pas de division par zéro, verdict neutralisé, alerte « Données insuffisantes »",
+  (function () {
+    var d = L.normalizeData(L.DEFAULT_DATA);
+    var radar = L.radarAll(d);
+    radar.list.forEach(function (a) { a.score = null; a.timingScore = null; });
+    var al = L.allocOf(1000, "une fois", null, d, radar);
+    return al !== null && al.recommande === null && al.recommandeLabel === null && al.pref === null &&
+      al.parts.every(function (p) { return p.exclu === true && p.manquant === true && p.euros === 0; }) &&
+      typeof al.alerte === "string" && al.alerte.indexOf("Données insuffisantes") !== -1;
+  })() === true);
+t("v5.10 B3: adviceOf — sans données actions chiffrables : manquantes TRACÉ, base Neutre, détail explicite (jamais de score inventé)",
+  (function () {
+    var d = L.normalizeData(L.DEFAULT_DATA);
+    var radar = L.radarAll(d);
+    radar.list.forEach(function (a) { if (a.id === "actions") { a.score = null; a.timingScore = null; } });
+    var adv = L.adviceOf(d, radar);
+    return adv.manquantes === true && adv.autoPosture === "Neutre" && adv.detail.indexOf("Données manquantes") !== -1;
+  })() === true);
+t("v5.10 C (écarté, documenté): la note du simulateur documente la FALAISSE binaire du seuil (rampe refusée — auto = v5.6 stricts)",
+  (function () {
+    var d = L.normalizeData(L.DEFAULT_DATA);
+    var al = L.allocOf(1000, "une fois", null, d, L.radarAll(d));
+    return al.note.indexOf("BINAIRE") !== -1 && al.note.indexOf("falaise") !== -1 && al.note.indexOf("rampe") !== -1;
+  })() === true);
 
 // ---------- Bilan ----------
 var fail = results.filter(function (r) { return !r.ok; });

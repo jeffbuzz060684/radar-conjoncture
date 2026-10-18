@@ -273,7 +273,22 @@ function strategyOf(d, der, paliers, top) {
 // (regimePostureOf), ou forçage manuel par Jade. Chaque poste déplace les seuils :
 // Offensive libère l'achat plus tôt, Défensive n'accepte que les scores élevés.
 var POSTURES = ["Défensive", "Prudente", "Neutre", "Constructive", "Offensive"];   // rang 0 → 4
-var ALLOC_EXCL = { "Défensive": 55, "Prudente": 50, "Neutre": 45, "Constructive": 40, "Offensive": 35 };   // seuil d'exclusion du simulateur (v5.8 : ne bouge QUE si posture forcée)
+// v5.10 (B1, revue externe) : UNE SEULE table de seuils pour le conseil ET le simulateur.
+// Avant : stanceOf recalculait ses seuils par décalage de rang (±5) et ALLOC_EXCL était une
+// 2e table maintenue à la main — deux sources qui pouvaient diverger en silence. Chaque
+// posture fixe désormais 4 seuils de stance (sur/ren/con/npr) + le seuil d'exclusion
+// alloc (excl) au même endroit. La ligne « Neutre » = seuils v5.6 stricts (65/55/45/35,
+// excl 45) inchangés — c'est la base en auto ; les autres lignes reproduisent EXACTEMENT
+// les décalages de rang v5.7/v5.8 (vérifié au harnais : mêmes sorties, mêmes entrées).
+var CUTS = {
+  "Défensive":    { sur: 75, ren: 65, con: 55, npr: 45, excl: 55 },
+  "Prudente":     { sur: 70, ren: 60, con: 50, npr: 40, excl: 50 },
+  "Neutre":       { sur: 65, ren: 55, con: 45, npr: 35, excl: 45 },
+  "Constructive": { sur: 60, ren: 50, con: 40, npr: 30, excl: 40 },
+  "Offensive":    { sur: 55, ren: 45, con: 35, npr: 25, excl: 35 }
+};
+var ALLOC_EXCL = {};   // v5.10 : dérivé de CUTS — plus jamais une 2e table écrite à la main
+POSTURES.forEach(function (p) { ALLOC_EXCL[p] = CUTS[p].excl; });
 // v5.8 : plancher monétaire du simulateur — l'exclusion renormalisait les actifs restants et
 // pouvait laisser la majorité du lot en or (57 %) ; en Prudente/Défensive forcées, la part de
 // préservation ne descend jamais sous ce plancher.
@@ -283,13 +298,11 @@ var ALLOC_MON_FLOOR = { "Prudente": 35, "Défensive": 50 };   // en % du montant
 function isPosture(p) { return typeof p === "string" && POSTURES.indexOf(p) !== -1; }
 
 function stanceOf(score, posture) {
-  var rank = (typeof posture === "string") ? POSTURES.indexOf(posture) : -1;
-  if (rank < 0) rank = 2;                       // inconnu/absent → Neutre (seuils historiques v5.6)
-  var sh = (2 - rank) * 5;                      // décalage des seuils : Offensive abaisse (achète plus tôt), Défensive durcit
-  if (score >= 65 + sh) return { cls: "good", label: "Sur-pondérer", verb: "INVESTIR" };
-  if (score >= 55 + sh) return { cls: "good", label: "Renforcer", verb: "INVESTIR" };
-  if (score >= 45 + sh) return { cls: "mid", label: "Conserver", verb: "CONSERVER" };
-  if (score >= 35 + sh) return { cls: "mid", label: "Ne pas renforcer", verb: "ATTENDRE" };
+  var c = isPosture(posture) ? CUTS[posture] : CUTS["Neutre"];   // inconnu/absent → base v5.6 (v5.10 : lit CUTS, plus de recalcul de rang)
+  if (score >= c.sur) return { cls: "good", label: "Sur-pondérer", verb: "INVESTIR" };
+  if (score >= c.ren) return { cls: "good", label: "Renforcer", verb: "INVESTIR" };
+  if (score >= c.con) return { cls: "mid", label: "Conserver", verb: "CONSERVER" };
+  if (score >= c.npr) return { cls: "mid", label: "Ne pas renforcer", verb: "ATTENDRE" };
   return { cls: "bad", label: "Sous-pondérer", verb: "SOUS-PONDÉRER" };
 }
 
@@ -325,6 +338,37 @@ function regimePostureOf(d) {
   return { score: sc, posture: posture, risque: risque, drivers: drv.join(" · ") };
 }
 
+// v5.10 (B2, revue externe) : UNE SEULE source pour « une fois / hybride / DCA ». Avant, la
+// synthèse du conseil (adviceOf) promettait « les apports peuvent aller au marché sans
+// attendre » (texte Offensive inconditionnel) alors que le verdict du simulateur, calculé
+// séparément dans allocOf, disait « hybride » ou « DCA » le même jour — contradiction réelle
+// signalée par la revue. Les deux lisent maintenant cette fonction : impossible de se
+// contredire. Traçabilité (v5.9, inchangée) : +8 si drawdown ≤ −10 % (marché déjà corrigé) ;
+// −6 à moins de 3 % du sommet 52 sem. (risque d'acheter le pic) ; −5 si CAPE ≥ 30
+// (valorisations tendues) ; « une fois » ≥ 60, « hybride » 45-59, « DCA » < 45 — heuristique
+// motivée point par point, NON validée historiquement (cf. note de méthode).
+function entryPrefOf(d, der, timingScore) {
+  var cape = num(d.cape), ddM = (der && num(der.ddMsci) !== null) ? der.ddMsci : null;
+  var pref = (num(timingScore) !== null) ? num(timingScore) : null;
+  if (pref === null) pref = 50;   // v5.10 (B3) : sans donnée chiffrable, base Neutre — le résultat est TRACÉ manquant par l'appelant, jamais glissé en silence
+  if (ddM !== null && ddM <= -10) pref += 8;     // marché déjà corrigé : moins de risque d'entrée
+  if (ddM !== null && ddM > -3) pref -= 6;       // au contact du sommet : risque d'acheter le pic
+  if (cape !== null && cape >= 30) pref -= 5;    // valorisations tendues : prudence sur la mise en une fois
+  pref = clampScore(pref);
+  var recommande = (pref >= 60) ? "une fois" : (pref >= 45) ? "hybride" : "dca";
+  var labels = {
+    "une fois": "Les signaux d'opportunité suffisent, inutile d'attendre un point d'entrée meilleur.",
+    "hybride": "Moitié immédiate, moitié étalée — le compromis entre regret et rendement.",
+    "dca": "Étaler l'apport : le contexte ne se prête pas à tout miser aujourd'hui."
+  };
+  var phrases = {
+    "une fois": "un apport du jour peut aller au marché sans attendre",
+    "hybride": "un apport du jour se lisse — moitié immédiate, moitié étalée",
+    "dca": "un apport du jour s'étale plutôt qu'il ne se place d'un coup"
+  };
+  return { pref: pref, recommande: recommande, label: labels[recommande], phrase: phrases[recommande] };
+}
+
 function adviceOf(d, radar, override) {
   var der = radar.der;
   var byId = {};
@@ -333,7 +377,12 @@ function adviceOf(d, radar, override) {
   var act = byId.actions || null;
   // v5.6 : la posture suit le TIMING (drawdown, VIX, BCE, PMI) qui bouge ; la valorisation
   // (CAPE) est lente et structurelle → affichée en contexte, pas en signal du jour.
-  var ap = (act && num(act.timingScore) !== null) ? act.timingScore : (act ? act.score : 50);
+  // v5.10 (B3) : plus de repli muet sur 50 — si le timing ET le score des actions sont
+  // absents, la base Neutre est prise mais TRACÉE (res.manquantes) : le conseil dit
+  // « données manquantes » au lieu d'inventer un score.
+  var ap = (act && num(act.timingScore) !== null) ? act.timingScore : (act ? num(act.score) : null);
+  res.manquantes = (ap === null);
+  if (ap === null) ap = 50;
   res.timingScore = ap;
   res.postureScore = ap;
   if (ap >= 65) res.posture = "Offensive";
@@ -347,18 +396,24 @@ function adviceOf(d, radar, override) {
   res.override = (typeof override === "string" && POSTURES.indexOf(override) !== -1) ? override : null;
   if (res.override) res.posture = res.override;
   var top = radar.list[0];
-  if (res.override)
+  if (res.manquantes)
+    res.detail = "Données manquantes : ni le timing ni le score des actions ne sont chiffrables aujourd'hui — conseil affiché sur la base Neutre (50), mets à jour le relevé. Règles de sécurité (jamais vendre sur la baisse) et stratégie PEA restent maîtresses.";
+  else if (res.override)
     res.detail = "Posture choisie : " + res.override + " — elle déplace les SEUILS des stances et du simulateur, jamais les scores ; en auto, ce sont les seuils de base qui s'appliquent. L'auto (timing actions " + ap + "/100) aurait dit " + res.autoPosture + ", l'auto reste affichée pour comparaison. Règles de sécurité (jamais vendre sur la baisse) et stratégie PEA restent maîtresses.";
   else
     res.detail = "Pilotée par le timing actions (" + ap + "/100 — drawdown, VIX, direction BCE, PMI). Actif le plus favorable du jour : " + top.name + " (" + top.score + "/100).";
   var syn = {
-    "Offensive": "Le timing domine à l'achat : les apports peuvent aller au marché sans attendre, l'étalement n'apporte que du confort psychologique.",
-    "Constructive": "Contexte globalement favorable : investir reste la bonne trajectoire ; un gros apport se lisse pour réduire le risque d'entrée.",
-    "Neutre": "Aucun signal de timing fort dans un sens ou l'autre : la régularité du socle prime, un apport exceptionnel se lisse plutôt qu'il ne se place d'un coup.",
-    "Prudente": "Le timing dégradé appelle la prudence : privilégier monétaire et actifs défensifs, étaler tout apport sur les actifs risqués.",
-    "Défensive": "Préservation du capital d'abord : monétaire, or en couverture, apports sur les actifs risqués différés — aucune précipitation."
+    "Offensive": "Le timing domine à l'achat : la trajectoire d'investissement reste la bonne.",
+    "Constructive": "Contexte globalement favorable : investir reste la bonne trajectoire.",
+    "Neutre": "Aucun signal de timing fort dans un sens ou l'autre : la régularité du socle prime.",
+    "Prudente": "Le timing dégradé appelle la prudence : privilégier monétaire et actifs défensifs.",
+    "Défensive": "Préservation du capital d'abord : monétaire, or en couverture, aucune précipitation."
   };
-  res.synthese = syn[res.posture];
+  // v5.10 (B2) : la phrase d'entrée d'apport vient de la MÊME source que le verdict du
+  // simulateur (entryPrefOf) — conseil et simulateur ne peuvent plus se contredire le même
+  // jour. Les textes de posture ci-dessus ne promettent plus rien sur l'entrée d'un apport.
+  var ep = entryPrefOf(d, der, res.manquantes ? null : ap);
+  res.synthese = syn[res.posture] + " Entrée : " + ep.phrase + " (" + ep.pref + "/100).";
   // v5.7/v5.8 : risque macro descriptif (vocabulaire séparé du timing : Calme/Modéré/Tendu/Stress)
   var rg = regimePostureOf(d);
   res.regime = { risque: rg.risque, score: rg.score, drivers: rg.drivers };   // v5.9 : plus de « posture » régime — jamais affichée, vocabulaire abandonné
@@ -421,12 +476,13 @@ function allocOf(montant, mode, months, d, radar, posture) {
   // 45 (comportement v5.6 strict) : la posture auto ne décale plus rien. En Défensive forcée on
   // n'achète que ce qui est solide (≥ 55), en Offensive forcée le seuil descend à 35. Le monétaire
   // reste TOUJOURS éligible : c'est l'actif de préservation, l'exclure n'a pas de sens.
-  var seuil = isPosture(posture) ? ALLOC_EXCL[posture] : 45;   // v5.9 : liste fermée — « constructor » n'ouvre plus les seuils
+  var seuil = isPosture(posture) ? CUTS[posture].excl : 45;   // v5.9 : liste fermée — « constructor » n'ouvre plus les seuils ; v5.10 (B1) : lu dans CUTS, la même table que stanceOf
   var cape = num(d.cape);
-  var raw = {}, total = 0, i, k;
+  var raw = {}, total = 0, i, k, manquantes = [];
   for (i = 0; i < ALLOC_IDS.length; i++) {
     k = ALLOC_IDS[i];
-    var sc = (byId[k] && num(byId[k].score) !== null) ? byId[k].score : 50;
+    var sc = byId[k] ? num(byId[k].score) : null;
+    if (sc === null) { raw[k] = 0; manquantes.push(k); continue; }   // v5.10 (B3) : actif non chiffrable = exclu et TRACÉ « données manquantes » — plus de score inventé (repli 50 muet)
     if (k === "actions") {
       // v5.8 : les actions sont pilotées par leur TIMING — le score global, verrouillé par le
       // CAPE structurel (−24 en données du jour), les excluait à jamais, même en Offensive.
@@ -442,9 +498,25 @@ function allocOf(montant, mode, months, d, radar, posture) {
     }
     total += raw[k];
   }
-  // v5.9 : le repli « tous < seuil → tout au monétaire » était un code MORT — le monétaire est
-  // toujours éligible (base 13 × tilt ≥ ×0,4 = 5,2 > 0), donc total > 0 est garanti par
-  // construction. La propriété (somme = montant, monétaire jamais exclu) est testée au harnais.
+  // v5.10 (B3) : le monétaire était « toujours éligible » par construction (scores clampés par
+  // radarAll) — depuis qu'un score manquant est traité honnêtement (exclu, tracé), total peut
+  // être nul. Plus de répartition inventée ni de division par zéro : lot signalé manquant,
+  // alerte explicite, verdict neutralisé. La propriété (somme = montant au €) est testée au harnais.
+  if (total <= 0) {
+    var partsVides = [], pi, pk, pa;
+    for (pi = 0; pi < ALLOC_IDS.length; pi++) {
+      pk = ALLOC_IDS[pi]; pa = byId[pk];
+      partsVides.push({ id: pk, icon: pa ? pa.icon : "•", name: pa ? pa.name : pk, pct: 0, euros: 0, exclu: true, manquant: true });
+    }
+    return {
+      montant: m, mode: mode, months: n, mensualite: n ? r2(m / n) : null,
+      parts: partsVides, pref: null, recommande: null, recommandeLabel: null,
+      posture: isPosture(posture) ? posture : null, seuil: seuil,
+      alerte: "Données insuffisantes : aucun actif n'est chiffrable aujourd'hui (" + manquantes.join(", ") + ") — mets à jour le relevé avant de simuler un apport.",
+      manquantes: manquantes,
+      note: "Aucune répartition calculée : le simulateur n'invente pas de score."
+    };
+  }
   var shares = {};
   for (i = 0; i < ALLOC_IDS.length; i++) { k = ALLOC_IDS[i]; shares[k] = raw[k] / total; }
   // v5.8 : plancher monétaire en Prudente (35 %) et Défensive (50 %) forcées — l'exclusion
@@ -469,7 +541,7 @@ function allocOf(montant, mode, months, d, radar, posture) {
     if (!excl && firstIdx === -1) firstIdx = i;
     var eur = Math.round(m * shares[k]);
     sum += eur;
-    parts.push({ id: k, icon: a ? a.icon : "•", name: a ? a.name : k, pct: r1(shares[k] * 100), euros: eur, exclu: excl });
+    parts.push({ id: k, icon: a ? a.icon : "•", name: a ? a.name : k, pct: r1(shares[k] * 100), euros: eur, exclu: excl, manquant: (manquantes.indexOf(k) !== -1) });
   }
   if (firstIdx !== -1) parts[firstIdx].euros += m - sum;   // reste d'arrondi au premier actif inclus (déterministe)
   // verdict « une fois » vs « DCA » : piloté par le TIMING actions (le CAPE, lent, pèse à part).
@@ -479,17 +551,14 @@ function allocOf(montant, mode, months, d, radar, posture) {
   // −5 si CAPE ≥ 30 (valorisations tendues) ; « une fois » à ≥ 60, « hybride » sur 45-59
   // (l'indécision honnête entre regret et rendement — repère Vanguard ~2/3).
   var ddM = radar.der.ddMsci;
-  var pref = (actA && num(actA.timingScore) !== null) ? actA.timingScore : (actA ? actA.score : 50);   // actA : réutilise la variable de la boucle ci-dessus (v5.9 : redéclaration supprimée)
-  if (ddM !== null && ddM <= -10) pref += 8;     // marché déjà corrigé : moins de risque d'entrée
-  if (ddM !== null && ddM > -3) pref -= 6;       // au contact du sommet : risque d'acheter le pic
-  if (cape !== null && cape >= 30) pref -= 5;    // valorisations tendues : prudence sur la mise en une fois
-  pref = clampScore(pref);
-  var recommande = (pref >= 60) ? "une fois" : (pref >= 45) ? "hybride" : "dca";
-  var labels = {
-    "une fois": "Les signaux d'opportunité suffisent, inutile d'attendre un point d'entrée meilleur.",
-    "hybride": "Moitié immédiate, moitié étalée — le compromis entre regret et rendement.",
-    "dca": "Étaler l'apport : le contexte ne se prête pas à tout miser aujourd'hui."
-  };
+  // v5.10 (B2) : le verdict passe par entryPrefOf — la MÊME fonction que la synthèse du conseil
+  // (adviceOf). Fin de la contradiction « sans attendre » (conseil) vs « hybride » (simulateur)
+  // le même jour : une seule source, deux affichages. Traçabilité des seuils : cf. entryPrefOf
+  // (v5.9, conservée telle quelle : +8 / −6 / −5 ; « une fois » ≥ 60, « hybride » 45-59, « DCA » < 45).
+  var actTs = (actA && num(actA.timingScore) !== null) ? actA.timingScore : (actA ? actA.score : null);
+  var ver = entryPrefOf(d, radar.der, actTs);
+  var pref = ver.pref;
+  var recommande = ver.recommande;
   // v5.9 : alerte fondée sur le RÉSULTAT (actions réellement exclues de ce lot), plus sur la
   // posture choisie — la contradiction avec la règle maison existe aussi en auto ou en Prudente
   // forcée, dès que le timing passe sous le seuil pendant un drawdown.
@@ -501,11 +570,12 @@ function allocOf(montant, mode, months, d, radar, posture) {
   return {
     montant: m, mode: mode, months: n,
     mensualite: n ? r2(m / n) : null,
-    parts: parts, pref: pref, recommande: recommande, recommandeLabel: labels[recommande],
+    parts: parts, pref: pref, recommande: recommande, recommandeLabel: ver.label,
+    manquantes: (manquantes.length > 0) ? manquantes : null,
     posture: isPosture(posture) ? posture : null,
     seuil: seuil,
     alerte: alerte,
-    note: "Méthode : pondération de référence (actions 40 % · immo 15 % · obligations 15 % · monétaire 13 % · or 12 % · crypto 5 %) pondérée par le score du jour (× score/50, borné ×0,4 à ×1,6) — pour les actions, le TIMING du jour pilote éligibilité et tilt, avec tilt plafonné à ×1,0 si CAPE ≥ 30 ; renormalisée à 100 %. Les actifs sous le seuil de la posture CHOISIE sont exclus (en auto, seuil de base 45 quelle que soit la posture automatique ; 35 en Offensive forcée, 55 en Défensive forcée). Le monétaire reste toujours éligible (actif de préservation) avec un plancher de 35 % en Prudente et 50 % en Défensive forcées. En DCA, la répartition est recalculée à chaque échéance sur les données du jour. Repère : sur les actions US 1926-2015, l'étude Vanguard « Cost Averaging: Invest Now or Temporarily Hold Your Cash » trouve que l'investissement en une fois bat le DCA ~2 fois sur 3 — un résultat propre à cette étude, qui ne valide pas ce simulateur multi-actifs. Heuristique transparente, pas un conseil financier : l'allocation dépend aussi de ton horizon, de ton portefeuille existant et de ta tolérance au risque (non demandés ici). Le verdict « une fois / hybride / DCA » (seuils 60/45, ajustements +8 / −6 / −5) est une heuristique motivée point par point, non validée historiquement."
+    note: "Méthode : pondération de référence (actions 40 % · immo 15 % · obligations 15 % · monétaire 13 % · or 12 % · crypto 5 %) pondérée par le score du jour (× score/50, borné ×0,4 à ×1,6) — pour les actions, le TIMING du jour pilote éligibilité et tilt, avec tilt plafonné à ×1,0 si CAPE ≥ 30 ; renormalisée à 100 %. Les actifs sous le seuil de la posture CHOISIE sont exclus (en auto, seuil de base 45 quelle que soit la posture automatique ; 35 en Offensive forcée, 55 en Défensive forcée). L'éligibilité au seuil est BINAIRE : un score juste sous le seuil reçoit 0 %, juste au-dessus la pondération pleine — une falaise, pas une rampe ; choix assumé pour garder « auto = seuils v5.6 stricts », documenté ici plutôt que lissé (rampe écartée en revue v5.10). Le monétaire reste toujours éligible (actif de préservation) avec un plancher de 35 % en Prudente et 50 % en Défensive forcées. Un actif sans score chiffrable est exclu et affiché « données manquantes », jamais noté 50 en silence. En DCA, la répartition est recalculée à chaque échéance sur les données du jour. Repère : sur les actions US 1926-2015, l'étude Vanguard « Cost Averaging: Invest Now or Temporarily Hold Your Cash » trouve que l'investissement en une fois bat le DCA ~2 fois sur 3 — un résultat propre à cette étude, qui ne valide pas ce simulateur multi-actifs. Heuristique transparente, pas un conseil financier : l'allocation dépend aussi de ton horizon, de ton portefeuille existant et de ta tolérance au risque (non demandés ici). Le verdict « une fois / hybride / DCA » (seuils 60/45, ajustements +8 / −6 / −5) est une heuristique motivée point par point, non validée historiquement."
   };
 }
 
@@ -662,8 +732,8 @@ if (typeof module !== "undefined" && module.exports) {
     paliersOf: paliersOf, strategyOf: strategyOf, normalizeData: normalizeData,
     snapshotOf: snapshotOf, badgeOf: badgeOf, radarAll: radarAll, parseGecko: parseGecko,
     staleDays: staleDays, Auto_sanStr: Auto_sanStr, Auto_sanNum: Auto_sanNum, Auto_sanitizeImport: Auto_sanitizeImport,
-    stanceOf: stanceOf, adviceOf: adviceOf, allocOf: allocOf,
-    regimePostureOf: regimePostureOf, POSTURES: POSTURES, ALLOC_EXCL: ALLOC_EXCL, ALLOC_MON_FLOOR: ALLOC_MON_FLOOR,
+    stanceOf: stanceOf, adviceOf: adviceOf, allocOf: allocOf, entryPrefOf: entryPrefOf,
+    regimePostureOf: regimePostureOf, POSTURES: POSTURES, ALLOC_EXCL: ALLOC_EXCL, ALLOC_MON_FLOOR: ALLOC_MON_FLOOR, CUTS: CUTS,
     isRealDate: isRealDate, isPosture: isPosture
   };
 }
