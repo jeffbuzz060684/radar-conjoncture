@@ -318,6 +318,23 @@ var PATRIMOINE_HORS_RADAR = [
   { nom: "Private equity", reel: "illiquide — souscriptions aux fenêtres seulement, horizon long ; affiché pour couvrir tout le patrimoine, jamais alloué par le simulateur" }
 ];
 
+// v5.12 : les 7 actifs RÉELLEMENT détenus par Jade, pour l'affichage PERMANENT (carte
+// « 👤 Ton patrimoine réel », onglet Radar). Avant la v5.12, l'univers réel n'était visible
+// qu'en sortie de simulateur — et seulement les lignes allouées : le livret et le private
+// equity n'apparaissaient nulle part en tant qu'actifs. Chaque entrée pointe vers la ligne
+// du radar qui la note (radar: id → score du jour affiché), ou null = hors radar
+// (private equity : illiquide, jamais alloué). Le livret est un actif à part entière
+// (épargne de précaution), pas seulement la destination du monétaire.
+var PATRIMOINE_ACTIFS = [
+  { nom: "Actions — MSCI World",  enceinte: "PEA · DCAM",           radar: "actions",     reel: "ton socle actions (Amundi PEA Monde) — 800 €/mois en plan programmé, paliers déployés sur ce support" },
+  { nom: "Fonds euro",            enceinte: "Assurance vie",        radar: "obligations", reel: "capital garanti, gains verrouillés chaque année — ton exposition obligataire réelle (l'ETF IEGA reste l'exemple marché, CTO en pause)" },
+  { nom: "SCPI",                  enceinte: "Assurance vie",        radar: "immo",        reel: "frais de souscription élevés : pertinent en une fois, pas idéal en DCA mensuel" },
+  { nom: "Livret",                enceinte: "Épargne de précaution", radar: "monetaire",  reel: "ta poche de sécurité — jamais compté dans la capacité paliers, jamais déployé en paliers" },
+  { nom: "Or",                    enceinte: "Détenu",               radar: "or",          reel: "déjà détenu — renfort possible à la reprise du CTO (SGLD), lecture d'ici là" },
+  { nom: "Bitcoin",               enceinte: "Détenu",               radar: "crypto",      reel: "déjà détenu — renfort possible sur plateforme enregistrée PSAN ou à la reprise du CTO (BITC)" },
+  { nom: "Private equity",        enceinte: "Hors radar",           radar: null,          reel: "illiquide — souscriptions aux fenêtres seulement, horizon long ; jamais alloué par le simulateur" }
+];
+
 function stanceOf(score, posture) {
   var c = isPosture(posture) ? CUTS[posture] : CUTS["Neutre"];   // inconnu/absent → base v5.6 (v5.10 : lit CUTS, plus de recalcul de rang)
   if (score >= c.sur) return { cls: "good", label: "Sur-pondérer", verb: "INVESTIR" };
@@ -756,6 +773,6 @@ if (typeof module !== "undefined" && module.exports) {
     stanceOf: stanceOf, adviceOf: adviceOf, allocOf: allocOf, entryPrefOf: entryPrefOf,
     regimePostureOf: regimePostureOf, POSTURES: POSTURES, ALLOC_EXCL: ALLOC_EXCL, ALLOC_MON_FLOOR: ALLOC_MON_FLOOR, CUTS: CUTS,
     isRealDate: isRealDate, isPosture: isPosture,
-    PATRIMOINE: PATRIMOINE, PATRIMOINE_HORS_RADAR: PATRIMOINE_HORS_RADAR   // v5.11 : univers réel de Jade
+    PATRIMOINE: PATRIMOINE, PATRIMOINE_HORS_RADAR: PATRIMOINE_HORS_RADAR, PATRIMOINE_ACTIFS: PATRIMOINE_ACTIFS   // v5.11/v5.12 : univers réel de Jade (mapping + liste des 7 actifs)
   };
 }

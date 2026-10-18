@@ -1,4 +1,4 @@
-/* Simulation DOM v5.11 (outillage) — rejoue le chargement complet de la page avec des stubs (aucun réseau).
+/* Simulation DOM v5.12 (outillage) — rejoue le chargement complet de la page avec des stubs (aucun réseau).
    Exécution : node sim.js  →  doit finir par "SIM OK" sans aucune erreur d'exécution. */
 "use strict";
 var fs = require("fs"), path = require("path"), vm = require("vm");
@@ -121,6 +121,17 @@ ck("v5.11 : bloc « Concrètement chez toi » avec le private equity affiché ma
 ck("v5.11 : le socle reste affiché 1 000 €/mois PEA seul (stratégie maîtresse inchangée)",
   allocHtml.indexOf("le socle des 1 000 €/mois reste PEA seul") !== -1);
 
+// 7 bis. v5.12 : carte « 👤 Ton patrimoine réel » — les 7 actifs de Jade, TOUJOURS visibles
+var patHtml = txt("patrimoineList");
+ck("v5.12 : la carte patrimoine affiche exactement 7 lignes",
+  (patHtml.match(/palrow/g) || []).length === 7);
+ck("v5.12 : livret ET private equity visibles en permanence (pas seulement via le simulateur)",
+  patHtml.indexOf("Livret") !== -1 && patHtml.indexOf("Private equity") !== -1 &&
+  patHtml.indexOf("Fonds euro") !== -1 && patHtml.indexOf("SCPI") !== -1);
+ck("v5.12 : chaque actif lié au score du jour de son radar (…/100) + PE « hors radar — jamais alloué »",
+  patHtml.indexOf("/100</b>") !== -1 && patHtml.indexOf("radar Or") !== -1 &&
+  patHtml.indexOf("hors radar — jamais alloué") !== -1);
+
 // 8. Changement de posture → recalcul automatique + plancher monétaire (v5.8)
 els.postureSel.value = "Défensive";
 els.postureSel.fire("change");
@@ -176,4 +187,4 @@ var fail = checks.filter(function (c) { return !c.ok; });
 checks.forEach(function (c) { console.log((c.ok ? "✅ " : "❌ ") + c.name); });
 console.log("");
 if (fail.length) { console.log("SIM ÉCHECS : " + fail.length); process.exit(1); }
-console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul + synthèse à source partagée v5.10 + univers réel v5.11).");
+console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul + synthèse à source partagée v5.10 + univers réel v5.11 + carte « Ton patrimoine réel » 7 actifs v5.12).");

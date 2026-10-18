@@ -109,7 +109,7 @@
 <header>
   <div class="hrow">
     <h1>📡 Radar <span>Conjoncture</span></h1>
-    <span class="badge">🔄 Maj auto quotidienne · <b>v5.11</b></span>
+    <span class="badge">🔄 Maj auto quotidienne · <b>v5.12</b></span>
   </div>
   <div class="hrow" style="margin-top:6px">
     <span class="chip" id="dataChip">—</span>
@@ -161,6 +161,12 @@
       <div id="adviceWarns"></div>
       <div id="adviceCtx"></div>
       <div id="adviceDesinv"></div>
+    </div>
+
+    <div class="card" id="patrimoineCard">
+      <h2>👤 Ton patrimoine réel — tes 7 actifs</h2>
+      <div class="mut" style="margin-bottom:10px">Tout ce que tu détiens, visible en permanence — pas seulement via le simulateur : chaque actif est relié à la ligne du radar qui le note (et à son score du jour), ou reste hors radar (private equity : illiquide, jamais alloué). Le socle des 1 000 €/mois reste PEA seul ; le livret (épargne de précaution) n'entre jamais dans la capacité paliers.</div>
+      <div id="patrimoineList"></div>
     </div>
 
     <div class="card">
@@ -403,6 +409,28 @@ function commitSnapshot(toastIf) {
 }
 
 // ---- Rendu Radar ----
+// v5.12 : carte « 👤 Ton patrimoine réel » — les 7 actifs de Jade, TOUJOURS visibles sur
+// l'onglet Radar (avant : l'univers réel n'apparaissait qu'en sortie de simulateur, et
+// seulement les lignes allouées — le livret et le private equity n'étaient affichés nulle
+// part). Chaque ligne : l'actif, son enveloppe, la situation réelle, et le score du jour
+// de la ligne du radar qui le note (ou « hors radar — jamais alloué »). Rendu par chaîne
+// (innerHTML) — compatible simulation DOM, aucun état persisté.
+function renderPatrimoine(radar) {
+  var el = $("patrimoineList");
+  if (!el) return;
+  var byId = {};
+  radar.list.forEach(function (a) { byId[a.id] = a; });
+  el.innerHTML = PATRIMOINE_ACTIFS.map(function (act) {
+    var a = act.radar ? byId[act.radar] : null;
+    return '<div class="palrow">' +
+      '<span class="st" style="width:auto;min-width:86px"><b>' + esc(act.nom) + '</b></span>' +
+      '<span class="th">' + esc(act.enceinte) + ' <span class="mut" style="font-size:11px">— ' + esc(act.reel) + "</span></span>" +
+      (a ? '<span class="fl">radar ' + esc(a.name) + ' · <b>' + a.score + '/100</b></span>'
+         : '<span class="fl" style="color:var(--mut)">hors radar — jamais alloué</span>') +
+      "</div>";
+  }).join("");
+}
+
 function renderRadar() {
   expirePostureOverride();   // v5.8 : forçage expiré (> 30 j) → retour auto silencieux
   var d = state.data;
@@ -434,6 +462,8 @@ function renderRadar() {
       '<details class="why"><summary>Pourquoi ce score ?</summary><div class="parts">' + partsHtml + "</div></details>";
     listEl.appendChild(el);
   });
+
+  renderPatrimoine(radar);   // v5.12 : tes 7 actifs réels, toujours visibles (carte 👤)
 
   // Paliers & stratégie
   var der = radar.der;
