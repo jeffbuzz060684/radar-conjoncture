@@ -1,12 +1,12 @@
-/* Radar Conjoncture — logique pure (v5) : valeurs du jour, scoring, paliers, stratégie.
-   Extraite du script inline d'index.html pour être testée sous Node (tools/test-auto.js).
-   Chargée comme script classique : ses variables/fonctions sont des globals de la page. */
 "use strict";
-
 // ---------- Valeurs du jour, vérifiées le 18/10/2026 (sources cf. onglet Données) ----------
+// Depuis v4.2, le MSCI World (IWDA) est suivi en EUR via la cotation Euronext Amsterdam
+// (IWDA.AS) : les paliers de la stratégie PEA (exécutée en euros via DCAM) réagissent au
+// cours en euros, pas au cours en dollars.
 var DEFAULT_DATA = {
-  dateData: "2026-10-17",
-  msci: 130.55, msciHigh52: 132.26, msciHigh52Date: "2026-10-12", msciLow52: 107.51,   // IWDA en € (Euronext Amsterdam, IWDA.AS) ; sommet/bas 52 sem. Yahoo range=1y — même source que le cours
+  dateData: "2026-10-16",
+  msci: 130.55, msciHigh52: 132.26, msciHigh52Date: "2026-10-12", msciLow52: 107.51,   // IWDA en € (Euronext Amsterdam, IWDA.AS) ; fenêtre 52 sem. Yahoo
+  dateMacro: "2026-10-16",                                                                                  // date du dernier relevé macro (inflation, BCE…)
   cape: 40.38, vix: 19.99, vix5: 16.76,                                      // VIX clôture 16/10 ; moyenne 5 séances Yahoo
   inflZE: 3.8, inflUS: 3.7,
   bceDepot: 2.5, bceDir: "hausse",                       // +25 pb le 10/09/2026, effectif 16/09/2026
@@ -14,7 +14,6 @@ var DEFAULT_DATA = {
   orEUR: 3729.84, orHigh52: 4592, orLow52: 3387.45,       // €/once
   btcEUR: 72598, btcHigh52: null,                        // 52 sem BTC : bouton « en direct » ou saisie
   imoRendement: 5.0,
-  dateMacro: "2026-10-16",                                // dernier point macro vérifié (PMI sept. + inflation confirmée le 16/10)
   reserve: 0,
   paliersDone: { p5: false, p10: false, p15: false, p20: false }
 };
@@ -22,8 +21,7 @@ var DEFAULT_DATA = {
 var FIELDS = [
   { g: "Marchés actions" },
   { k: "dateData", l: "Date des données", t: "date", h: "date du relevé" },
-  { k: "dateMacro", l: "Date du dernier point macro", t: "date", h: "PMI/inflation — fraîcheur macro ≠ fraîcheur marché" },
-  { k: "msci", l: "Cours MSCI World (IWDA, €)", t: "num", h: "clôture Euronext Amsterdam, en euros" },
+  { k: "msci", l: "Cours MSCI World (IWDA, €)", t: "num", h: "clôture Euronext Amsterdam (IWDA.AS), en euros" },
   { k: "msciHigh52", l: "Plus haut 52 sem. MSCI (€)", t: "num", h: "sommet 52 semaines" },
   { k: "msciHigh52Date", l: "Date du sommet 52 sem.", t: "date", h: "optionnel — trace la référence des paliers" },
   { k: "msciLow52", l: "Plus bas 52 sem. MSCI (€)", t: "num", h: "optionnel, jauge de position" },
@@ -31,6 +29,7 @@ var FIELDS = [
   { k: "vix", l: "VIX", t: "num", h: "volatilité implicite US" },
   { k: "vix5", l: "VIX lissé 5 j", t: "num", h: "optionnel — moyenne 5 séances, lisse les spikes" },
   { g: "Macro zone euro & US" },
+  { k: "dateMacro", l: "Date du relevé macro", t: "date", h: "date du dernier relevé vérifié (inflation, BCE, PMI…)" },
   { k: "inflZE", l: "Inflation zone euro (%)", t: "num", h: "dernier mois, annualisé" },
   { k: "inflUS", l: "Inflation US (%)", t: "num", h: "dernier mois, annualisé" },
   { k: "bceDepot", l: "Taux de dépôt BCE (%)", t: "num", h: "taux directeur" },
@@ -307,7 +306,7 @@ function snapshotOf(d, radar) {
 }
 
 var SOURCES = [
-  ["MSCI World (IWDA) : 130,55 € (clôture du 16/10/2026, cotation Euronext Amsterdam) ; plus haut 52 sem. 132,26 € (12/10/2026) ; plus bas 107,51 € — paliers en EUROS depuis la v5 : même devise que le PEA, pas de bruit USD/EUR", "Yahoo Finance (IWDA.AS, range=1y) — même source que le relevé quotidien"],
+  ["MSCI World (IWDA) : 130,55 € (clôture du 16/10/2026, IWDA.AS Euronext Amsterdam) ; plus haut 52 sem. 132,26 € (12/10/2026) ; plus bas 107,51 €", "Yahoo Finance (IWDA.AS) — même source pour le cours et les références 52 sem."],
   ["CAPE Shiller : 40,38 (01/10/2026) — 98,9e percentile historique, seule la bulle 1999-2000 a été plus haute", "GuruFocus, corroboré par thetrading.tools (40,7)"],
   ["VIX : 19,99 (+21,5 %, clôture du 16/10/2026) ; moyenne 5 séances : 16,76", "CBOE via Yahoo Finance (^VIX)"],
   ["Inflation zone euro : 3,8 % en septembre 2026 (confirmé le 16/10, en hausse depuis 3 mois ; énergie +18,8 %)", "Eurostat, communiqués du 02/10 et du 16/10/2026"],
@@ -319,14 +318,68 @@ var SOURCES = [
   ["Bitcoin : 72 598 € (17/10/2026)", "CoinGecko"]
 ];
 
+// ---------- Sanitisation des imports (anti-injection HTML) ----------
+// Les exports/imports JSON contiennent de l'état (historique, épisodes, alertes) qui est
+// injecté dans l'UI : un fichier malveillant ne doit jamais pouvoir y glisser du HTML.
+// Coercition stricte : chaînes tronquées, nombres ou rien.
 
-// Export Node pour le harnais de tests (tools/test-auto.js).
+function Auto_sanStr(x, maxLen) {
+  if (typeof x === "string") return x.slice(0, maxLen || 60);
+  if (typeof x === "number" && isFinite(x)) return String(x);
+  return "";
+}
+function Auto_sanNum(x) {
+  return (typeof x === "number" && isFinite(x)) ? x : null;
+}
+
+function Auto_sanitizeImport(raw) {
+  var out = { history: [], episodes: [], refAlert: null };
+  if (!raw || typeof raw !== "object") return out;
+  if (Array.isArray(raw.history)) {
+    out.history = raw.history.slice(0, 200).map(function (h) {
+      if (!h || typeof h !== "object") return null;
+      var o = {
+        date: Auto_sanStr(h.date, 10),
+        top: Auto_sanStr(h.top, 60),
+        topScore: Auto_sanNum(h.topScore),
+        scores: {},
+        ddMsci: Auto_sanNum(h.ddMsci)
+      };
+      if (h.scores && typeof h.scores === "object") {
+        Object.keys(h.scores).slice(0, 12).forEach(function (k) {
+          o.scores[Auto_sanStr(k, 20)] = Auto_sanNum(h.scores[k]);
+        });
+      }
+      return o;
+    }).filter(Boolean);
+  }
+  if (Array.isArray(raw.episodes)) {
+    out.episodes = raw.episodes.slice(0, 50).map(function (e) {
+      if (!e || typeof e !== "object") return null;
+      return {
+        date: Auto_sanStr(e.date, 10),
+        oldHigh52: Auto_sanNum(e.oldHigh52),
+        newHigh52: Auto_sanNum(e.newHigh52),
+        deployed: Auto_sanNum(e.deployed)
+      };
+    }).filter(Boolean);
+  }
+  if (raw.refAlert && typeof raw.refAlert === "object") {
+    var ra = { date: Auto_sanStr(raw.refAlert.date, 10), from: Auto_sanNum(raw.refAlert.from), to: Auto_sanNum(raw.refAlert.to) };
+    out.refAlert = (ra.date && ra.from !== null && ra.to !== null) ? ra : null;
+  }
+  return out;
+}
+
+// Export Node pour le harnais de tests (logique pure, aucun accès DOM).
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
+    DEFAULT_DATA: DEFAULT_DATA, FIELDS: FIELDS, PALIERS: PALIERS, SOURCES: SOURCES,
     num: num, r1: r1, r2: r2, pctDD: pctDD, clampScore: clampScore, fmtPts: fmtPts,
     stepScore: stepScore, computeDerived: computeDerived, regimeOf: regimeOf,
     paliersOf: paliersOf, strategyOf: strategyOf, normalizeData: normalizeData,
-    snapshotOf: snapshotOf, radarAll: radarAll, parseGecko: parseGecko, staleDays: staleDays,
-    DEFAULT_DATA: DEFAULT_DATA, FIELDS: FIELDS, PALIERS: PALIERS, SOURCES: SOURCES
+    snapshotOf: snapshotOf, badgeOf: badgeOf, radarAll: radarAll, parseGecko: parseGecko,
+    staleDays: staleDays, Auto_sanStr: Auto_sanStr, Auto_sanNum: Auto_sanNum, Auto_sanitizeImport: Auto_sanitizeImport
   };
+  return;
 }

@@ -109,7 +109,7 @@
 <header>
   <div class="hrow">
     <h1>📡 Radar <span>Conjoncture</span></h1>
-    <span class="badge">🔄 Maj auto quotidienne · <b>v5</b></span>
+    <span class="badge">🔄 Maj auto quotidienne · <b>v4.2</b></span>
   </div>
   <div class="hrow" style="margin-top:6px">
     <span class="chip" id="dataChip">—</span>
@@ -151,7 +151,7 @@
       <div class="mut" style="margin-bottom:4px">Mets à jour en ~1 minute par semaine (idéal avec le brief PEA du lundi). « Or & BTC en direct » interroge CoinGecko depuis ton téléphone (courant + plus haut/bas 52 semaines automatiques) ; le reste se trouve sur les sites des sources ci-dessous.</div>
       <div class="btnrow">
         <button class="btn" id="btnGecko">🔄 Or & BTC en direct</button>
-        <button class="btn ghost" id="btnReset">↩️ Valeurs du 17/10/2026</button>
+        <button class="btn ghost" id="btnReset">↩️ Valeurs du 16/10/2026</button>
       </div>
     </div>
     <div class="card">
@@ -192,6 +192,18 @@
       <table class="hist" id="histTable"></table>
       <div class="btnrow"><button class="btn danger" id="btnClearHist" type="button">🗑️ Vider l'historique</button></div>
     </div>
+    <div class="card">
+      <h2>🔔 Notifications Telegram</h2>
+      <div class="mut" style="margin-bottom:8px">Prévenu quand un palier est franchi et à déployer (une fois par jour, tant qu'il n'est pas marqué déployé). Crée un bot via @BotFather, récupère ton chat id (ex. @userinfobot), colle ici. Le token reste <b>uniquement sur ce téléphone</b> (jamais exporté, jamais poussé sur GitHub).</div>
+      <div class="frow"><label>Token du bot (123456789:AA…)<input id="tgToken" type="password" inputmode="text" autocomplete="off" placeholder="colle le token BotFather"></label></div>
+      <div class="frow"><label>Chat ID<input id="tgChatId" type="text" inputmode="numeric" placeholder="ex. 123456789"></label></div>
+      <div class="btnrow" style="margin-top:8px">
+        <button class="btn" id="btnTgSave" type="button">💾 Enregistrer</button>
+        <button class="btn ghost" id="btnTgTest" type="button">📤 Tester l'envoi</button>
+        <button class="btn ghost" id="btnTgForget" type="button">🗑️ Oublier</button>
+      </div>
+      <div class="mut" id="tgStatus" style="margin-top:6px"></div>
+    </div>
   </section>
 </main>
 
@@ -205,8 +217,6 @@
 <script src="vehicles.js"></script>
 <script src="logic.js"></script>
 <script>
-"use strict";
-
 // ================== Couche UI ==================
 var KEY = "radar-conjoncture-v1";
 var state = { data: null, history: [], refAlert: null, episodes: [] };
@@ -221,9 +231,10 @@ function load() {
     state.data = normalizeData(raw.data);
     state.data.reserve = num(raw.data.reserve) !== null ? num(raw.data.reserve) : 0;
     if (raw.data.paliersDone) state.data.paliersDone = { p5: !!raw.data.paliersDone.p5, p10: !!raw.data.paliersDone.p10, p15: !!raw.data.paliersDone.p15, p20: !!raw.data.paliersDone.p20 };
-    state.history = Array.isArray(raw.history) ? raw.history : [];
-    state.refAlert = (raw.refAlert && typeof raw.refAlert === "object") ? raw.refAlert : null;
-    state.episodes = Array.isArray(raw.episodes) ? raw.episodes : [];
+    var san = Auto_sanitizeImport(raw); // historique/épisodes/alertes nettoyés (anti-injection)
+    state.history = san.history;
+    state.refAlert = san.refAlert;
+    state.episodes = san.episodes;
   } else {
     state.data = normalizeData(DEFAULT_DATA);
     state.history = [];
@@ -382,7 +393,7 @@ function renderRadar() {
   if (state.refAlert && num(d.msciHigh52) !== null && state.refAlert.to === d.msciHigh52) {
     var raPct = r1((state.refAlert.to / state.refAlert.from - 1) * 100);
     ra.innerHTML = '<div class="warnbox">⚠️ Référence 52 sem. déplacée au relevé du ' + esc(state.refAlert.date) + " : " +
-      esc(String(state.refAlert.from)) + " € → " + esc(String(state.refAlert.to)) + " € (" + (raPct > 0 ? "+" : "") + raPct +
+      esc(String(state.refAlert.from)) + " → " + esc(String(state.refAlert.to)) + " (" + (raPct > 0 ? "+" : "") + raPct +
       " %). Seuils des paliers recalculés — vérifie la cohérence de la source. " +
       '<button class="toggle" id="btnRefOk">compris ✓</button></div>';
     $("btnRefOk").addEventListener("click", function () {
@@ -397,18 +408,20 @@ function renderRadar() {
   var sd = staleDays(d.dateData, Date.now());
   var sc = $("staleChip");
   if (sd === null) { sc.className = "chip warn"; sc.textContent = "date invalide"; }
-  else if (sd <= 7) { sc.className = "chip ok"; sc.textContent = "marchés frais (" + sd + " j)"; }
+  else if (sd <= 7) { sc.className = "chip ok"; sc.textContent = "marchés fraîches (" + sd + " j)"; }
   else if (sd <= 30) { sc.className = "chip warn"; sc.textContent = "marchés : " + sd + " j — pense à actualiser"; }
-  else { sc.className = "chip bad"; sc.textContent = "marchés périmés : " + sd + " jours !"; }
-  // Fraîcheur macro séparée : PMI/inflation sont mensuels — un relevé de marché quotidien ne
-  // rajeunit pas le point macro (qui peut dater de plusieurs semaines sans être suspect).
+  else { sc.className = "chip bad"; sc.textContent = "marchés périmées : " + sd + " jours !"; }
+
+  // Fraîcheur MACRO séparée (cadence mensuelle : inflation, BCE, PMI…)
   var mc = $("macroChip");
-  var md = d.dateMacro ? staleDays(d.dateMacro, Date.now()) : null;
-  if (!d.dateMacro) { mc.className = "chip warn"; mc.textContent = "date macro manquante"; }
-  else if (md === null) { mc.className = "chip warn"; mc.textContent = "date macro invalide"; }
-  else if (md <= 45) { mc.className = "chip ok"; mc.textContent = "macro OK (" + md + " j)"; }
-  else if (md <= 75) { mc.className = "chip warn"; mc.textContent = "macro : " + md + " j — vérifie PMI/inflation"; }
-  else { mc.className = "chip bad"; mc.textContent = "macro périmée : " + md + " jours !"; }
+  if (!d.dateMacro || typeof d.dateMacro !== "string") { mc.className = "chip warn"; mc.textContent = "date macro absente"; }
+  else {
+    var md = staleDays(d.dateMacro, Date.now());
+    if (md === null) { mc.className = "chip warn"; mc.textContent = "date macro invalide"; }
+    else if (md <= 45) { mc.className = "chip ok"; mc.textContent = "macro fraîche (" + md + " j)"; }
+    else if (md <= 75) { mc.className = "chip warn"; mc.textContent = "macro : " + md + " j — attends le mois suivant"; }
+    else { mc.className = "chip bad"; mc.textContent = "macro périmée : " + md + " jours !"; }
+  }
 }
 
 // ---- Rendu Suivi ----
@@ -418,7 +431,7 @@ function renderSuivi() {
   if (!hist.length) { t.innerHTML = '<tr><td colspan="5" class="empty">Aucun snapshot pour l\'instant — les enregistrements de l\'onglet Données s\'accumulent ici.</td></tr>'; }
   else {
     var rows = hist.slice().reverse().map(function (h) {
-      return "<tr><td>" + esc(h.date) + "</td><td>" + esc(h.top) + "</td><td><b>" + esc(String(h.topScore)) + "</b></td><td>" + (h.scores.actions !== undefined ? esc(String(h.scores.actions)) : "—") + "</td><td>" + (h.ddMsci !== null ? r1(h.ddMsci) + " %" : "—") + "</td></tr>";
+      return "<tr><td>" + esc(h.date) + "</td><td>" + esc(h.top) + "</td><td><b>" + h.topScore + "</b></td><td>" + (h.scores.actions !== undefined ? h.scores.actions : "—") + "</td><td>" + (h.ddMsci !== null ? r1(h.ddMsci) + " %" : "—") + "</td></tr>";
     }).join("");
     t.innerHTML = "<tr><th>Date</th><th>N°1 du jour</th><th>Score</th><th>Actions</th><th>DD MSCI</th></tr>" + rows;
   }
@@ -492,21 +505,21 @@ function renderEpisodes() {
   var eps = state.episodes || [];
   if (!eps.length) { t.innerHTML = '<tr><td colspan="4" class="empty">Aucun épisode clos pour l\'instant — dès qu\'un nouveau plus haut 52 sem. sera détecté, l\'épisode précédent s\'affichera ici.</td></tr>'; return; }
   var rows = eps.slice().reverse().map(function (e) {
-    return "<tr><td>" + esc(e.date) + "</td><td>" + esc(String(e.oldHigh52)) + " €</td><td><b>" + esc(String(e.newHigh52)) + " €</b></td><td>" +
-      (e.deployed ? esc(String(e.deployed)) + " palier(s) déployé(s)" : "aucun palier déployé") + "</td></tr>";
+    return "<tr><td>" + esc(e.date) + "</td><td>" + e.oldHigh52 + " $</td><td><b>" + e.newHigh52 + " $</b></td><td>" +
+      (e.deployed ? e.deployed + " palier(s) déployé(s)" : "aucun palier déployé") + "</td></tr>";
   }).join("");
   t.innerHTML = "<tr><th>Date</th><th>Ancien sommet</th><th>Nouveau sommet</th><th>Bilan de l'épisode</th></tr>" + rows;
 }
 
 // ---- Boutons données ----
 $("btnReset").addEventListener("click", function () {
-  if (!confirm("Restaurer toutes les valeurs du 17/10/2026 ? (La réserve et les paliers déployés sont conservés.)")) return;
+  if (!confirm("Restaurer toutes les valeurs du 16/10/2026 (références en euros, IWDA.AS) ? (La réserve et les paliers déployés sont conservés.)")) return;
   var keep = { reserve: state.data.reserve, paliersDone: state.data.paliersDone };
   state.data = normalizeData(DEFAULT_DATA);
   state.data.reserve = keep.reserve;
   state.data.paliersDone = keep.paliersDone;
   save(); buildForm(); renderRadar();
-  toast("Valeurs du 17/10/2026 restaurées");
+  toast("Valeurs du 16/10/2026 restaurées");
 });
 
 $("btnGecko").addEventListener("click", function () {
@@ -552,9 +565,10 @@ $("importFile").addEventListener("change", function (ev) {
       state.data = normalizeData(parsed.data);
       if (parsed.data.reserve !== undefined) state.data.reserve = num(parsed.data.reserve) || 0;
       if (parsed.data.paliersDone) state.data.paliersDone = parsed.data.paliersDone;
-      state.history = Array.isArray(parsed.history) ? parsed.history : [];
-      state.refAlert = (parsed.refAlert && typeof parsed.refAlert === "object") ? parsed.refAlert : null;
-      state.episodes = Array.isArray(parsed.episodes) ? parsed.episodes : [];
+      var san2 = Auto_sanitizeImport(parsed); // import nettoyé (anti-injection HTML)
+      state.history = san2.history;
+      state.refAlert = san2.refAlert;
+      state.episodes = san2.episodes;
       save(); buildForm(); renderRadar();
       toast("Import réussi");
     } catch (e) { toast("Import impossible : fichier invalide"); }
@@ -569,13 +583,47 @@ $("btnClearHist").addEventListener("click", function () {
   toast("Historique vidé");
 });
 
+// ---- Notifications Telegram (le token reste sur ce téléphone, jamais exporté) ----
+var TG_KEY = "radar-telegram-v1";
+(function () {
+  var tok = $("tgToken"), chat = $("tgChatId"), st = $("tgStatus");
+  function loadCfg() { try { return JSON.parse(localStorage.getItem(TG_KEY) || "null"); } catch (e) { return null; } }
+  function showState(cfg) {
+    if (cfg && Auto_tgValid(cfg.token, cfg.chatId)) {
+      st.textContent = "✅ Configuré — un message partira à chaque palier à déployer.";
+      tok.value = cfg.token; chat.value = String(cfg.chatId);
+    } else st.textContent = "Non configuré.";
+  }
+  $("btnTgSave").addEventListener("click", function () {
+    var cfg = { token: tok.value.trim(), chatId: chat.value.trim() };
+    if (!Auto_tgValid(cfg.token, cfg.chatId)) { st.textContent = "❌ Format invalide (token « 123456789:AA… », chat id numérique)."; return; }
+    try { localStorage.setItem(TG_KEY, JSON.stringify(cfg)); } catch (e) {}
+    st.textContent = "✅ Enregistré — le token reste sur ce téléphone.";
+  });
+  $("btnTgForget").addEventListener("click", function () {
+    try { localStorage.removeItem(TG_KEY); } catch (e) {}
+    tok.value = ""; chat.value = ""; st.textContent = "Oublié.";
+  });
+  $("btnTgTest").addEventListener("click", function () {
+    var cfg = loadCfg() || { token: tok.value.trim(), chatId: chat.value.trim() };
+    if (!Auto_tgValid(cfg.token, cfg.chatId)) { st.textContent = "❌ Configure d'abord un token et un chat id valides."; return; }
+    st.textContent = "⏳ Envoi du message de test…";
+    Auto_sendTelegram(cfg.token, cfg.chatId, "📡 Radar Conjoncture — test de notification ✅ (les alertes palier arriveront ici)").then(function (ok) {
+      st.textContent = ok ? "✅ Reçu — notifications opérationnelles." : "❌ Échec — vérifie le token et le chat id.";
+    });
+  });
+  // auto.js se charge après le script UI : l'état s'affiche une fois tout chargé.
+  window.addEventListener("load", function () { showState(loadCfg()); });
+})();
+
 // ---- Sources ----
 (function () {
   var ul = $("srcList");
   ul.innerHTML = SOURCES.map(function (s) {
     return "<li><b style='color:#cbd5e1'>" + esc(s[0]) + "</b><br>↳ " + esc(s[1]) + "</li>";
   }).join("") +
-  "<li style='margin-top:6px'><b style='color:#cbd5e1'>Mise à jour automatique :</b> à chaque ouverture, l'app récupère le relevé hebdomadaire vérifié (data.json, mis à jour le lundi par l'assistant) puis le relevé quotidien automatique (data-daily.json : cours IWDA en € (Euronext Amsterdam) + VIX lissé + sommet/bas 52 sem. issus de la même source Yahoo sur 1 an, généré chaque soir de semaine par GitHub Actions) — les paliers réagissent donc chaque jour, pas seulement le lundi. La référence 52 sem. ne peut être relevée qu'à la hausse (jamais abaissée automatiquement). Or & BTC en direct via l'API publique CoinGecko (or via PAXG = 1 once, ± léger premium). Un nouveau plus haut 52 sem. réinitialise automatiquement les paliers déployés (nouvel épisode, tracé dans l'onglet Suivi). Aucune saisie nécessaire.</li>" +
+  "<li style='margin-top:6px'><b style='color:#cbd5e1'>Mise à jour automatique :</b> à chaque ouverture, l'app récupère le relevé hebdomadaire vérifié (data.json, mis à jour le lundi par l'assistant) puis le relevé quotidien automatique (data-daily.json : cours IWDA en euros <b>Euronext Amsterdam IWDA.AS</b> + références 52 sem. de la même source + VIX lissé + taux de dépôt BCE via l'API officielle ECB Data Portal + inflation zone euro via l'API officielle Eurostat quand sa période est récente, généré chaque soir de semaine par GitHub Actions) — les paliers réagissent donc chaque jour, pas seulement le lundi. Or & BTC en direct via l'API publique CoinGecko (or via PAXG = 1 once, ± léger premium). Un nouveau plus haut 52 sem. réinitialise automatiquement les paliers déployés (nouvel épisode, tracé dans l'onglet Suivi). Aucune saisie nécessaire.</li>" +
+  "<li style='margin-top:6px'><b style='color:#cbd5e1'>Notifications :</b> quand un palier est franchi et à déployer, l'app peut te prévenir sur Telegram (onglet Suivi, carte 🔔) — le token reste sur ce téléphone, jamais exporté ni poussé sur GitHub.</li>" +
   "<li style='margin-top:6px'><b style='color:#cbd5e1'>Instruments exemples :</b> chaque actif de l'onglet Radar affiche un véhicule concret vérifié le 17/10/2026 — justETF, extraETF, Boursorama, DCA Tracker (éligibilité PEA), ASPIM (SCPI). Exemples indicatifs, pas des recommandations.</li>";
 })();
 

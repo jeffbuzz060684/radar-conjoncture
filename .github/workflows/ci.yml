@@ -1,0 +1,19 @@
+name: CI — harnais & données
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Harnais de tests (0 échec obligatoire avant publication)
+        run: node tools/test-auto.js
+      - name: Validation des fichiers de données
+        run: node tools/validate-data.js

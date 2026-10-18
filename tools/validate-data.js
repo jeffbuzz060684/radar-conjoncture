@@ -64,7 +64,7 @@ function checkWeekly(raw) {
   optNum(d, "btcHigh52", 500, 1000000, "data.json");
   optNum(d, "vix5", 3, 100, "data.json");
   optStr(d, "msciHigh52Date", "data.json");
-  optStr(d, "dateMacro", "data.json");
+  optStr(d, "dateMacro", "data.json"); // fraîcheur macro affichée séparément (cadence mensuelle)
   if (["hausse", "stable", "baisse"].indexOf(d.bceDir) === -1) {
     errors.push("data.json : bceDir doit valoir hausse | stable | baisse");
   }
@@ -78,26 +78,18 @@ function checkWeekly(raw) {
 
 function checkDaily(raw) {
   var d = checkCommon(raw, "data-daily.json") || {};
-  var has = ["msci", "vix", "vix5", "bund10", "oat10"].filter(function (k) { return d[k] !== undefined; });
+  var has = ["msci", "msciHigh52", "msciLow52", "vix", "vix5", "bund10", "oat10", "bceDepot", "inflZE"].filter(function (k) { return d[k] !== undefined; });
   if (!has.length) errors.push("data-daily.json : aucun champ de marché reconnu (msci, vix, vix5…)");
   optNum(d, "msci", 20, 1000, "data-daily.json");
+  optNum(d, "msciHigh52", 20, 1000, "data-daily.json");
+  optNum(d, "msciLow52", 20, 1000, "data-daily.json");
   optNum(d, "vix", 3, 100, "data-daily.json");
   optNum(d, "vix5", 3, 100, "data-daily.json");
+  optNum(d, "bceDepot", -1, 10, "data-daily.json");
+  optNum(d, "inflZE", -2, 15, "data-daily.json");
+  optStr(d, "msciHigh52Date", "data-daily.json");
   optNum(d, "bund10", -1, 15, "data-daily.json");
   optNum(d, "oat10", -1, 15, "data-daily.json");
-  // Références 52 sem. (fenêtre 1 an, même source que le cours) : optionnelles mais plausibles.
-  var r = raw.refs;
-  if (r !== undefined) {
-    if (!r || typeof r !== "object") errors.push("data-daily.json : refs doit être un objet");
-    else {
-      optNum(r, "msciHigh52", 20, 1000, "data-daily.json refs");
-      optNum(r, "msciLow52", 20, 1000, "data-daily.json refs");
-      optStr(r, "msciHigh52Date", "data-daily.json refs");
-      if (isNum(r.msciHigh52, 20, 1000) && isNum(r.msciLow52, 20, 1000) && r.msciLow52 >= r.msciHigh52) {
-        errors.push("data-daily.json refs : msciLow52 (" + r.msciLow52 + ") doit être < msciHigh52 (" + r.msciHigh52 + ")");
-      }
-    }
-  }
 }
 
 var files = process.argv.slice(2);
