@@ -1,6 +1,6 @@
 "use strict";
 // ---------- Valeurs du jour, vérifiées le 18/10/2026 (sources cf. onglet Données) ----------
-// Depuis v4.2, le MSCI World (IWDA) est suivi en EUR via la cotation Euronext Amsterdam
+// Depuis la v5, le MSCI World (IWDA) est suivi en EUR via la cotation Euronext Amsterdam
 // (IWDA.AS) : les paliers de la stratégie PEA (exécutée en euros via DCAM) réagissent au
 // cours en euros, pas au cours en dollars.
 var DEFAULT_DATA = {

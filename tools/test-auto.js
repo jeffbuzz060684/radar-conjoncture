@@ -1,6 +1,6 @@
-/* Harnais de tests — Radar Conjoncture v4.2 (logic.js, auto.js, vehicles.js, fichiers livrés,
+/* Harnais de tests — Radar Conjoncture v5.1 (logic.js, auto.js, vehicles.js, fichiers livrés,
    pipeline quotidien/épisode/référence, validateurs, workflows, notifications Telegram,
-   sanitisation des imports et régressions v4.1/v4.2).
+   sanitisation des imports et régressions v4.1/v5).
    Exécution : node tools/test-auto.js  →  0 échec obligatoire avant publication. */
 "use strict";
 var fs = require("fs");
@@ -19,7 +19,7 @@ t("isNewerDate: date plus ancienne → false", A.Auto_isNewerDate("2026-10-10", 
 t("isNewerDate: année à 4 chiffres seule → true", A.Auto_isNewerDate("2027-01-05", "2026-12-31") === true);
 t("isNewerDate: entrée non chaîne → false", A.Auto_isNewerDate(null, "2026-10-17") === false && A.Auto_isNewerDate("2026-10-17", undefined) === false);
 
-// ---------- Auto_validRemote (v4.2 : la date doit EXISTER dans le calendrier) ----------
+// ---------- Auto_validRemote (v5 : la date doit EXISTER dans le calendrier) ----------
 var NOW = Date.UTC(2026, 9, 18); // 2026-10-18, horloge figée pour des tests déterministes
 var OK_REMOTE = { dateData: "2026-10-19", data: { msci: 150.2 }, note: "test" };
 t("validRemote: payload valide → accepté", A.Auto_validRemote(OK_REMOTE, NOW) === OK_REMOTE);
@@ -64,8 +64,9 @@ t("merge: date du sommet 52 sem. (string) appliquée", m4b.msciHigh52Date === "2
 var m5 = A.Auto_merge(LOCAL, { dateMacro: "2026-10-16" });
 t("merge: dateMacro absent du local (non-string) → ignoré sans erreur", m5 !== null);
 
-// ---------- Auto_overlayDaily (v4.2 : références 52 sem. + macro officiels) ----------
-t("dailyFields: liste exacte autorisée", JSON.stringify(A.AUTO_DAILY_FIELDS) === JSON.stringify(["msci", "msciHigh52", "msciLow52", "vix", "vix5", "bund10", "oat10", "bceDepot", "inflZE"]));
+// ---------- Auto_overlayDaily (v5.1 : champs spot + macro officiels, références via Auto_refUpdate) ----------
+t("dailyFields: liste exacte autorisée (spot + macro ; les références 52 sem. passent par Auto_refUpdate)",
+  JSON.stringify(A.AUTO_DAILY_FIELDS) === JSON.stringify(["msci", "vix", "vix5", "bund10", "oat10", "bceDepot", "inflZE"]));
 t("dailyRanges: plages plausibles EUR + macro", A.AUTO_DAILY_RANGES.msci[0] === 15 && A.AUTO_DAILY_RANGES.msci[1] === 1000 &&
   A.AUTO_DAILY_RANGES.msciHigh52[1] === 1000 && A.AUTO_DAILY_RANGES.vix[0] === 3 && A.AUTO_DAILY_RANGES.vix[1] === 100 &&
   A.AUTO_DAILY_RANGES.bceDepot[0] === -1 && A.AUTO_DAILY_RANGES.inflZE[1] === 15);
@@ -93,12 +94,50 @@ t("overlayDaily: vix5 accepté même si absent localement (null)",
   (function () { var l = JSON.parse(JSON.stringify(LOCAL)); l.vix5 = null; var r = A.Auto_overlayDaily(l, { vix5: 16.8 }); return r !== null && r.vix5 === 16.8; })());
 t("overlayDaily: rien de valable → null", A.Auto_overlayDaily(LOCAL, {}) === null);
 t("overlayDaily: entrée null → null", A.Auto_overlayDaily(LOCAL, null) === null && A.Auto_overlayDaily(null, DAILY_OK) === null);
-var ovE = A.Auto_overlayDaily(LOCAL, { msciHigh52: 152.3, msciLow52: 120.4, bceDepot: 2.75, inflZE: 3.9, bceDir: "hausse", msciHigh52Date: "2026-08-01" });
-t("overlayDaily: références 52 sem. + macro officiels appliqués", ovE && ovE.msciHigh52 === 152.3 && ovE.msciLow52 === 120.4 && ovE.bceDepot === 2.75 && ovE.inflZE === 3.9);
+var ovE = A.Auto_overlayDaily(LOCAL, { bceDepot: 2.75, inflZE: 3.9, bceDir: "hausse" });
+t("overlayDaily: macro officiels appliqués", ovE && ovE.bceDepot === 2.75 && ovE.inflZE === 3.9);
 t("overlayDaily: bceDir validé par liste fermée", ovE && ovE.bceDir === "hausse" && A.Auto_overlayDaily(LOCAL, { bceDir: "nimporte" }) === null);
-t("overlayDaily: msciHigh52Date suit la référence appliquée", ovE && ovE.msciHigh52Date === "2026-08-01");
-t("overlayDaily: msciHigh52Date sans référence appliquée → ignorée", A.Auto_overlayDaily(LOCAL, { msciHigh52Date: "2026-08-01" }) === null);
-t("overlayDaily: date du sommet mal formée ignorée", A.Auto_overlayDaily(LOCAL, { msciHigh52: 152.3, msciHigh52Date: "12/08/2026" }).msciHigh52Date === "");
+t("overlayDaily: références 52 sem. JAMAIS appliquées à plat (via Auto_refUpdate uniquement)",
+  A.Auto_overlayDaily(LOCAL, { msciHigh52: 152.3, msciLow52: 120.4, msciHigh52Date: "2026-08-01" }) === null &&
+  A.Auto_overlayDaily(LOCAL, { msciHigh52Date: "2026-08-01" }) === null);
+
+// ---------- Auto_isValidDate / Auto_isSameOrNewerDate ----------
+t("isValidDate: 2026-10-16 → true", A.Auto_isValidDate("2026-10-16") === true);
+t("isValidDate: 2026-02-28 → true, 2026-02-29 → false (année non bissextile)",
+  A.Auto_isValidDate("2026-02-28") === true && A.Auto_isValidDate("2026-02-29") === false);
+t("isValidDate: 2026-02-31 / 2026-13-01 → false", A.Auto_isValidDate("2026-02-31") === false && A.Auto_isValidDate("2026-13-01") === false);
+t("isValidDate: formats invalides → false",
+  A.Auto_isValidDate("16/10/2026") === false && A.Auto_isValidDate("") === false && A.Auto_isValidDate(null) === false && A.Auto_isValidDate(20261016) === false);
+t("isSameOrNewerDate: même date → true, ancien → false, récent → true",
+  A.Auto_isSameOrNewerDate("2026-10-16", "2026-10-16") === true &&
+  A.Auto_isSameOrNewerDate("2026-10-15", "2026-10-16") === false &&
+  A.Auto_isSameOrNewerDate("2026-10-17", "2026-10-16") === true);
+
+// ---------- Auto_refUpdate (recale la référence 52 sem., fenêtre 1 an, à la hausse uniquement) ----------
+var RU_BASE = { msci: 146.81, msciHigh52: 149.81, msciHigh52Date: "", msciLow52: 123.2, paliersDone: { p5: true, p10: false, p15: false, p20: false } };
+var ru1 = A.Auto_refUpdate(RU_BASE, { msciHigh52: 152.3, msciLow52: 120.4, msciHigh52Date: "2026-08-01" }, "2026-10-20");
+t("refUpdate: sommet 1 an plus haut → référence recalée", ru1 && ru1.data.msciHigh52 === 152.3);
+t("refUpdate: date du sommet consignée (fournie)", ru1 && ru1.data.msciHigh52Date === "2026-08-01");
+t("refUpdate: bas 52 sem. suivi (même fenêtre)", ru1 && ru1.data.msciLow52 === 120.4);
+t("refUpdate: nouvel épisode + paliers réinitialisés",
+  ru1 && ru1.episode.oldHigh52 === 149.81 && ru1.episode.newHigh52 === 152.3 && ru1.episode.deployed === 1 && ru1.data.paliersDone.p5 === false);
+t("refUpdate: écart de 1,7 % → pas d'alerte instable", ru1 && ru1.unstable === false);
+t("refUpdate: date du sommet absente/invalide → date du relevé",
+  A.Auto_refUpdate(RU_BASE, { msciHigh52: 152.3, msciHigh52Date: "12/08/2026" }, "2026-10-20").data.msciHigh52Date === "2026-10-20");
+t("refUpdate: référence JAMAIS abaissée (fenêtre qui défile) → null", A.Auto_refUpdate(RU_BASE, { msciHigh52: 148.0 }, "2026-10-20") === null);
+t("refUpdate: égalité (même sommet) → null (no-op)", A.Auto_refUpdate(RU_BASE, { msciHigh52: 149.81 }, "2026-10-20") === null);
+t("refUpdate: saut aberrant > +10 % → null", A.Auto_refUpdate(RU_BASE, { msciHigh52: 165.0 }, "2026-10-20") === null);
+t("refUpdate: sommet hors plage plausible → null", A.Auto_refUpdate(RU_BASE, { msciHigh52: 5000 }, "2026-10-20") === null);
+t("refUpdate: bas hors plage ignoré, sommet appliqué",
+  (function () { var r = A.Auto_refUpdate(RU_BASE, { msciHigh52: 152.3, msciLow52: 5000 }, "2026-10-20"); return r && r.data.msciHigh52 === 152.3 && r.data.msciLow52 === 123.2; })());
+t("refUpdate: date du relevé invalide → null", A.Auto_refUpdate(RU_BASE, { msciHigh52: 152.3 }, "24/10/2026") === null);
+t("refUpdate: gros mouvement légitime (+7,7 %) → alerte instable",
+  A.Auto_refUpdate(RU_BASE, { msciHigh52: 161.35 }, "2026-10-20").unstable === true);
+t("refUpdate: entrées invalides → null",
+  A.Auto_refUpdate(null, { msciHigh52: 152.3 }, "2026-10-20") === null &&
+  A.Auto_refUpdate(RU_BASE, null, "2026-10-20") === null &&
+  A.Auto_refUpdate(RU_BASE, { msciHigh52: "abc" }, "2026-10-20") === null);
+t("refUpdate: ne modifie pas l'objet local", RU_BASE.msciHigh52 === 149.81 && RU_BASE.paliersDone.p5 === true);
 
 // ---------- Auto_episodeUpdate ----------
 t("episodeMaxJump: 10 %", A.AUTO_EPISODE_MAX_JUMP === 0.10);
@@ -132,14 +171,14 @@ t("refUnstable: référence plus haute (nouveau sommet +8 %) → true",
 t("refUnstable: référence abaissée par le défilement de la fenêtre 52 sem. → true",
   A.Auto_refUnstable(132.26, 125.6) === true);
 
-// ---------- Auto_palierToDeploy (v4.2 : notifications) ----------
+// ---------- Auto_palierToDeploy (v5 : notifications) ----------
 t("palierToDeploy: −5 % franchi non déployé → 5", A.Auto_palierToDeploy({ msci: 125, msciHigh52: 132.26, paliersDone: { p5: false } }) === 5);
 t("palierToDeploy: −5 déployé → passe au −10", A.Auto_palierToDeploy({ msci: 119, msciHigh52: 132.26, paliersDone: { p5: true, p10: false } }) === 10);
 t("palierToDeploy: tous déployés → null", A.Auto_palierToDeploy({ msci: 100, msciHigh52: 132.26, paliersDone: { p5: true, p10: true, p15: true, p20: true } }) === null);
 t("palierToDeploy: aucun palier franchi → null", A.Auto_palierToDeploy({ msci: 130, msciHigh52: 132.26, paliersDone: { p5: false } }) === null);
 t("palierToDeploy: données manquantes → null", A.Auto_palierToDeploy({}) === null && A.Auto_palierToDeploy(null) === null);
 
-// ---------- Auto_tgValid (v4.2 : Telegram) ----------
+// ---------- Auto_tgValid (v5 : Telegram) ----------
 t("tgValid: token + chat id valides → true", A.Auto_tgValid("123456789:AAEhBOweik6ad9r_QXMENQjcr7q6hRLTfF", 123456789) === true);
 t("tgValid: chat id en chaîne accepté", A.Auto_tgValid("123456789:AAEhBOweik6ad9r_QXMENQjcr7q6hRLTfF", "123456789") === true);
 t("tgValid: chat id de groupe (négatif) accepté", A.Auto_tgValid("123456789:AAEhBOweik6ad9r_QXMENQjcr7q6hRLTfF", "-1001234567890") === true);
@@ -182,7 +221,7 @@ t("pipeline: cours 152 > sommet 149,81 → nouvel épisode déclenché",
 t("pipeline: référence quasi identique (−1,9 %) → pas d'alerte",
   A.Auto_refUnstable(149.81, 147.0) === false);
 
-// ---------- logic.js : module pur (v4.2 : extrait de index.html) ----------
+// ---------- logic.js : module pur (v5 : extrait de index.html) ----------
 t("logic.js: module pur requêrable sous Node", typeof L.radarAll === "function" && typeof L.strategyOf === "function" && typeof L.normalizeData === "function");
 var srcLogic = fs.readFileSync(path.join(__dirname, "..", "logic.js"), "utf8");
 t("logic.js: aucun accès DOM ni localStorage dans la logique pure", srcLogic.indexOf("document.") === -1 && srcLogic.indexOf("localStorage") === -1);
@@ -192,7 +231,7 @@ t("logic.js: libellés MSCI en euros", L.FIELDS.some(function (f) { return f.k =
 t("logic.js: DEFAULT_DATA en EUR, daté du 16/10 (clôture IWDA.AS)", L.DEFAULT_DATA.msci < 200 && L.DEFAULT_DATA.msci > 50 && L.DEFAULT_DATA.dateData === "2026-10-16" && L.DEFAULT_DATA.dateMacro === "2026-10-16");
 t("logic.js: références 52 sem. EUR cohérentes (bas ≤ cours ≤ haut)", L.DEFAULT_DATA.msciLow52 <= L.DEFAULT_DATA.msci && L.DEFAULT_DATA.msci <= L.DEFAULT_DATA.msciHigh52);
 
-// ---------- logic.js : scoring & stratégie (tests de fond ajoutés en v4.2) ----------
+// ---------- logic.js : scoring & stratégie (tests de fond ajoutés en v5) ----------
 var dEU = JSON.parse(JSON.stringify(L.DEFAULT_DATA)); dEU.reserve = 1000;
 var radarEU = L.radarAll(dEU);
 t("scoring: 6 actifs, scores 0–100, triés décroissant",
@@ -259,7 +298,7 @@ t("data.json: fusion sur données par défaut OK", mergedDefaults.msci === raw.d
 // ---------- data-daily.json livré ----------
 var daily = JSON.parse(fs.readFileSync(path.join(ROOT, "data-daily.json"), "utf8"));
 t("data-daily.json: structure valide pour auto.js", A.Auto_validRemote(daily) === daily);
-var ALLOWED_DAILY = A.AUTO_DAILY_FIELDS.concat(["bceDir", "msciHigh52Date"]);
+var ALLOWED_DAILY = A.AUTO_DAILY_FIELDS.concat(["bceDir", "msciHigh52", "msciLow52", "msciHigh52Date"]); // références 52 sem. livrées mais appliquées via Auto_refUpdate
 t("data-daily.json: au moins un champ de marché", A.AUTO_DAILY_FIELDS.some(function (k) { return typeof daily.data[k] === "number"; }));
 t("data-daily.json: ni reserve ni paliersDone", !("reserve" in daily.data) && !("paliersDone" in daily.data));
 t("data-daily.json: aucun champ hors liste autorisée", Object.keys(daily.data).every(function (k) { return ALLOWED_DAILY.indexOf(k) !== -1; }));
@@ -304,8 +343,8 @@ t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === 
 // ---------- index.html, logic.js, sw.js, auto.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v4.2", html.indexOf("<b>v4.2</b>") !== -1);
-t("index.html: aucun ancien badge v4.1/v4/v3/v2/v1", ["<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
+t("index.html: badge v5.1", html.indexOf("<b>v5.1</b>") !== -1);
+t("index.html: aucun ancien badge v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: logic.js chargé entre vehicles.js et le script UI inline",
   html.indexOf('<script src="vehicles.js"></script>') !== -1 &&
@@ -329,8 +368,8 @@ t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: VIX lissé utilisé dans le scoring (vixEff, désormais dans logic.js)", srcLogic.indexOf("der.vixEff") !== -1 && srcLogic.indexOf("vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v6", sw.indexOf('CACHE = "radar-v6"') !== -1);
-t("sw.js: anciens caches v5/v4/v3 absents", sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
+t("sw.js: cache v7", sw.indexOf('CACHE = "radar-v7"') !== -1);
+t("sw.js: anciens caches v6/v5/v4/v3 absents", sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
 t("sw.js: logic.js dans le shell", sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
 t("sw.js: shell en stale-while-revalidate (cache d'abord, réseau en arrière-plan)", sw.indexOf("stale-while-revalidate") !== -1 && sw.indexOf("m || net") !== -1);
@@ -340,16 +379,18 @@ t("sw.js: auto.js dans le shell", sw.indexOf('"./auto.js"') !== -1);
 // auto.js : le câblage ne tourne pas sous Node (guard module.exports)
 t("auto.js: pas d'exception à l'import Node", true);
 var autosrc = fs.readFileSync(path.join(ROOT, "auto.js"), "utf8");
-t("auto.js: en-tête v4.2", autosrc.indexOf("module de mise à jour automatique (v4.2)") !== -1);
+t("auto.js: en-tête v5.1", autosrc.indexOf("module de mise à jour automatique (v5.1)") !== -1);
 t("auto.js: récupère data-daily.json à l'ouverture", autosrc.indexOf('"data-daily.json"') !== -1);
 t("auto.js: câble l'épisode et l'alerte référence", autosrc.indexOf("Auto_episodeUpdate(") !== -1 && autosrc.indexOf("Auto_refUnstable(") !== -1);
 t("auto.js: garde anti-corruption 50 % msci uniquement (plus de dérive 15 %)",
   autosrc.indexOf("AUTO_DAILY_MAX_JUMP") !== -1 && autosrc.indexOf("AUTO_DAILY_MAX_DRIFT") === -1);
 t("auto.js: fetchRemote sans paramètre anti-cache (?v= supprimé)", autosrc.indexOf("?v=") === -1);
 t("auto.js: quotidien accepté à même date (>=) avec no-op si rien ne change",
-  autosrc.indexOf("daily.dateData >= cur.dateData") !== -1 && autosrc.indexOf("JSON.stringify(ov) !== JSON.stringify(cur)") !== -1);
-t("auto.js: alerte référence aussi quand le quotidien déplace la fenêtre 52 sem.",
-  autosrc.indexOf("Auto_refUnstable(cur.msciHigh52, ov.msciHigh52)") !== -1);
+  autosrc.indexOf("Auto_isSameOrNewerDate(daily.dateData, cur.dateData)") !== -1 && autosrc.indexOf("JSON.stringify(ov) !== JSON.stringify(cur)") !== -1);
+t("auto.js: recale la référence via Auto_refUpdate (nouvel épisode, paliers réinitialisés)",
+  autosrc.indexOf("Auto_refUpdate(cur, daily.data, daily.dateData)") !== -1 &&
+  autosrc.indexOf("ru.unstable") !== -1 &&
+  autosrc.indexOf("Référence 52 sem. recalée") !== -1);
 t("auto.js: notifications Telegram branchées (palier à déployer, 1/jour)",
   autosrc.indexOf("notifyPalier") !== -1 && autosrc.indexOf("Auto_palierToDeploy") !== -1 && autosrc.indexOf("TG_NOTIFY_KEY") !== -1);
 t("auto.js: mini-API Telegram exposée à la page (carte Suivi)", autosrc.indexOf("window.Auto_tgValid") !== -1 && autosrc.indexOf("window.Auto_sendTelegram") !== -1);

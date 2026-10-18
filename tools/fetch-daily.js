@@ -1,4 +1,4 @@
-/* Relevé quotidien automatique v4.2 — exécuté par GitHub Actions (cron jours ouvrés).
+/* Relevé quotidien automatique v5.1 — exécuté par GitHub Actions (cron jours ouvrés).
    Récupère le cours IWDA en EUROS (IWDA.AS, Euronext Amsterdam) et ses références
    52 sem. (fenêtre 1 an, même source que le cours), le VIX (courant + moyenne 5 séances),
    le taux de dépôt BCE et sa direction (API officielle ECB Data Portal) et l'inflation

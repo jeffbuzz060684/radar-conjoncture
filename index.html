@@ -109,7 +109,7 @@
 <header>
   <div class="hrow">
     <h1>📡 Radar <span>Conjoncture</span></h1>
-    <span class="badge">🔄 Maj auto quotidienne · <b>v4.2</b></span>
+    <span class="badge">🔄 Maj auto quotidienne · <b>v5.1</b></span>
   </div>
   <div class="hrow" style="margin-top:6px">
     <span class="chip" id="dataChip">—</span>
@@ -408,9 +408,9 @@ function renderRadar() {
   var sd = staleDays(d.dateData, Date.now());
   var sc = $("staleChip");
   if (sd === null) { sc.className = "chip warn"; sc.textContent = "date invalide"; }
-  else if (sd <= 7) { sc.className = "chip ok"; sc.textContent = "marchés fraîches (" + sd + " j)"; }
+  else if (sd <= 7) { sc.className = "chip ok"; sc.textContent = "marchés frais (" + sd + " j)"; }
   else if (sd <= 30) { sc.className = "chip warn"; sc.textContent = "marchés : " + sd + " j — pense à actualiser"; }
-  else { sc.className = "chip bad"; sc.textContent = "marchés périmées : " + sd + " jours !"; }
+  else { sc.className = "chip bad"; sc.textContent = "marchés périmés : " + sd + " jours !"; }
 
   // Fraîcheur MACRO séparée (cadence mensuelle : inflation, BCE, PMI…)
   var mc = $("macroChip");
@@ -431,7 +431,7 @@ function renderSuivi() {
   if (!hist.length) { t.innerHTML = '<tr><td colspan="5" class="empty">Aucun snapshot pour l\'instant — les enregistrements de l\'onglet Données s\'accumulent ici.</td></tr>'; }
   else {
     var rows = hist.slice().reverse().map(function (h) {
-      return "<tr><td>" + esc(h.date) + "</td><td>" + esc(h.top) + "</td><td><b>" + h.topScore + "</b></td><td>" + (h.scores.actions !== undefined ? h.scores.actions : "—") + "</td><td>" + (h.ddMsci !== null ? r1(h.ddMsci) + " %" : "—") + "</td></tr>";
+      return "<tr><td>" + esc(h.date) + "</td><td>" + esc(h.top) + "</td><td><b>" + esc(String(h.topScore)) + "</b></td><td>" + (h.scores.actions !== undefined ? esc(String(h.scores.actions)) : "—") + "</td><td>" + (h.ddMsci !== null ? r1(h.ddMsci) + " %" : "—") + "</td></tr>";
     }).join("");
     t.innerHTML = "<tr><th>Date</th><th>N°1 du jour</th><th>Score</th><th>Actions</th><th>DD MSCI</th></tr>" + rows;
   }
@@ -505,8 +505,8 @@ function renderEpisodes() {
   var eps = state.episodes || [];
   if (!eps.length) { t.innerHTML = '<tr><td colspan="4" class="empty">Aucun épisode clos pour l\'instant — dès qu\'un nouveau plus haut 52 sem. sera détecté, l\'épisode précédent s\'affichera ici.</td></tr>'; return; }
   var rows = eps.slice().reverse().map(function (e) {
-    return "<tr><td>" + esc(e.date) + "</td><td>" + e.oldHigh52 + " $</td><td><b>" + e.newHigh52 + " $</b></td><td>" +
-      (e.deployed ? e.deployed + " palier(s) déployé(s)" : "aucun palier déployé") + "</td></tr>";
+    return "<tr><td>" + esc(e.date) + "</td><td>" + esc(String(e.oldHigh52)) + " €</td><td><b>" + esc(String(e.newHigh52)) + " €</b></td><td>" +
+      (e.deployed ? esc(String(e.deployed)) + " palier(s) déployé(s)" : "aucun palier déployé") + "</td></tr>";
   }).join("");
   t.innerHTML = "<tr><th>Date</th><th>Ancien sommet</th><th>Nouveau sommet</th><th>Bilan de l'épisode</th></tr>" + rows;
 }
