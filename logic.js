@@ -273,7 +273,11 @@ function strategyOf(d, der, paliers, top) {
 // (regimePostureOf), ou forçage manuel par Jade. Chaque poste déplace les seuils :
 // Offensive libère l'achat plus tôt, Défensive n'accepte que les scores élevés.
 var POSTURES = ["Défensive", "Prudente", "Neutre", "Constructive", "Offensive"];   // rang 0 → 4
-var ALLOC_EXCL = { "Défensive": 55, "Prudente": 50, "Neutre": 45, "Constructive": 40, "Offensive": 35 };   // seuil d'exclusion du simulateur
+var ALLOC_EXCL = { "Défensive": 55, "Prudente": 50, "Neutre": 45, "Constructive": 40, "Offensive": 35 };   // seuil d'exclusion du simulateur (v5.8 : ne bouge QUE si posture forcée)
+// v5.8 : plancher monétaire du simulateur — l'exclusion renormalisait les actifs restants et
+// pouvait laisser la majorité du lot en or (57 %) ; en Prudente/Défensive forcées, la part de
+// préservation ne descend jamais sous ce plancher.
+var ALLOC_MON_FLOOR = { "Prudente": 35, "Défensive": 50 };   // en % du montant
 
 function stanceOf(score, posture) {
   var rank = (typeof posture === "string") ? POSTURES.indexOf(posture) : -1;
@@ -286,9 +290,11 @@ function stanceOf(score, posture) {
   return { cls: "bad", label: "Sous-pondérer", verb: "SOUS-PONDÉRER" };
 }
 
-// v5.7 : posture de référence SELON LA SITUATION ÉCONOMIQUE (axes du régime conjoncturel,
-// indépendants du timing du jour) : croissance (PMI), inflation, direction BCE, stress de marché.
-// Heuristique transparente (base 50, déplacements motivés un par un), mêmes seuils de posture que le timing.
+// v5.7/v5.8 : lecture descriptive du contexte macro (croissance PMI, inflation, direction BCE,
+// stress de marché). ATTENTION : PMI/BCE/VIX sont PARTAGÉS avec le timing — ce n'est pas un
+// signal indépendant, d'où un vocabulaire séparé (risque macro : Calme/Modéré/Tendu/Stress)
+// pour ne pas prêter à confusion avec la posture de timing (Offensive…Défensive).
+// Heuristique transparente (base 50, déplacements motivés un par un), non validée historiquement.
 function regimePostureOf(d) {
   var pmi = num(d.pmiZE), inf = num(d.inflZE), vx = (num(d.vix5) !== null) ? num(d.vix5) : num(d.vix);
   var sc = 50, drv = [];
@@ -312,7 +318,8 @@ function regimePostureOf(d) {
   }
   sc = clampScore(sc);
   var posture = (sc >= 65) ? "Offensive" : (sc >= 55) ? "Constructive" : (sc >= 45) ? "Neutre" : (sc >= 35) ? "Prudente" : "Défensive";
-  return { score: sc, posture: posture, drivers: drv.join(" · ") };
+  var risque = (sc >= 55) ? "Calme" : (sc >= 45) ? "Modéré" : (sc >= 35) ? "Tendu" : "Stress";   // v5.8 : vocabulaire macro séparé du timing
+  return { score: sc, posture: posture, risque: risque, drivers: drv.join(" · ") };
 }
 
 function adviceOf(d, radar, override) {
@@ -338,7 +345,7 @@ function adviceOf(d, radar, override) {
   if (res.override) res.posture = res.override;
   var top = radar.list[0];
   if (res.override)
-    res.detail = "Posture choisie : " + res.override + " — l'auto (timing actions " + ap + "/100) aurait dit " + res.autoPosture + ". Stances et simulateur alignés sur ta posture ; l'auto reste affichée pour comparaison.";
+    res.detail = "Posture choisie : " + res.override + " — elle déplace les SEUILS des stances et du simulateur, jamais les scores ; en auto, ce sont les seuils de base qui s'appliquent. L'auto (timing actions " + ap + "/100) aurait dit " + res.autoPosture + ", l'auto reste affichée pour comparaison. Règles de sécurité (jamais vendre sur la baisse) et stratégie PEA restent maîtresses.";
   else
     res.detail = "Pilotée par le timing actions (" + ap + "/100 — drawdown, VIX, direction BCE, PMI). Actif le plus favorable du jour : " + top.name + " (" + top.score + "/100).";
   var syn = {
@@ -349,12 +356,17 @@ function adviceOf(d, radar, override) {
     "Défensive": "Préservation du capital d'abord : monétaire, or en couverture, apports sur les actifs risqués différés — aucune précipitation."
   };
   res.synthese = syn[res.posture];
-  // v5.7 : posture de référence selon la situation économique (axes du régime, indépendants du timing)
+  // v5.7/v5.8 : risque macro descriptif (vocabulaire séparé du timing : Calme/Modéré/Tendu/Stress)
   var rg = regimePostureOf(d);
-  res.regime = { posture: rg.posture, score: rg.score, drivers: rg.drivers };
+  res.regime = { posture: rg.posture, risque: rg.risque, score: rg.score, drivers: rg.drivers };
   radar.list.forEach(function (a) {
-    // v5.7 : le monétaire (actif de préservation) garde ses seuils de base quelle que soit la posture
-    var st = (a.id === "monetaire") ? stanceOf(a.score) : stanceOf(a.score, res.posture);
+    // v5.8 : les seuils ne sont déplacés QUE par le FORÇAGE manuel (en auto, seuils de base v5.6) ;
+    // le monétaire (préservation) garde toujours ses seuils de base ; les actions sont pilotées
+    // par leur TIMING — le score global, verrouillé par le CAPE structurel, interdisait tout achat.
+    var st;
+    if (a.id === "monetaire") st = stanceOf(a.score);
+    else if (a.id === "actions") st = stanceOf(ap, res.override);
+    else st = stanceOf(a.score, res.override);
     var why = a.parts.slice().sort(function (x, y) { return Math.abs(y.pts) - Math.abs(x.pts); }).slice(0, 2).map(function (p) { return p.label.split(" (")[0]; });
     if (a.partial) why = ["score partiel : 52 sem. manquantes"];
     res.assets.push({ id: a.id, icon: a.icon, name: a.name, score: a.score, stance: st.label, cls: st.cls, verb: st.verb, why: why.join(" · ") });
@@ -372,6 +384,11 @@ function adviceOf(d, radar, override) {
     res.desinv.push("Actions en drawdown (" + r1(ddM) + " %) — règle maison absolue : on ne vend JAMAIS sur la baisse ; les paliers tactiques achètent cette faiblesse au contraire.");
   if (byId.or && ddO !== null && ddO > -3 && tr !== null && tr > 0 && byId.or.score < 55)
     res.desinv.push("Or : à " + r1(-ddO) + " % du sommet 52 sem. avec des taux réels positifs (" + r1(tr) + " %) — prise de profit partielle possible sur l'ETF ou le physique si besoin de liquidités.");
+  // v5.8 : avertissement de cohérence — forcer une posture en plein drawdown ne suspend jamais
+  // la règle maison (les paliers tactiques ACHÈTENT cette faiblesse).
+  res.warns = [];
+  if (res.override && ddM !== null && ddM <= -5)
+    res.warns.push("Posture forcée en plein drawdown (" + r1(ddM) + " %) : la règle maison des paliers reste maîtresse — elle achète cette faiblesse ; le forçage déplace des seuils d'entrée, il ne remplace jamais la stratégie PEA.");
   return res;
 }
 
@@ -390,34 +407,63 @@ function allocOf(montant, mode, months, d, radar, posture) {
   }
   var byId = {};
   radar.list.forEach(function (a) { byId[a.id] = a; });
-  // v5.7 : le seuil d'exclusion suit la POSTURE appliquée (choisie ou auto) — en Défensive on
-  // n'achète que ce qui est solide (≥ 55), en Offensive le seuil descend à 35. Le monétaire
+  // v5.7/v5.8 : le seuil d'exclusion suit UNIQUEMENT la posture FORCÉE — en auto, seuil de base
+  // 45 (comportement v5.6 strict) : la posture auto ne décale plus rien. En Défensive forcée on
+  // n'achète que ce qui est solide (≥ 55), en Offensive forcée le seuil descend à 35. Le monétaire
   // reste TOUJOURS éligible : c'est l'actif de préservation, l'exclure n'a pas de sens.
   var seuil = (typeof posture === "string" && ALLOC_EXCL[posture] !== undefined) ? ALLOC_EXCL[posture] : 45;
+  var cape = num(d.cape);
   var raw = {}, total = 0, i, k;
   for (i = 0; i < ALLOC_IDS.length; i++) {
     k = ALLOC_IDS[i];
     var sc = (byId[k] && num(byId[k].score) !== null) ? byId[k].score : 50;
-    raw[k] = (k === "monetaire" || sc >= seuil) ? ALLOC_BASE[k] * Math.max(0.4, Math.min(1.6, sc / 50)) : 0;
+    if (k === "actions") {
+      // v5.8 : les actions sont pilotées par leur TIMING — le score global, verrouillé par le
+      // CAPE structurel (−24 en données du jour), les excluait à jamais, même en Offensive.
+      // Éligibilité ET tilt sur le timing ; CAPE ≥ 30 → tilt plafonné à ×1,0 (valorisations
+      // tendues : jamais de bonus d'achat) — la valorisation reste un garde-fou, plus un verrou.
+      var actA = byId.actions;
+      var ts = (actA && num(actA.timingScore) !== null) ? actA.timingScore : sc;
+      var multA = Math.max(0.4, Math.min(1.6, ts / 50));
+      if (cape !== null && cape >= 30) multA = Math.min(multA, 1.0);
+      raw[k] = (ts >= seuil) ? ALLOC_BASE[k] * multA : 0;
+    } else {
+      raw[k] = (k === "monetaire" || sc >= seuil) ? ALLOC_BASE[k] * Math.max(0.4, Math.min(1.6, sc / 50)) : 0;
+    }
     total += raw[k];
   }
-  if (total <= 0) {   // tous les actifs < 45 (marché extrême) → tout au monétaire, l'actif de préservation
+  if (total <= 0) {   // tous les actifs < seuil (marché extrême) → tout au monétaire, l'actif de préservation
     raw["monetaire"] = 1; total = 1;
+  }
+  var shares = {};
+  for (i = 0; i < ALLOC_IDS.length; i++) { k = ALLOC_IDS[i]; shares[k] = raw[k] / total; }
+  // v5.8 : plancher monétaire en Prudente (35 %) et Défensive (50 %) forcées — l'exclusion
+  // renormalisait les actifs restants (or jusqu'à 57 % en Défensive) : la préservation ne se
+  // dilue pas. Les actifs risqués restants sont renormalisés sur (100 − plancher).
+  var floor = (typeof posture === "string" && ALLOC_MON_FLOOR[posture] !== undefined) ? ALLOC_MON_FLOOR[posture] / 100 : 0;
+  if (floor > 0 && shares.monetaire < floor) {
+    var restRaw = 0;
+    for (i = 0; i < ALLOC_IDS.length; i++) { k = ALLOC_IDS[i]; if (k !== "monetaire") restRaw += raw[k]; }
+    if (restRaw > 0) {
+      for (i = 0; i < ALLOC_IDS.length; i++) {
+        k = ALLOC_IDS[i];
+        shares[k] = (k === "monetaire") ? floor : raw[k] / restRaw * (1 - floor);
+      }
+    }
   }
   var parts = [], sum = 0, firstIdx = -1;
   for (i = 0; i < ALLOC_IDS.length; i++) {
     k = ALLOC_IDS[i];
     var a = byId[k];
-    var excl = (raw[k] === 0);
+    var excl = !(shares[k] > 0);
     if (!excl && firstIdx === -1) firstIdx = i;
-    var share = raw[k] / total;
-    var eur = Math.round(m * share);
+    var eur = Math.round(m * shares[k]);
     sum += eur;
-    parts.push({ id: k, icon: a ? a.icon : "•", name: a ? a.name : k, pct: r1(share * 100), euros: eur, exclu: excl });
+    parts.push({ id: k, icon: a ? a.icon : "•", name: a ? a.name : k, pct: r1(shares[k] * 100), euros: eur, exclu: excl });
   }
   if (firstIdx !== -1) parts[firstIdx].euros += m - sum;   // reste d'arrondi au premier actif inclus (déterministe)
   // verdict « une fois » vs « DCA » : piloté par le TIMING actions (le CAPE, lent, pèse à part)
-  var ddM = radar.der.ddMsci, cape = num(d.cape);
+  var ddM = radar.der.ddMsci;
   var actA = byId.actions;
   var pref = (actA && num(actA.timingScore) !== null) ? actA.timingScore : (actA ? actA.score : 50);
   if (ddM !== null && ddM <= -10) pref += 8;     // marché déjà corrigé : moins de risque d'entrée
@@ -430,13 +476,19 @@ function allocOf(montant, mode, months, d, radar, posture) {
     "hybride": "Moitié immédiate, moitié étalée — le compromis entre regret et rendement.",
     "dca": "Étaler l'apport : le contexte ne se prête pas à tout miser aujourd'hui."
   };
+  // v5.8 : contradiction explicite — Défensive forcée en plein drawdown contredit la règle
+  // maison (les paliers ACHÈTENT la faiblesse) : on l'affiche au lieu de la laisser implicite.
+  var alerte = (posture === "Défensive" && ddM !== null && ddM <= -5)
+    ? "Posture Défensive en plein drawdown (" + r1(ddM) + " %) : ta règle maison ACHÈTE cette faiblesse aux paliers (−5/−10/−15/−20 %) — le simulateur exclut ici les actions, mais la stratégie PEA prime sur le simulateur."
+    : null;
   return {
     montant: m, mode: mode, months: n,
     mensualite: n ? r2(m / n) : null,
     parts: parts, pref: pref, recommande: recommande, recommandeLabel: labels[recommande],
     posture: (typeof posture === "string" && ALLOC_EXCL[posture] !== undefined) ? posture : null,
     seuil: seuil,
-    note: "Méthode : pondération de référence (actions 40 % · immo 15 % · obligations 15 % · monétaire 13 % · or 12 % · crypto 5 %) pondérée par le score du jour (× score/50, borné ×0,4 à ×1,6), renormalisée à 100 % — les actifs sous le seuil de la posture appliquée sont exclus (45/100 en Neutre, 35 en Offensive, 55 en Défensive ; le monétaire reste toujours éligible, c'est l'actif de préservation). En DCA, la répartition est recalculée à chaque échéance sur les données du jour. Repère : sur les actions US 1926-2015, l'étude Vanguard « Cost Averaging: Invest Now or Temporarily Hold Your Cash » trouve que l'investissement en une fois bat le DCA ~2 fois sur 3 — un résultat propre à cette étude, qui ne valide pas ce simulateur multi-actifs. Heuristique transparente, pas un conseil financier : l'allocation dépend aussi de ton horizon et de ta tolérance au risque."
+    alerte: alerte,
+    note: "Méthode : pondération de référence (actions 40 % · immo 15 % · obligations 15 % · monétaire 13 % · or 12 % · crypto 5 %) pondérée par le score du jour (× score/50, borné ×0,4 à ×1,6) — pour les actions, le TIMING du jour pilote éligibilité et tilt, avec tilt plafonné à ×1,0 si CAPE ≥ 30 ; renormalisée à 100 %. Les actifs sous le seuil de la posture CHOISIE sont exclus (en auto, seuil de base 45 quelle que soit la posture automatique ; 35 en Offensive forcée, 55 en Défensive forcée). Le monétaire reste toujours éligible (actif de préservation) avec un plancher de 35 % en Prudente et 50 % en Défensive forcées. En DCA, la répartition est recalculée à chaque échéance sur les données du jour. Repère : sur les actions US 1926-2015, l'étude Vanguard « Cost Averaging: Invest Now or Temporarily Hold Your Cash » trouve que l'investissement en une fois bat le DCA ~2 fois sur 3 — un résultat propre à cette étude, qui ne valide pas ce simulateur multi-actifs. Heuristique transparente, pas un conseil financier : l'allocation dépend aussi de ton horizon, de ton portefeuille existant et de ta tolérance au risque (non demandés ici)."
   };
 }
 
@@ -565,8 +617,13 @@ function Auto_sanitizeImport(raw) {
     var ra = { date: Auto_sanStr(raw.refAlert.date, 10), from: Auto_sanNum(raw.refAlert.from), to: Auto_sanNum(raw.refAlert.to) };
     out.refAlert = (ra.date && ra.from !== null && ra.to !== null) ? ra : null;
   }
-  // v5.7 : forçage de posture importé seulement s'il est dans la liste (anti-injection)
-  if (typeof raw.postureOverride === "string" && POSTURES.indexOf(raw.postureOverride) !== -1) out.postureOverride = raw.postureOverride;
+  // v5.7/v5.8 : forçage importé seulement s'il est dans la liste (anti-injection), avec sa date
+  // de forçage (YYYY-MM-DD) — le forçage expire après 30 jours (v5.8).
+  if (typeof raw.postureOverride === "string" && POSTURES.indexOf(raw.postureOverride) !== -1) {
+    out.postureOverride = raw.postureOverride;
+    if (typeof raw.postureOverrideDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.postureOverrideDate))
+      out.postureOverrideDate = Auto_sanStr(raw.postureOverrideDate, 10);
+  }
   return out;
 }
 
@@ -580,6 +637,6 @@ if (typeof module !== "undefined" && module.exports) {
     snapshotOf: snapshotOf, badgeOf: badgeOf, radarAll: radarAll, parseGecko: parseGecko,
     staleDays: staleDays, Auto_sanStr: Auto_sanStr, Auto_sanNum: Auto_sanNum, Auto_sanitizeImport: Auto_sanitizeImport,
     stanceOf: stanceOf, adviceOf: adviceOf, allocOf: allocOf,
-    regimePostureOf: regimePostureOf, POSTURES: POSTURES, ALLOC_EXCL: ALLOC_EXCL
+    regimePostureOf: regimePostureOf, POSTURES: POSTURES, ALLOC_EXCL: ALLOC_EXCL, ALLOC_MON_FLOOR: ALLOC_MON_FLOOR
   };
 }

@@ -109,7 +109,7 @@
 <header>
   <div class="hrow">
     <h1>📡 Radar <span>Conjoncture</span></h1>
-    <span class="badge">🔄 Maj auto quotidienne · <b>v5.7</b></span>
+    <span class="badge">🔄 Maj auto quotidienne · <b>v5.8</b></span>
   </div>
   <div class="hrow" style="margin-top:6px">
     <span class="chip" id="dataChip">—</span>
@@ -143,8 +143,8 @@
     </div>
     <div class="card" id="adviceCard">
       <h2>💼 Conseil du jour — investir ou désinvestir</h2>
-      <div class="mut" style="margin-bottom:8px">Lecture d'asset manager dérivée du scoring du jour : posture pilotée par le timing (drawdown, VIX, BCE, PMI) — ou forcée manuellement ci-dessous, ce qui déplace les seuils des stances ET du simulateur ; une ligne conseil selon la situation économique (PMI, inflation, direction BCE) est affichée à titre de référence. Heuristique transparente, pas un conseil financier — l'allocation dépend aussi de ton horizon et de ta tolérance au risque. La stratégie PEA reste maîtresse.</div>
-      <div class="ddnow"><span class="mut">Posture de risque<br><span style="font-size:11px">score actions = pilote</span></span><b id="advicePosture">—</b></div>
+      <div class="mut" style="margin-bottom:8px">Lecture d'asset manager dérivée du scoring du jour : posture auto pilotée par le timing actions (drawdown, VIX, BCE, PMI), forçable manuellement ci-dessous. Le forçage déplace les SEUILS des stances et du simulateur — jamais les scores — et expire après 30 jours ; en auto, ce sont toujours les seuils de base qui s'appliquent. Les règles de sécurité (jamais vendre sur la baisse) et la stratégie PEA restent maîtresses. La ligne « Risque macro » est une lecture descriptive de contexte (axes partiellement partagés avec le timing), pas un signal. Heuristique transparente, pas un conseil financier — l'allocation dépend aussi de ton horizon, de ton portefeuille existant et de ta tolérance au risque.</div>
+      <div class="ddnow"><span class="mut">Posture de risque<br><span style="font-size:11px" id="advicePostureSub">score actions (timing) = pilote</span></span><b id="advicePosture">—</b></div>
       <div class="bar" style="margin-bottom:10px"><i id="advicePostureBar" style="width:0%"></i></div>
       <div class="mut" id="adviceDetail">—</div>
       <div class="mut" id="adviceRegime" style="margin:6px 0 8px"></div>
@@ -158,6 +158,7 @@
       </select></label></div>
       <div id="adviceStances" style="margin-top:10px"></div>
       <div id="adviceSynthese" class="verdict" style="margin-top:10px">—</div>
+      <div id="adviceWarns"></div>
       <div id="adviceCtx"></div>
       <div id="adviceDesinv"></div>
     </div>
@@ -265,7 +266,7 @@
 <script>
 // ================== Couche UI ==================
 var KEY = "radar-conjoncture-v1";
-var state = { data: null, history: [], refAlert: null, episodes: [], postureOverride: null };
+var state = { data: null, history: [], refAlert: null, episodes: [], postureOverride: null, postureOverrideDate: null };
 
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
@@ -284,16 +285,29 @@ function load() {
     state.refAlert = san.refAlert;
     state.episodes = san.episodes;
     state.postureOverride = san.postureOverride || null;   // v5.7 : forçage de posture persisté (liste blanche)
+    state.postureOverrideDate = san.postureOverrideDate || null;   // v5.8 : date du forçage (expiration 30 j)
+    expirePostureOverride();
   } else {
     state.data = normalizeData(DEFAULT_DATA);
     state.history = [];
     state.refAlert = null;
     state.episodes = [];
     state.postureOverride = null;
+    state.postureOverrideDate = null;
+  }
+}
+// v5.8 : le forçage n'est pas éternel — sans date (config v5.7 plus ancienne), date invalide
+// ou plus de 30 jours, il expire silencieusement et l'auto reprend la main.
+function expirePostureOverride() {
+  if (!state.postureOverride) { state.postureOverrideDate = null; return; }
+  var days = state.postureOverrideDate ? staleDays(state.postureOverrideDate, Date.now()) : null;
+  if (days === null || days > 30) {
+    state.postureOverride = null;
+    state.postureOverrideDate = null;
   }
 }
 function save() {
-  try { localStorage.setItem(KEY, JSON.stringify({ data: state.data, history: state.history, refAlert: state.refAlert, episodes: state.episodes, postureOverride: state.postureOverride })); } catch (e) {}
+  try { localStorage.setItem(KEY, JSON.stringify({ data: state.data, history: state.history, refAlert: state.refAlert, episodes: state.episodes, postureOverride: state.postureOverride, postureOverrideDate: state.postureOverrideDate })); } catch (e) {}
   if (navigator.storage && navigator.storage.persist) { try { navigator.storage.persist(); } catch (e) {} }
 }
 
@@ -374,6 +388,7 @@ function commitSnapshot(toastIf) {
 
 // ---- Rendu Radar ----
 function renderRadar() {
+  expirePostureOverride();   // v5.8 : forçage expiré (> 30 j) → retour auto silencieux
   var d = state.data;
   var radar = radarAll(d);
   var regime = regimeOf(d);
@@ -456,14 +471,27 @@ function renderRadar() {
     ra.innerHTML = "";
   }
 
-  // v5.4 : conseil du jour (lecture asset manager du scoring) — v5.7 : posture forçable, conseil selon la situation éco
+  // v5.4 : conseil du jour — v5.8 : forçage = SEUILS déplacés uniquement (jamais les scores),
+  // affichage honnête (barre grisée au forçage, l'auto reste tracée), risque macro descriptif.
   var adv = adviceOf(d, radar, state.postureOverride);
-  $("advicePosture").textContent = adv.posture + " (" + adv.postureScore + "/100)" + (adv.override ? " — choisie (auto : " + adv.autoPosture + ")" : "");
+  var apb = $("advicePostureBar");
+  var sub = $("advicePostureSub");
+  if (adv.override) {
+    var oj = state.postureOverrideDate ? staleDays(state.postureOverrideDate, Date.now()) : null;
+    $("advicePosture").textContent = adv.posture + " — " +
+      (oj === 0 ? "choisie aujourd'hui" : (oj !== null && oj > 0 ? "choisie depuis " + oj + " j" : "choisie")) +
+      " · auto : " + adv.autoPosture + " (" + adv.autoPostureScore + "/100)";
+    apb.style.opacity = "0.35";   // v5.8 : la barre porte le score AUTO, grisée quand ce n'est plus lui qui pilote
+    if (sub) sub.textContent = "posture choisie — l'auto ne pilote plus";
+  } else {
+    $("advicePosture").textContent = adv.posture + " (" + adv.postureScore + "/100)";
+    apb.style.opacity = "";
+    if (sub) sub.textContent = "score actions (timing) = pilote";
+  }
   var pSel = $("postureSel");
   if (pSel) pSel.value = state.postureOverride || "";
   var rg = adv.regime;
-  $("adviceRegime").innerHTML = "🧭 Situation économique → posture de référence : <b>" + esc(rg.posture) + "</b> (" + rg.score + "/100) — " + esc(rg.drivers) + (adv.override ? ". Ton forçage manuel prime sur tout le conseil." : ".");
-  var apb = $("advicePostureBar");
+  $("adviceRegime").innerHTML = "🧭 Risque macro (descriptif) : <b>" + esc(rg.risque) + "</b> (" + rg.score + "/100) — " + esc(rg.drivers) + ". Lecture de contexte, pas un signal d'achat" + (adv.override ? " ; ton forçage déplace les seuils, pas les scores." : ".");
   apb.style.width = adv.postureScore + "%";
   apb.className = adv.postureScore >= 55 ? "good" : adv.postureScore >= 45 ? "mid" : "bad";
   $("adviceDetail").textContent = adv.detail;
@@ -472,6 +500,7 @@ function renderRadar() {
     return '<div class="palrow"><span class="st" style="width:auto;min-width:104px">' + a.icon + " " + esc(a.stance) + '</span><span class="th">' + esc(a.name) + ' <span style="font-size:11px">· ' + esc(a.why) + "</span></span>" + '<span class="fl" style="color:' + col + '">' + a.verb + "</span></div>";
   }).join("");
   $("adviceSynthese").innerHTML = "<b>Synthèse.</b> " + esc(adv.synthese);
+  $("adviceWarns").innerHTML = adv.warns.map(function (w) { return '<div class="warnbox">⚠️ ' + esc(w) + "</div>"; }).join("");
   $("adviceCtx").innerHTML = adv.contexte.length
     ? '<div class="verdict" style="opacity:.7"><b>Contexte (axes lents)</b><ul style="margin:6px 0 0 16px">' + adv.contexte.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul></div>"
     : "";
@@ -499,6 +528,9 @@ function renderRadar() {
     else if (md <= 75) { mc.className = "chip warn"; mc.textContent = "macro : " + md + " j — attends le mois suivant"; }
     else { mc.className = "chip bad"; mc.textContent = "macro périmée : " + md + " jours !"; }
   }
+  // v5.8 : une répartition déjà affichée est recalculée à chaque rendu — auto.js met à jour les
+  // données après l'ouverture et le simulateur suivait deux étoiles de retard (revue v5.7, petit point).
+  if (window._allocRerun) window._allocRerun();
 }
 
 // ---- Rendu Suivi ----
@@ -622,7 +654,7 @@ $("btnGecko").addEventListener("click", function () {
 });
 
 $("btnExport").addEventListener("click", function () {
-  var blob = new Blob([JSON.stringify({ data: state.data, history: state.history, refAlert: state.refAlert, episodes: state.episodes, postureOverride: state.postureOverride }, null, 2)], { type: "application/json" });
+  var blob = new Blob([JSON.stringify({ data: state.data, history: state.history, refAlert: state.refAlert, episodes: state.episodes, postureOverride: state.postureOverride, postureOverrideDate: state.postureOverrideDate }, null, 2)], { type: "application/json" });
   var a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = "radar-conjoncture-" + new Date().toISOString().slice(0, 10) + ".json";
@@ -647,6 +679,7 @@ $("importFile").addEventListener("change", function (ev) {
       state.refAlert = san2.refAlert;
       state.episodes = san2.episodes;
       state.postureOverride = san2.postureOverride || null;   // v5.7 : posture importée seulement si valide
+      state.postureOverrideDate = san2.postureOverrideDate || null;   // v5.8 : date du forçage (expire après 30 j)
       save(); buildForm(); renderRadar();
       toast("Import réussi");
     } catch (e) { toast("Import impossible : fichier invalide"); }
@@ -726,8 +759,10 @@ var NOTIFY_OLD_KEY = "radar-telegram-v1"; // configs Telegram v5.1, lues et migr
   function runAlloc() {
     var d = state.data;
     var radar = radarAll(d);
-    var effPosture = adviceOf(d, radar, state.postureOverride).posture;   // v5.7 : posture effective (choisie ou auto) pilote le seuil
-    var alloc = allocOf(mt.value, mode.value, months.value, d, radar, effPosture);
+    var adv = adviceOf(d, radar, state.postureOverride);
+    // v5.8 : en AUTO, seuils de base v5.6 (45) — la posture automatique ne décale plus les seuils ;
+    // seul le FORÇAGE manuel est passé à allocOf (revue v5.7, point 2).
+    var alloc = allocOf(mt.value, mode.value, months.value, d, radar, state.postureOverride);
     if (!alloc) {
       out.innerHTML = '<div class="warnbox">⚠️ Montant invalide — indique un montant en euros entre 1 et 10 000 000' + (mode.value === "dca" ? " (et un nombre de mensualités entre 2 et 24)" : "") + ".</div>";
       return;
@@ -740,9 +775,14 @@ var NOTIFY_OLD_KEY = "radar-telegram-v1"; // configs Telegram v5.1, lues et migr
     var modeTxt = alloc.mode === "dca"
       ? "DCA : " + alloc.months + " mensualités de " + fmtEUR2(alloc.mensualite) + " — la répartition ci-dessous est la projection totale à données du jour, recalculée à chaque échéance."
       : "En une fois, dès aujourd'hui.";
+    var floorTxt = (typeof ALLOC_MON_FLOOR !== "undefined" && alloc.posture && ALLOC_MON_FLOOR[alloc.posture]) ? ", plancher monétaire " + ALLOC_MON_FLOOR[alloc.posture] + " %" : "";
+    var postureTxt = alloc.posture
+      ? "<b>" + esc(alloc.posture) + "</b> (choisie) — actifs sous " + alloc.seuil + "/100 exclus (monétaire toujours éligible" + floorTxt + ")"
+      : "<b>auto (" + esc(adv.posture) + ")</b> — seuils de base (" + alloc.seuil + "/100, inchangés en auto quelle que soit la posture du jour)";
     out.innerHTML =
-      "<div class='mut' style='margin:8px 0'>" + modeTxt + " Posture appliquée : <b>" + esc(effPosture) + "</b> — actifs sous " + alloc.seuil + "/100 exclus (monétaire toujours éligible).</div>" + rows +
+      "<div class='mut' style='margin:8px 0'>" + modeTxt + " Posture appliquée : " + postureTxt + ".</div>" + rows +
       "<div class='palrow' style='border-top:1px solid var(--line)'><span class='st' style='width:auto;min-width:86px'>Total</span><span class='th'></span><span class='fl' style='font-weight:700'>" + fmtEUR(total) + "</span></div>" +
+      (alloc.alerte ? '<div class="warnbox" style="margin-top:8px">⚠️ ' + esc(alloc.alerte) + "</div>" : "") +
       '<div class="verdict" style="margin-top:10px"><b>Recommandation du jour : ' +
       (alloc.recommande === "une fois" ? "en une fois" : alloc.recommande === "hybride" ? "hybride (½ maintenant, ½ étalée)" : "DCA (étalé)") +
       "</b> — indice " + alloc.pref + "/100. " + esc(alloc.recommandeLabel) +
@@ -755,11 +795,13 @@ var NOTIFY_OLD_KEY = "radar-telegram-v1"; // configs Telegram v5.1, lues et migr
   window._allocRerun = function () { if (out.innerHTML) runAlloc(); };   // v5.7 : recalcul auto si une répartition est affichée quand la posture change
 })();
 
-// ---- v5.7 : forçage manuel de la posture (conseil + simulateur), persisté sur ce téléphone, jamais poussé sur GitHub ----
+// ---- v5.7/v5.8 : forçage manuel de la posture (conseil + simulateur), persisté sur ce téléphone, jamais poussé sur GitHub ----
 (function () {
   $("postureSel").addEventListener("change", function () {
     var v = $("postureSel").value;
-    state.postureOverride = (typeof POSTURES !== "undefined" && POSTURES.indexOf(v) !== -1) ? v : null;   // "" = auto
+    var valid = (typeof POSTURES !== "undefined" && POSTURES.indexOf(v) !== -1);
+    state.postureOverride = valid ? v : null;   // "" = auto
+    state.postureOverrideDate = valid ? new Date().toISOString().slice(0, 10) : null;   // v5.8 : date du forçage (expiration 30 j)
     save();
     renderRadar();
     if (window._allocRerun) window._allocRerun();

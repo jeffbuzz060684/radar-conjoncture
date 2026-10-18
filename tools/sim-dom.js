@@ -1,4 +1,4 @@
-/* Simulation DOM v5.7 (outillage) — rejoue le chargement complet de la page avec des stubs (aucun réseau).
+/* Simulation DOM v5.8 (outillage) — rejoue le chargement complet de la page avec des stubs (aucun réseau).
    Exécution : node sim.js  →  doit finir par "SIM OK" sans aucune erreur d'exécution. */
 "use strict";
 var fs = require("fs"), path = require("path"), vm = require("vm");
@@ -88,44 +88,58 @@ var checks = [];
 function ck(name, cond) { checks.push({ name: name, ok: !!cond }); }
 
 ck("page rendue : posture affichée", /\/100\)/.test(txt("advicePosture")));
-ck("conseil situation économique affiché", /posture de référence/.test(txt("adviceRegime")));
+ck("risque macro descriptif affiché (vocabulaire v5.8)", /Risque macro/.test(txt("adviceRegime")) && /Modéré/.test(txt("adviceRegime")));
 ck("auto (pas d'override) : pas de « choisie »", txt("advicePosture").indexOf("choisie") === -1);
+ck("sous-titre auto : « score actions (timing) = pilote »", txt("advicePostureSub") === "score actions (timing) = pilote");
 ck("state.data chargé (dateData)", sandbox.state && sandbox.state.data && sandbox.state.data.dateData);
 ck("pas d'override au départ", sandbox.state.postureOverride === null);
 
-// 6. Override manuel → conseil + persistance
+// 6. Override manuel → conseil + persistance + affichage honnête (v5.8)
 els.postureSel.value = "Offensive";
 els.postureSel.fire("change");
-ck("override Offensive : posture affichée « choisie »", txt("advicePosture").indexOf("Offensive") !== -1 && txt("advicePosture").indexOf("choisie (auto : Prudente)") !== -1);
-ck("override persisté dans localStorage", (store["radar-conjoncture-v1"] || store[Object.keys(store)[0] || ""] || "").indexOf("\"Offensive\"") !== -1);
+ck("override Offensive : « choisie aujourd'hui · auto : Prudente (44/100) »",
+  txt("advicePosture").indexOf("Offensive — choisie aujourd'hui") !== -1 && txt("advicePosture").indexOf("auto : Prudente (44/100)") !== -1);
+ck("sous-titre forçage : « posture choisie — l'auto ne pilote plus »", txt("advicePostureSub") === "posture choisie — l'auto ne pilote plus");
+ck("override + date persistés dans localStorage",
+  (store["radar-conjoncture-v1"] || "").indexOf("\"Offensive\"") !== -1 && (store["radar-conjoncture-v1"] || "").indexOf("postureOverrideDate") !== -1);
 
-// 7. Simulateur piloté par la posture
+// 7. Simulateur piloté par le forçage UNIQUEMENT (v5.8) — en Offensive, les actions (timing 44) redeviennent achetables
 els.allocMontant.value = "5000";
 els.allocMode.value = "une fois";
 els.btnAlloc.click();
 var allocHtml = String(els.allocOut.innerHTML);
 ck("répartition calculée", allocHtml.indexOf("Total") !== -1);
-ck("posture appliquée affichée (Offensive, seuil 35)", allocHtml.indexOf("Posture appliquée") !== -1 && allocHtml.indexOf("35/100") !== -1);
-ck("obligations/immo/crypto incluses en Offensive (seul actions 20 exclue)", (allocHtml.match(/opacity:\.45/g) || []).length === 1);
+ck("posture appliquée affichée (Offensive choisie, seuil 35)", allocHtml.indexOf("Posture appliquée") !== -1 && allocHtml.indexOf("35/100") !== -1 && allocHtml.indexOf("(choisie)") !== -1);
+ck("aucune ligne exclue en Offensive (actions timing 44 ≥ 35 incluses)", (allocHtml.match(/opacity:\.45/g) || []).length === 0);
+ck("actions incluses via le timing (36,5 %)", allocHtml.indexOf("36.5 %") !== -1);
 ck("somme 5 000 € affichée", allocHtml.indexOf("5 000 €") !== -1);
 
-// 8. Changement de posture → recalcul automatique de la répartition affichée
+// 8. Changement de posture → recalcul automatique + plancher monétaire (v5.8)
 els.postureSel.value = "Défensive";
 els.postureSel.fire("change");
 var allocHtml2 = String(els.allocOut.innerHTML);
 ck("recalcul auto : seuil 55 en Défensive", allocHtml2.indexOf("55/100") !== -1);
-ck("recalcul auto : 4 lignes exclues (actions, obligations, immo, crypto), or + monétaire inclus", (allocHtml2.match(/opacity:\.45/g) || []).length === 4);
+ck("recalcul auto : 4 lignes exclues (actions, obligations, immo, crypto)", (allocHtml2.match(/opacity:\.45/g) || []).length === 4);
+ck("plancher monétaire Défensive : or 50 % / monétaire 50 % (plus de 57/43)", (allocHtml2.match(/50 %/g) || []).length >= 2);
 ck("recalcul auto : total 5 000 € toujours", allocHtml2.indexOf("5 000 €") !== -1);
-ck("conseil éco inchangé + forçage prime", txt("adviceRegime").indexOf("forçage manuel prime") !== -1);
+ck("risque macro inchangé + forçage = seuils, pas les scores", txt("adviceRegime").indexOf("déplace les seuils, pas les scores") !== -1);
 
 // 9. Retour auto
 els.postureSel.value = "";
 els.postureSel.fire("change");
-ck("retour auto : plus de « choisie »", txt("advicePosture").indexOf("choisie") === -1 && sandbox.state.postureOverride === null);
+ck("retour auto : plus de « choisie », override et date remis à zéro",
+  txt("advicePosture").indexOf("choisie") === -1 && sandbox.state.postureOverride === null && sandbox.state.postureOverrideDate === null);
+
+// 9 bis. Expiration du forçage (v5.8) : plus de 30 jours → retour auto silencieux
+store["radar-conjoncture-v1"] = JSON.stringify({ data: {}, postureOverride: "Offensive", postureOverrideDate: "2026-09-01" });
+sandbox.load();
+sandbox.renderRadar();
+ck("forçage > 30 j expiré silencieusement (retour auto)",
+  sandbox.state.postureOverride === null && sandbox.state.postureOverrideDate === null && txt("advicePosture").indexOf("Prudente") !== -1);
 
 // 10. Bilan
 var fail = checks.filter(function (c) { return !c.ok; });
 checks.forEach(function (c) { console.log((c.ok ? "✅ " : "❌ ") + c.name); });
 console.log("");
 if (fail.length) { console.log("SIM ÉCHECS : " + fail.length); process.exit(1); }
-console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override + simulateur).");
+console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + simulateur piloté par le forçage seul).");

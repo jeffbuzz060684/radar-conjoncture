@@ -1,6 +1,6 @@
-/* Harnais de tests — Radar Conjoncture v5.7 (logic.js, auto.js, vehicles.js, fichiers livrés,
+/* Harnais de tests — Radar Conjoncture v5.8 (logic.js, auto.js, vehicles.js, fichiers livrés,
    pipeline quotidien/épisode/référence, validateurs, workflows, notifications ntfy/Telegram,
-   sanitisation des imports, régressions v4.1/v5, compilation navigateur des scripts servis, conseil d'allocation v5.4, socle 1 000 €/mois v5.5, revue v5.6 : paliers incohérents, unités EUR, conseil non prescriptif, exclusions d'allocation, notification serveur, bceDirOf stable ; v5.7 : posture pilotable — conseil selon la situation économique (regimePostureOf), forçage manuel impactant stances et simulateur).
+   sanitisation des imports, régressions v4.1/v5, compilation navigateur des scripts servis, conseil d'allocation v5.4, socle 1 000 €/mois v5.5, revue v5.6 : paliers incohérents, unités EUR, conseil non prescriptif, exclusions d'allocation, notification serveur, bceDirOf stable ; v5.7 : posture pilotable (regimePostureOf, forçage manuel) ; v5.8 : revue v5.7 — actions pilotées par le timing (CAPE = plafond, plus un verrou), auto = seuils v5.6 stricts (le forçage SEUL décale les seuils), vocabulaire risque macro séparé + avertissements, forçage daté expirant à 30 j, plancher monétaire Prudente/Défensive, affichage honnête du forçage).
    Exécution : node tools/test-auto.js  →  0 échec obligatoire avant publication. */
 "use strict";
 var fs = require("fs");
@@ -369,8 +369,8 @@ t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === 
 // ---------- index.html, logic.js, sw.js, auto.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v5.7", html.indexOf("<b>v5.7</b>") !== -1);
-t("index.html: aucun ancien badge v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
+t("index.html: badge v5.8", html.indexOf("<b>v5.8</b>") !== -1);
+t("index.html: aucun ancien badge v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: logic.js chargé entre vehicles.js et le script UI inline",
   html.indexOf('<script src="vehicles.js"></script>') !== -1 &&
@@ -381,7 +381,7 @@ t("index.html: logique pure extraite (définitions absentes de l'inline)",
 t("index.html: la logique reste appelée par l'UI", html.indexOf("radarAll(state.data)") !== -1 && html.indexOf("strategyOf(") !== -1);
 t("index.html: carte notifications ntfy + Telegram (canal, sujet, token, chat id, test, oubli)",
   html.indexOf('id="notifyChannel"') !== -1 && html.indexOf('id="ntfyTopic"') !== -1 && html.indexOf('id="tgToken"') !== -1 && html.indexOf('id="tgChatId"') !== -1 && html.indexOf('id="btnTgTest"') !== -1 && html.indexOf('id="btnTgForget"') !== -1);
-t("index.html: config notification jamais incluse dans l'export (données persos)", html.indexOf("NOTIFY_KEY") !== -1 && html.indexOf("data: state.data, history: state.history, refAlert: state.refAlert, episodes: state.episodes, postureOverride: state.postureOverride }, null, 2") !== -1);
+t("index.html: config notification jamais incluse dans l'export (données persos)", html.indexOf("NOTIFY_KEY") !== -1 && html.indexOf("data: state.data, history: state.history, refAlert: state.refAlert, episodes: state.episodes, postureOverride: state.postureOverride, postureOverrideDate: state.postureOverrideDate }, null, 2") !== -1);
 t("index.html: rétrocompat config Telegram v5.1 lue (NOTIFY_OLD_KEY)", html.indexOf("NOTIFY_OLD_KEY") !== -1);
 t("index.html: chip macro séparée + fraîcheur mensuelle", html.indexOf('id="macroChip"') !== -1 && html.indexOf("dateMacro") !== -1 && html.indexOf("macro fraîche") !== -1);
 t("index.html: alerte référence échappée (anti-injection)", html.indexOf("esc(String(state.refAlert.from))") !== -1);
@@ -396,8 +396,8 @@ t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: VIX lissé utilisé dans le scoring (vixEff, désormais dans logic.js)", srcLogic.indexOf("der.vixEff") !== -1 && srcLogic.indexOf("vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v13", sw.indexOf('CACHE = "radar-v13"') !== -1);
-t("sw.js: anciens caches v12/v11/v10/v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v12") === -1 && sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
+t("sw.js: cache v14", sw.indexOf('CACHE = "radar-v14"') !== -1);
+t("sw.js: anciens caches v13/v12/v11/v10/v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v13") === -1 && sw.indexOf("radar-v12") === -1 && sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
 t("sw.js: logic.js dans le shell", sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
 t("sw.js: shell réseau d'abord + repli cache (plus aucun skew HTML frais / JS périmé)",
@@ -653,11 +653,17 @@ t("v5.7: adviceOf — stances déplacées par la posture : obligations 41 « Ne 
   var off = L.adviceOf(L.DEFAULT_DATA, RAD0, "Offensive").assets.filter(function (a) { return a.id === "obligations"; })[0];
   return auto.stance === "Ne pas renforcer" && off.stance === "Conserver";
 })());
-t("v5.7: adviceOf — en Défensive l'or 76 reste Sur-pondérer (seuils durcis) et le monétaire 52 garde ses seuils de base (Conserver)", (function () {
-  var def = L.adviceOf(L.DEFAULT_DATA, RAD0, "Défensive");
-  var or = def.assets.filter(function (a) { return a.id === "or"; })[0];
-  var mon = def.assets.filter(function (a) { return a.id === "monetaire"; })[0];
-  return or.stance === "Sur-pondérer" && mon.stance === "Conserver";
+t("v5.8: stanceOf — marges sûres par posture (remplace le test or 76/Défensive, à 1 pt du seuil 75)", (function () {
+  var ok = true;
+  ["Défensive", "Prudente", "Neutre", "Constructive", "Offensive"].forEach(function (p) {
+    ok = ok && L.stanceOf(80, p).label === "Sur-pondérer" && L.stanceOf(80, p).verb === "INVESTIR";
+  });
+  ok = ok && L.stanceOf(70, "Défensive").label === "Renforcer" && L.stanceOf(70, "Prudente").label === "Sur-pondérer";
+  ok = ok && L.stanceOf(52, "Défensive").label === "Ne pas renforcer" && L.stanceOf(52, "Neutre").label === "Conserver";
+  ok = ok && L.stanceOf(30, "Défensive").verb === "SOUS-PONDÉRER" && L.stanceOf(30, "Offensive").label === "Ne pas renforcer";
+  // le monétaire garde ses seuils de base en toute posture (préservation non décalée) — 52 à marges sûres
+  ok = ok && L.adviceOf(L.DEFAULT_DATA, RAD0, "Défensive").assets.filter(function (a) { return a.id === "monetaire"; })[0].stance === "Conserver";
+  return ok;
 })());
 t("v5.7: stanceOf — seuils inchangés sans posture (régression v5.6 : 30 → SOUS-PONDÉRER, 52 → Conserver)",
   L.stanceOf(30).verb === "SOUS-PONDÉRER" && L.stanceOf(52).label === "Conserver" && L.stanceOf(45).label === "Conserver" && L.stanceOf(55).label === "Renforcer");
@@ -683,10 +689,120 @@ t("v5.7: sanitizeImport — postureOverride valide conservée, invalide ignorée
   L.Auto_sanitizeImport({ postureOverride: "Offensive" }).postureOverride === "Offensive" && L.Auto_sanitizeImport({ postureOverride: "Hack<script>" }).postureOverride === undefined);
 t("v5.7: index.html — sélecteur de posture + override passé à adviceOf + conseil situation éco affiché",
   html.indexOf('id="postureSel"') !== -1 && html.indexOf('id="adviceRegime"') !== -1 && html.indexOf("adviceOf(d, radar, state.postureOverride)") !== -1 && html.indexOf("regime") !== -1);
-t("v5.7: index.html — override persisté (save/export) et importé via la liste blanche, simulateur piloté par la posture effective",
-  html.indexOf("postureOverride: state.postureOverride") !== -1 && html.indexOf("state.postureOverride = san.postureOverride || null") !== -1 && html.indexOf("state.postureOverride = san2.postureOverride || null") !== -1 && html.indexOf("allocOf(mt.value, mode.value, months.value, d, radar, effPosture)") !== -1);
+t("v5.7: index.html — override persisté (save/export) et importé via la liste blanche, simulateur piloté par le forçage uniquement (v5.8)",
+  html.indexOf("postureOverride: state.postureOverride") !== -1 && html.indexOf("state.postureOverride = san.postureOverride || null") !== -1 && html.indexOf("state.postureOverride = san2.postureOverride || null") !== -1 && html.indexOf("allocOf(mt.value, mode.value, months.value, d, radar, state.postureOverride)") !== -1);
 t("v5.7: index.html — changer la posture recalcule une répartition déjà affichée (window._allocRerun)",
   html.indexOf("window._allocRerun") !== -1 && html.indexOf("if (window._allocRerun) window._allocRerun()") !== -1);
+
+// 12. v5.8 : revue v5.7 — le TIMING pilote les actions (CAPE = plafond, plus un verrou), auto = seuils
+//     v5.6 stricts (le forçage SEUL décale les seuils), plancher monétaire, forçage daté (30 j),
+//     vocabulaire risque macro séparé, avertissements de contradiction, affichage honnête.
+t("v5.8: exports ALLOC_MON_FLOOR (plancher monétaire du simulateur)", typeof L.ALLOC_MON_FLOOR === "object" && L.ALLOC_MON_FLOOR["Prudente"] === 35 && L.ALLOC_MON_FLOOR["Défensive"] === 50);
+t("v5.8: chaîne UI en AUTO — posture Prudente affichée MAIS seuils v5.6 de base : allocOf seuil 45 et actions (timing 44) « Ne pas renforcer »",
+  (function () {
+    var adv = L.adviceOf(L.DEFAULT_DATA, RAD0, null);
+    var a = adv.assets.filter(function (x) { return x.id === "actions"; })[0];
+    var al = L.allocOf(1000, "une fois", null, L.DEFAULT_DATA, RAD0, null);
+    return adv.posture === "Prudente" && al.seuil === 45 && a.stance === "Ne pas renforcer";
+  })());
+t("v5.8: adviceOf — actions pilotées par le TIMING : « Conserver » en Offensive forcée (timing 44 ≥ 35), plus jamais verrouillées par le CAPE",
+  (function () {
+    var adv = L.adviceOf(L.DEFAULT_DATA, RAD0, "Offensive");
+    return adv.assets.filter(function (x) { return x.id === "actions"; })[0].stance === "Conserver";
+  })());
+t("v5.8: allocOf Offensive — actions ÉLIGIBLES via le timing (44 ≥ 35) : euros > 0, somme exacte",
+  (function () {
+    var al = L.allocOf(1000, "une fois", null, L.DEFAULT_DATA, RAD0, "Offensive");
+    var act = al.parts.filter(function (p) { return p.id === "actions"; })[0];
+    return !act.exclu && act.euros > 0 && al.parts.reduce(function (s, p) { return s + p.euros; }, 0) === 1000;
+  })());
+t("v5.8: allocOf — plafond CAPE : timing 70 + CAPE ≥ 30 → tilt actions borné ×1,0 (sans plafond il serait ×1,4)",
+  (function () {
+    var RR = { der: { ddMsci: -1.3 }, list: [
+      { id: "or", icon: "🥇", name: "Or", score: 76 },
+      { id: "monetaire", icon: "💵", name: "Monétaire", score: 52 },
+      { id: "actions", icon: "🌍", name: "Actions", score: 20, timingScore: 70 },
+      { id: "obligations", icon: "📜", name: "Obligations", score: 41 },
+      { id: "immo", icon: "🏢", name: "Immobilier", score: 43 },
+      { id: "crypto", icon: "₿", name: "Crypto", score: 44 }
+    ] };
+    var cap = L.allocOf(1000, "une fois", null, { cape: 40 }, RR, "Offensive");
+    var ncap = L.allocOf(1000, "une fois", null, { cape: null }, RR, "Offensive");
+    var pa = cap.parts.filter(function (p) { return p.id === "actions"; })[0].pct;
+    var pn = ncap.parts.filter(function (p) { return p.id === "actions"; })[0].pct;
+    return pa === 39.5 && pn > pa + 5;   // 40/101,36 vs 56/117,36 : le plafond borne le bonus d'achat
+  })());
+t("v5.8: allocOf Défensive — plancher monétaire 50 % : or 50 % / monétaire 50 % (fini le 57/43 renormalisé)",
+  (function () {
+    var al = L.allocOf(1000, "une fois", null, L.DEFAULT_DATA, RAD0, "Défensive");
+    var or = al.parts.filter(function (p) { return p.id === "or"; })[0];
+    var mon = al.parts.filter(function (p) { return p.id === "monetaire"; })[0];
+    return or.pct === 50 && mon.pct === 50 && or.euros === 500 && mon.euros === 500;
+  })());
+t("v5.8: allocOf Prudente — plancher 35 % qui binde quand le monétaire est faible ; en auto, pas de plancher",
+  (function () {
+    var RR = { der: { ddMsci: -1.3 }, list: [
+      { id: "or", icon: "🥇", name: "Or", score: 76 },
+      { id: "monetaire", icon: "💵", name: "Monétaire", score: 20 },
+      { id: "actions", icon: "🌍", name: "Actions", score: 20, timingScore: 70 },
+      { id: "obligations", icon: "📜", name: "Obligations", score: 41 },
+      { id: "immo", icon: "🏢", name: "Immobilier", score: 43 },
+      { id: "crypto", icon: "₿", name: "Crypto", score: 44 }
+    ] };
+    var pr = L.allocOf(1000, "une fois", null, { cape: null }, RR, "Prudente");   // seuil 50 : actions (timing 70) + or + mon
+    var au = L.allocOf(1000, "une fois", null, { cape: null }, RR, null);          // seuil 45, plancher désactivé en auto
+    var mPr = pr.parts.filter(function (p) { return p.id === "monetaire"; })[0].pct;
+    var mAu = au.parts.filter(function (p) { return p.id === "monetaire"; })[0].pct;
+    return mPr === 35 && mAu < 35;
+  })());
+t("v5.8: regimePostureOf — vocabulaire risque macro séparé du timing : Modéré (52) aujourd'hui, Stress en contraction, Tendu, Calme en expansion",
+  (function () {
+    return L.regimePostureOf(L.DEFAULT_DATA).risque === "Modéré" &&
+      L.regimePostureOf(L.DEFAULT_DATA).posture === "Neutre" &&
+      L.regimePostureOf({ pmiZE: 46, inflZE: 3.8, bceDir: "hausse", vix5: 28 }).risque === "Stress" &&
+      L.regimePostureOf({ pmiZE: 56, inflZE: 1.5, bceDir: "baisse", vix5: 15 }).risque === "Calme" &&
+      L.regimePostureOf({ pmiZE: 48 }).risque === "Tendu";
+  })());
+t("v5.8: adviceOf — warns si forçage en plein drawdown, silence en auto ou hors drawdown",
+  (function () {
+    var dDD = JSON.parse(JSON.stringify(L.DEFAULT_DATA));
+    dDD.msciHigh52 = L.r2(dDD.msci * 1.10);   // drawdown ≈ −9,1 %
+    return L.adviceOf(dDD, L.radarAll(dDD), "Défensive").warns.length === 1 &&
+      L.adviceOf(dDD, L.radarAll(dDD), null).warns.length === 0 &&
+      L.adviceOf(L.DEFAULT_DATA, RAD0, "Défensive").warns.length === 0;   // pas de drawdown → pas d'avertissement
+  })());
+t("v5.8: allocOf — alerte si Défensive forcée en plein drawdown (contradiction avec la règle des paliers)",
+  (function () {
+    var dDD = JSON.parse(JSON.stringify(L.DEFAULT_DATA));
+    dDD.msciHigh52 = L.r2(dDD.msci * 1.10);
+    var rDD = L.radarAll(dDD);
+    return L.allocOf(1000, "une fois", null, dDD, rDD, "Défensive").alerte !== null &&
+      L.allocOf(1000, "une fois", null, dDD, rDD, null).alerte === null &&
+      L.allocOf(1000, "une fois", null, L.DEFAULT_DATA, RAD0, "Défensive").alerte === null;
+  })());
+t("v5.8: sanitizeImport — postureOverrideDate conservée (YYYY-MM-DD) seulement avec un forçage valide, format invalide ignoré",
+  (function () {
+    return L.Auto_sanitizeImport({ postureOverride: "Offensive", postureOverrideDate: "2026-10-18" }).postureOverrideDate === "2026-10-18" &&
+      L.Auto_sanitizeImport({ postureOverride: "Offensive", postureOverrideDate: "18/10/2026" }).postureOverrideDate === undefined &&
+      L.Auto_sanitizeImport({ postureOverride: "Offensive", postureOverrideDate: "<script>x" }).postureOverrideDate === undefined &&
+      L.Auto_sanitizeImport({ postureOverrideDate: "2026-10-18" }).postureOverrideDate === undefined;
+  })());
+t("v5.8: index.html — forçage daté : date posée au changement, expiration à 30 j (expirePostureOverride), « choisie depuis N j » affiché",
+  html.indexOf("postureOverrideDate = valid ? new Date().toISOString().slice(0, 10) : null") !== -1 &&
+  html.indexOf("function expirePostureOverride") !== -1 &&
+  html.indexOf("days > 30") !== -1 &&
+  html.indexOf("choisie depuis") !== -1 &&
+  html.indexOf("choisie aujourd'hui") !== -1);
+t("v5.8: index.html — affichage honnête du forçage : sous-titre dynamique (advicePostureSub), barre grisée, warns rendus",
+  html.indexOf('id="advicePostureSub"') !== -1 &&
+  html.indexOf("posture choisie — l'auto ne pilote plus") !== -1 &&
+  html.indexOf('apb.style.opacity = "0.35"') !== -1 &&
+  html.indexOf('id="adviceWarns"') !== -1);
+t("v5.8: index.html — vocabulaire macro séparé (« Risque macro (descriptif) ») + simulateur recalculé à chaque rendu + horizon/portefeuille/tolérance cités",
+  html.indexOf("Risque macro (descriptif)") !== -1 &&
+  html.indexOf("posture de référence") === -1 &&
+  html.indexOf("if (window._allocRerun) window._allocRerun();") !== -1 &&
+  html.indexOf("portefeuille existant") !== -1);
 
 // ---------- Régression v5.3 : chaque script servi doit compiler comme script navigateur ----------
 // Un `return` au niveau global est légal en CommonJS/Node mais SyntaxError dans un <script>
