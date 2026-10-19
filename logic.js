@@ -761,6 +761,152 @@ function Auto_sanitizeImport(raw) {
   return out;
 }
 
+// ---------- v6.0 : 🎯 Ma décision — flux du mois, supplément, lecture du stock ----------
+// Répond à « investir au bon moment, sur le bon actif » en consolidant les fonctions déjà
+// testées (paliersOf, adviceOf, allocOf, entryPrefOf) : AUCUNE donnée nouvelle, AUCUN seuil
+// nouveau — la carte est une lecture décisionnelle, pas un second moteur. Trois blocs :
+//   flux       → le socle 1 000 €/mois : y a-t-il un palier à déployer ce mois-ci ?
+//   supplement → un apport exceptionnel : verdict d'entrée (entryPrefOf) + répartition (allocOf)
+//   stock      → le patrimoine détenu : écarts de poids vs la référence, LECTURE jamais ordre.
+// Règles maîtresses inchangées : on ne vend JAMAIS sur la baisse ; le livret n'entre jamais
+// dans la capacité paliers ; le private equity (radar === null) est affiché mais jamais
+// arbitrable ; la pondération de référence est un repère de RÉPARTITION D'APPORTS, pas une
+// cible à rattraper en vendant. Les montants réels (reels) sont fournis par l'UI depuis le
+// téléphone de Jade (stockage local « radar-reels ») : jamais dans l'état exporté, jamais
+// dans le dépôt public.
+
+// Sanitisation stricte des montants réels : liste blanche des 7 noms de PATRIMOINE_ACTIFS,
+// nombres 0..1e12 uniquement, clés héritées (« constructor », « toString ») rejetées par
+// hasOwnProperty (v5.9 : leçon isPosture). Garde anti-skew : un logic.js partiellement
+// périmé (cache SW/CDN pendant la bascule) ne doit JAMAIS faire de page blanche.
+function sanitizeReels(raw) {
+  var out = {};
+  if (typeof PATRIMOINE_ACTIFS === "undefined") return out;
+  if (!raw || typeof raw !== "object") return out;
+  var noms = PATRIMOINE_ACTIFS.map(function (a) { return a.nom; });
+  for (var i = 0; i < noms.length; i++) {
+    var k = noms[i];
+    if (!Object.prototype.hasOwnProperty.call(raw, k)) continue;   // héritées d'Object.prototype → ignorées
+    var v = num(raw[k]);
+    if (v !== null && v >= 0 && v <= 1e12) out[k] = v;
+  }
+  return out;
+}
+
+function decisionOf(d, radar, opts) {
+  var o = (opts && typeof opts === "object") ? opts : {};
+  var der = radar.der;
+  var res = { flux: null, supplement: null, stock: null };
+
+  // ---- 1 · FLUX DU MOIS (socle 1 000 €/mois — la seule question : un palier à déployer ?) ----
+  var pal = paliersOf(d, der);
+  var reserve = num(d.reserve);
+  var flux = { etat: null, palier: null, seuil: null, montant: null, dist: null, lines: [], warns: [] };
+  if (!pal.length) {
+    // v5.6 : références 52 sem. manquantes ou incohérentes → paliers suspendus, socle intact
+    flux.etat = "suspendu";
+    flux.lines.push("Paliers suspendus (référence 52 sem. manquante ou incohérente) : le socle 1 000 €/mois continue normalement, aucun déploiement tant que les références ne sont pas réparées.");
+  } else {
+    var next = null;
+    for (var i = 0; i < pal.length; i++) if (pal[i].atteint && !d.paliersDone["p" + pal[i].p]) { next = pal[i]; break; }
+    if (next) {
+      flux.etat = "deploy";
+      flux.palier = next.p;
+      flux.seuil = next.seuil;
+      flux.montant = (reserve !== null && reserve > 0) ? Math.round(reserve * 0.25) : null;
+      flux.lines.push("Palier −" + next.p + " % FRANCHI (cours " + num(d.msci) + " €, seuil " + next.seuil + " €) → déploye 25 % de la réserve" + (flux.montant !== null ? " ≈ " + flux.montant + " €" : "") + " sur DCAM, UNE seule fois cet épisode, puis marque le palier « déployé » dans la carte paliers.");
+    } else {
+      flux.etat = "normal";
+      var nxt = null;
+      for (var j = 0; j < pal.length; j++) { if (!pal[j].atteint) { nxt = pal[j]; break; } }
+      if (nxt) {
+        flux.palier = nxt.p;
+        flux.seuil = nxt.seuil;
+        if (num(d.msci) !== null && nxt.seuil > 0) {
+          flux.dist = r1((1 - nxt.seuil / d.msci) * 100);   // v4.1 : dist = 1 − seuil/cours, positif = baisse restante
+          flux.lines.push("Socle normal : 800 €/mois DCAM + 200 €/mois réserve, rien à déployer aujourd'hui. Prochain palier −" + nxt.p + " % à " + nxt.seuil + " €, soit encore " + flux.dist + " % de baisse sous le cours actuel (" + num(d.msci) + " €).");
+        } else {
+          flux.lines.push("Socle normal : le cours n'est pas chiffrable — le prochain relevé recalcule la distance au prochain palier (−" + nxt.p + " % à " + nxt.seuil + " €).");
+        }
+      } else {
+        var pending = pal.filter(function (p) { return p.atteint; });
+        flux.lines.push(pending.length
+          ? "Tous les paliers franchis sont marqués déployés — plus rien à faire jusqu'au prochain épisode (un nouveau plus haut 52 sem. réinitialise la mécanique)."
+          : "Socle normal : 800 €/mois DCAM + 200 €/mois réserve, aucun palier à portée aujourd'hui.");
+      }
+    }
+  }
+  if (reserve !== null && reserve > 3000)
+    flux.warns.push("Réserve > 3 000 € : règle anti-accumulation — hors palier, la réserve reste au monétaire, pas de déploiement « par ennui » (CAPE actuel : " + (num(d.cape) !== null ? r1(num(d.cape)) : "?") + ").");
+  if (der.ddMsci !== null && der.ddMsci <= -5)
+    flux.warns.push("Marché en drawdown (" + r1(der.ddMsci) + " %) : on ne vend JAMAIS sur la baisse — la mécanique des paliers achète cette faiblesse au contraire.");
+  res.flux = flux;
+
+  // ---- 2 · SUPPLÉMENT (prime, don, virement — en plus du socle) ----
+  var sup = { montant: null, alloc: null, verdict: null, topStances: null };
+  var m = (o.supplement && num(o.supplement.montant) !== null) ? num(o.supplement.montant) : null;
+  if (m !== null && m >= 1) {
+    sup.montant = m;
+    sup.alloc = allocOf(m, (o.supplement.mode === "dca") ? "dca" : "une fois", num(o.supplement.months), d, radar, isPosture(o.override) ? o.override : null);
+  }
+  // Verdict d'entrée = la MÊME source que conseil et simulateur (entryPrefOf, v5.10) : les
+  // trois affichages ne peuvent pas se contredire le même jour.
+  var actA = null;
+  radar.list.forEach(function (a) { if (a.id === "actions") actA = a; });
+  var ts = (actA && num(actA.timingScore) !== null) ? actA.timingScore : (actA ? num(actA.score) : null);
+  sup.verdict = entryPrefOf(d, der, ts);
+  if (!sup.alloc) {
+    // Pas de montant saisi → les actifs à renforcer/consolider selon le conseil du jour
+    var adv = adviceOf(d, radar, isPosture(o.override) ? o.override : null);
+    sup.topStances = adv.assets.filter(function (a) { return a.verb === "INVESTIR" || a.verb === "CONSERVER"; }).slice(0, 3);
+  }
+  res.supplement = sup;
+
+  // ---- 3 · STOCK (patrimoine détenu — LECTURE d'écarts, jamais un ordre d'arbitrage) ----
+  var stock = { actifs: [], tot: null, ecarts: [], note: "" };
+  if (typeof PATRIMOINE_ACTIFS === "undefined") {   // garde anti-skew (classe v5.12.1)
+    stock.note = "Lecture du stock indisponible (logique incomplète) — mets à jour l'app.";
+    res.stock = stock;
+    return res;
+  }
+  var reels = sanitizeReels(o.reels);
+  var hasReels = false;
+  for (var k in reels) if (Object.prototype.hasOwnProperty.call(reels, k)) hasReels = true;
+  if (!hasReels) {
+    stock.note = "Saisis tes montants réels (bouton ✏️ de la carte 👤 patrimoine) pour voir tes écarts de poids vs la pondération de référence — ils restent sur ton téléphone, jamais exportés, jamais sur GitHub.";
+    res.stock = stock;
+    return res;
+  }
+  var byId = {};
+  radar.list.forEach(function (a) { byId[a.id] = a; });
+  var perRadar = {};   // id radar → € cumulés (Livret compte avec monétaire ; PE exclu du total)
+  var tot = 0;
+  PATRIMOINE_ACTIFS.forEach(function (act) {
+    var v = Object.prototype.hasOwnProperty.call(reels, act.nom) ? reels[act.nom] : null;
+    stock.actifs.push({ nom: act.nom, enceinte: act.enceinte, radar: act.radar, montant: v, score: (act.radar !== null && byId[act.radar] && num(byId[act.radar].score) !== null) ? byId[act.radar].score : null });
+    if (act.radar !== null && v !== null) {
+      perRadar[act.radar] = (perRadar[act.radar] || 0) + v;
+      tot += v;
+    }
+  });
+  stock.tot = tot;
+  if (tot > 0) {
+    var ecarts = [];
+    ALLOC_IDS.forEach(function (k2) {
+      if (!Object.prototype.hasOwnProperty.call(perRadar, k2)) return;   // actif non déclaré → pas d'écart inventé
+      var userPct = r1(perRadar[k2] / tot * 100);
+      ecarts.push({ id: k2, name: byId[k2] ? byId[k2].name : k2, userPct: userPct, ref: ALLOC_BASE[k2], ecart: r1(userPct - ALLOC_BASE[k2]) });
+    });
+    ecarts.sort(function (x, y) { return Math.abs(y.ecart) - Math.abs(x.ecart); });
+    stock.ecarts = ecarts;
+    stock.note = "Lecture de ton stock vs la pondération de référence du simulateur (actions 40 · immo 15 · obligations 15 · monétaire 13 · or 12 · crypto 5). Fonds euro, SCPI, livret et private equity ne s'arbitrent pas vite (capital garanti, frais de souscription, fenêtres) ; or et Bitcoin se lisent, ne se vendent pas sur un signal ; et on ne vend JAMAIS sur la baisse. La référence est un repère pour répartir tes PROCHAINS apports, pas une cible à rattraper en vendant.";
+  } else {
+    stock.note = "Aucun montant exploitable saisi (0 € sur les 6 actifs du radar) — les écarts apparaîtront dès qu'un montant réel est enregistré.";
+  }
+  res.stock = stock;
+  return res;
+}
+
 // Export Node pour le harnais de tests (logique pure, aucun accès DOM).
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
@@ -773,6 +919,7 @@ if (typeof module !== "undefined" && module.exports) {
     stanceOf: stanceOf, adviceOf: adviceOf, allocOf: allocOf, entryPrefOf: entryPrefOf,
     regimePostureOf: regimePostureOf, POSTURES: POSTURES, ALLOC_EXCL: ALLOC_EXCL, ALLOC_MON_FLOOR: ALLOC_MON_FLOOR, CUTS: CUTS,
     isRealDate: isRealDate, isPosture: isPosture,
+    decisionOf: decisionOf, sanitizeReels: sanitizeReels,   // v6.0 : carte 🎯 Ma décision
     PATRIMOINE: PATRIMOINE, PATRIMOINE_HORS_RADAR: PATRIMOINE_HORS_RADAR, PATRIMOINE_ACTIFS: PATRIMOINE_ACTIFS   // v5.11/v5.12 : univers réel de Jade (mapping + liste des 7 actifs)
   };
 }

@@ -1,4 +1,4 @@
-/* Simulation DOM v5.13 (outillage) — rejoue le chargement complet de la page avec des stubs (aucun réseau).
+/* Simulation DOM v6.0 (outillage) — rejoue le chargement complet de la page avec des stubs (aucun réseau).
    Exécution : node sim.js  →  doit finir par "SIM OK" sans aucune erreur d'exécution. */
 "use strict";
 var fs = require("fs"), path = require("path"), vm = require("vm");
@@ -231,9 +231,48 @@ els.btnAlloc.click();
 ck("v5.12.1 : simulateur guéri — le bloc « Concrètement chez toi » revient",
   String(els.allocOut.innerHTML).indexOf("Concrètement chez toi") !== -1);
 
+// 9 octies. v6.0 : carte 🎯 Ma décision — flux / supplément / stock
+ck("v6.0 : carte décision rendue — « Flux du mois » + SOCLE NORMAL sur les données du jour",
+  txt("decFlux").indexOf("Flux du mois") !== -1 && txt("decFlux").indexOf("SOCLE NORMAL") !== -1);
+ck("v6.0 : bloc supplément sans montant → verdict du jour + top stances (aucune répartition inventée)",
+  txt("decSuppOut").indexOf("Supplément") !== -1 && txt("decSuppOut").indexOf("Entrée si tu en as un") !== -1 &&
+  (txt("decSuppOut").match(/INVESTIR|CONSERVER/g) || []).length >= 1);
+ck("v6.0 : bloc stock sans montants réels → note d'invitation ✏️",
+  txt("decStock").indexOf("Ton stock") !== -1 && txt("decStock").indexOf("✏️") !== -1);
+els.decSuppMontant.value = "5000";
+els.decSuppMontant.fire("input");
+var decSuppHtml = String(els.decSuppOut.innerHTML);
+ck("v6.0 : saisie 5 000 € → recompute immédiat : répartition affichée, somme exacte, destinations réelles",
+  decSuppHtml.indexOf("5 000 €") !== -1 && decSuppHtml.indexOf("→ PEA — DCAM") !== -1 &&
+  decSuppHtml.indexOf("Entrée :") !== -1);
+ck("v6.0 : le supplément saisi est persisté localStorage (radar-dec-supp), PAS dans l'état exporté",
+  (store["radar-dec-supp"] || "").indexOf("5000") !== -1 &&
+  (store["radar-conjoncture-v1"] || "").indexOf("radar-dec-supp") === -1);
+// éditeur ✏️ : saisie de montants réels → persistance + stock rendu
+els.btnReelsEdit.click();
+document.getElementById("reelIn0").value = "30000";   // Actions — MSCI World
+document.getElementById("reelIn1").value = "10000";   // Fonds euro
+els.btnReelsSave.click();
+ck("v6.0 : montants réels persistés (radar-reels) + écarts du stock affichés (40 000 € hors PE)",
+  (store["radar-reels"] || "").indexOf("30000") !== -1 &&
+  txt("decStock").indexOf("40 000 €") !== -1 && txt("decStock").indexOf("pts") !== -1);
+ck("v6.0 : la carte 👤 patrimoine affiche le montant saisi dans la ligne",
+  txt("patrimoineList").indexOf("30 000 €") !== -1);
+// skew : logic.js périmé (pas de decisionOf) → carte omise SANS erreur
+var DEC_SAVED = sandbox.decisionOf;
+sandbox.decisionOf = undefined;
+var skewDecOk = true;
+try { sandbox.renderRadar(); } catch (e) { skewDecOk = false; }
+ck("v6.0 skew : logic.js sans decisionOf → re-rendu SANS levée d'erreur (carte figée, page intacte)",
+  skewDecOk && txt("adviceSynthese").length > 0);
+sandbox.decisionOf = DEC_SAVED;
+sandbox.renderRadar();
+ck("v6.0 : après guérison, la carte décision revient (Flux du mois rendu)",
+  txt("decFlux").indexOf("Flux du mois") !== -1);
+
 // 10. Bilan
 var fail = checks.filter(function (c) { return !c.ok; });
 checks.forEach(function (c) { console.log((c.ok ? "✅ " : "❌ ") + c.name); });
 console.log("");
 if (fail.length) { console.log("SIM ÉCHECS : " + fail.length); process.exit(1); }
-console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul + synthèse à source partagée v5.10 + univers réel v5.11 + carte « Ton patrimoine réel » 7 actifs v5.12 + gardes anti-skew logic.js périmé v5.12.1 + lecture honnête ligne par ligne v5.13).");
+console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul + synthèse à source partagée v5.10 + univers réel v5.11 + carte « Ton patrimoine réel » 7 actifs v5.12 + gardes anti-skew logic.js périmé v5.12.1 + lecture honnête ligne par ligne v5.13 + carte 🎯 Ma décision v6.0 : flux/supplément/stock + saisie persistée + éditeur ✏️ + skew).");

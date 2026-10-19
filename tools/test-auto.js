@@ -369,8 +369,8 @@ t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === 
 // ---------- index.html, logic.js, sw.js, auto.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v5.13", html.indexOf("<b>v5.13</b>") !== -1);
-t("index.html: aucun ancien badge v5.12.1/v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5.12.1</b>", "<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
+t("index.html: badge v6.0", html.indexOf("<b>v6.0</b>") !== -1);
+t("index.html: aucun ancien badge v5.13/v5.12.1/v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5.13</b>", "<b>v5.12.1</b>", "<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: logic.js chargé entre vehicles.js et le script UI inline",
   html.indexOf('<script src="vehicles.js"></script>') !== -1 &&
@@ -396,8 +396,8 @@ t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: VIX lissé utilisé dans le scoring (vixEff, désormais dans logic.js)", srcLogic.indexOf("der.vixEff") !== -1 && srcLogic.indexOf("vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v20", sw.indexOf('CACHE = "radar-v20"') !== -1);
-t("sw.js: anciens caches v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v16") === -1 && sw.indexOf("radar-v15") === -1 && sw.indexOf("radar-v14") === -1 && sw.indexOf("radar-v13") === -1 && sw.indexOf("radar-v12") === -1 && sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
+t("sw.js: cache v21", sw.indexOf('CACHE = "radar-v21"') !== -1);
+t("sw.js: anciens caches v20/v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v20") === -1 && sw.indexOf("radar-v16") === -1 && sw.indexOf("radar-v15") === -1 && sw.indexOf("radar-v14") === -1 && sw.indexOf("radar-v13") === -1 && sw.indexOf("radar-v12") === -1 && sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
 t("sw.js: logic.js dans le shell", sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
 t("sw.js: shell réseau d'abord + repli cache (plus aucun skew HTML frais / JS périmé)",
@@ -1118,6 +1118,94 @@ t("v5.13 : ligne Actions = timing (pilote du conseil depuis la v5.8) à côté d
 t("v5.13 : lecture du SEGMENT, pas une note du produit (fonds euro capital garanti, livret à taux réglementé)",
   html.indexOf("lecture marché ' + esc(a.name)") !== -1 &&
   html.indexOf("pas une note du produit") !== -1);
+
+// ---------- v6.0 : carte 🎯 Ma décision — flux du mois, supplément, lecture du stock ----------
+t("v6.0 : decisionOf + sanitizeReels exportés par logic.js",
+  typeof L.decisionOf === "function" && typeof L.sanitizeReels === "function");
+var DEC_D = L.normalizeData(L.DEFAULT_DATA);   // données figées du 16/10 : dd −1,3 %, aucun palier atteint
+var DEC_R = L.radarAll(DEC_D);
+var DEC = L.decisionOf(DEC_D, DEC_R, {});
+t("v6.0 : flux NORMAL sur les données du jour — socle inchangé, prochain palier −5 % (seuil 125,65 €)",
+  DEC.flux.etat === "normal" && DEC.flux.palier === 5 && DEC.flux.seuil === 125.65 &&
+  DEC.flux.lines[0].indexOf("Socle normal") !== -1 && DEC.flux.lines[0].indexOf("−5 %") !== -1);
+t("v6.0 : dist du flux = baisse restante positive (1 − seuil/cours, ~3,8 %)",
+  DEC.flux.dist === L.r1((1 - 125.65 / 130.55) * 100) && DEC.flux.dist > 0);
+var DEC_D2 = L.normalizeData(L.DEFAULT_DATA); DEC_D2.msci = 110; DEC_D2.reserve = 4000;
+var DEC2 = L.decisionOf(DEC_D2, L.radarAll(DEC_D2), {});
+t("v6.0 : flux DÉPLOYER quand le palier −5 % est franchi — montant = 25 % de la réserve",
+  DEC2.flux.etat === "deploy" && DEC2.flux.palier === 5 && DEC2.flux.montant === 1000 &&
+  DEC2.flux.lines[0].indexOf("FRANCHI") !== -1 && DEC2.flux.lines[0].indexOf("1000 €") !== -1);
+var DEC_D3 = L.normalizeData(L.DEFAULT_DATA); DEC_D3.msci = 125; DEC_D3.paliersDone.p5 = true;
+var DEC3 = L.decisionOf(DEC_D3, L.radarAll(DEC_D3), {});
+t("v6.0 : palier −5 % franchi MAIS marqué déployé → re-normal (plus rien à déployer)",
+  DEC3.flux.etat === "normal" && DEC3.flux.lines.length === 1);
+var DEC_D3B = L.normalizeData(L.DEFAULT_DATA); DEC_D3B.msci = 100;
+["p5", "p10", "p15", "p20"].forEach(function (k) { DEC_D3B.paliersDone[k] = true; });
+var DEC3B = L.decisionOf(DEC_D3B, L.radarAll(DEC_D3B), {});
+t("v6.0 : tous les paliers franchis déployés → message « jusqu'au prochain épisode »",
+  DEC3B.flux.etat === "normal" && DEC3B.flux.lines[0].indexOf("prochain épisode") !== -1);
+var DEC_D4 = L.normalizeData(L.DEFAULT_DATA); DEC_D4.msci = 90;   // dd ≈ −32 % → incohérent
+var DEC4 = L.decisionOf(DEC_D4, L.radarAll(DEC_D4), {});
+t("v6.0 : références incohérentes → flux SUSPENDU (paliersOf [] repris tel quel, socle intact)",
+  DEC4.flux.etat === "suspendu" && DEC4.flux.lines[0].indexOf("suspendus") !== -1);
+t("v6.0 : règle jamais vendre en baisse — drawdown ≤ −5 % → warn explicite dans le flux",
+  DEC2.flux.warns.some(function (w) { return w.indexOf("JAMAIS") !== -1 && w.indexOf("drawdown") !== -1; }));
+var DEC_D5 = L.normalizeData(L.DEFAULT_DATA); DEC_D5.msci = 110; DEC_D5.reserve = 4000;
+var DEC5 = L.decisionOf(DEC_D5, L.radarAll(DEC_D5), { supplement: { montant: 5000, mode: "une fois" } });
+t("v6.0 : supplément 5 000 € → répartition allocOf (somme exacte au € + destinations réelles sur chaque part)",
+  DEC5.supplement.alloc !== null &&
+  DEC5.supplement.alloc.parts.reduce(function (s, p) { return s + p.euros; }, 0) === 5000 &&
+  DEC5.supplement.alloc.parts.every(function (p) { return p.ou !== null || p.exclu; }));
+t("v6.0 : verdict d'entrée du supplément = la MÊME source que conseil/simulateur (entryPrefOf)",
+  (function () {
+    var r5 = L.radarAll(DEC_D5), actA5 = null;
+    r5.list.forEach(function (a) { if (a.id === "actions") actA5 = a; });
+    return DEC5.supplement.verdict.recommande === L.entryPrefOf(DEC_D5, r5.der, actA5 ? actA5.timingScore : null).recommande &&
+      typeof DEC5.supplement.verdict.pref === "number";
+  })());
+var DEC6 = L.decisionOf(DEC_D, DEC_R, {});
+t("v6.0 : sans montant saisi → topStances = actifs INVESTIR/CONSERVER du conseil du jour",
+  DEC6.supplement.alloc === null && Array.isArray(DEC6.supplement.topStances) &&
+  DEC6.supplement.topStances.length >= 1 &&
+  DEC6.supplement.topStances.every(function (a) { return a.verb === "INVESTIR" || a.verb === "CONSERVER"; }));
+t("v6.0 : sanitizeReels — liste blanche des 7 noms, conversion numérique, zéros admis",
+  JSON.stringify(L.sanitizeReels({ "Or": "5000", "Livret": 0 })) === '{"Livret":0,"Or":5000}' &&
+  JSON.stringify(L.sanitizeReels(null)) === "{}");
+t("v6.0 : sanitizeReels — clés héritées/négatifs/hors bornes rejetés (leçon isPosture/constructor)",
+  JSON.stringify(L.sanitizeReels({ "constructor": "x", "toString": 5, "Or": -5, "SCPI": 2e13 })) === "{}");
+var DEC_REELS = { "Actions — MSCI World": 30000, "Fonds euro": 10000, "SCPI": 5000, "Livret": 5000, "Or": 2000, "Bitcoin": 2000, "Private equity": 6000 };
+var DEC7 = L.decisionOf(DEC_D, DEC_R, { reels: DEC_REELS });
+t("v6.0 : stock — total des montants radar-mappés SANS le private equity (6 000 € PE exclus)",
+  DEC7.stock.tot === 54000 && DEC7.stock.actifs.length === 7 &&
+  DEC7.stock.actifs.some(function (a) { return a.nom === "Private equity" && a.montant === 6000; }));
+t("v6.0 : stock — écarts vs ALLOC_BASE triés par |écart| décroissant (actions +15,6 pts en tête)",
+  DEC7.stock.ecarts.length === 6 && DEC7.stock.ecarts[0].id === "actions" && DEC7.stock.ecarts[0].userPct === 55.6 &&
+  DEC7.stock.ecarts.every(function (e, i) { return i === 0 || Math.abs(DEC7.stock.ecarts[i - 1].ecart) >= Math.abs(e.ecart); }));
+t("v6.0 : stock sans montants → note d'invitation (✏️), aucun écart inventé",
+  L.decisionOf(DEC_D, DEC_R, {}).stock.ecarts.length === 0 &&
+  L.decisionOf(DEC_D, DEC_R, { reels: { "Private equity": 99999 } }).stock.tot === 0);
+t("v6.0 : index.html — carte 🎯 Ma décision (ids complets) placée après la carte régime",
+  html.indexOf('id="decisionCard"') !== -1 && html.indexOf('id="decFlux"') !== -1 &&
+  html.indexOf('id="decSuppOut"') !== -1 && html.indexOf('id="decStock"') !== -1 &&
+  html.indexOf('id="decSuppMontant"') !== -1 && html.indexOf('id="decSuppMode"') !== -1 &&
+  html.indexOf('id="decSuppMonths"') !== -1 && html.indexOf('id="decSuppMonthsRow"') !== -1 &&
+  html.indexOf("decisionCard") > html.indexOf("regimeCard"));
+t("v6.0 : garde anti-skew sur decisionOf (logic.js périmé → carte omise, jamais de page blanche)",
+  html.indexOf("typeof decisionOf") !== -1 && html.indexOf("typeof PATRIMOINE_ACTIFS") !== -1);
+t("v6.0 : tout le texte dynamique de la carte est échappé (esc sur lignes/warns/stances/notes)",
+  (function () { var m = html.match(/function renderDecision[\s\S]*?\n}\n/); return m && (m[0].match(/esc\(/g) || []).length >= 8; })());
+t("v6.0 : montants réels et supplément en localStorage SÉPARÉ (jamais dans state ni l'export)",
+  html.indexOf('"radar-reels"') !== -1 && html.indexOf('"radar-dec-supp"') !== -1 &&
+  html.indexOf("REELS_KEY") !== -1 && html.indexOf("DECSUPP_KEY") !== -1 &&
+  html.indexOf("data: state.data, history: state.history, refAlert: state.refAlert, episodes: state.episodes, postureOverride: state.postureOverride, postureOverrideDate: state.postureOverrideDate }, null, 2") !== -1);
+t("v6.0 : éditeur ✏️ dans la carte patrimoine (reelsEdit/reelsInputs/btnReelsSave) + montant affiché dans la ligne",
+  html.indexOf('id="btnReelsEdit"') !== -1 && html.indexOf('id="reelsEdit"') !== -1 &&
+  html.indexOf('id="reelsInputs"') !== -1 && html.indexOf('id="btnReelsSave"') !== -1 &&
+  html.indexOf("fmtEUR(rv)") !== -1);
+t("v6.0 : les inputs du supplément sont statiques (jamais reconstruits au rendu — le focus survit)",
+  html.indexOf("decSuppMontant\").innerHTML") === -1 &&   // jamais d'innerHTML sur l'input
+  html.indexOf("decSuppMontant\").value") !== -1 &&        // ...mais sa valeur est lue/restaurée
+  html.indexOf("decSuppMonthsRow\").style.display") !== -1);
 
 // ---------- Bilan ----------
 var fail = results.filter(function (r) { return !r.ok; });
