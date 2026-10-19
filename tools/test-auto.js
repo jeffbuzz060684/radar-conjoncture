@@ -369,8 +369,8 @@ t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === 
 // ---------- index.html, logic.js, sw.js, auto.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v6.0", html.indexOf("<b>v6.0</b>") !== -1);
-t("index.html: aucun ancien badge v5.13/v5.12.1/v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v5.13</b>", "<b>v5.12.1</b>", "<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
+t("index.html: badge v6.1", html.indexOf("<b>v6.1</b>") !== -1);
+t("index.html: aucun ancien badge v6.0/v5.13/v5.12.1/v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v6.0</b>", "<b>v5.13</b>", "<b>v5.12.1</b>", "<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: logic.js chargé entre vehicles.js et le script UI inline",
   html.indexOf('<script src="vehicles.js"></script>') !== -1 &&
@@ -396,8 +396,8 @@ t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: VIX lissé utilisé dans le scoring (vixEff, désormais dans logic.js)", srcLogic.indexOf("der.vixEff") !== -1 && srcLogic.indexOf("vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v21", sw.indexOf('CACHE = "radar-v21"') !== -1);
-t("sw.js: anciens caches v20/v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v20") === -1 && sw.indexOf("radar-v16") === -1 && sw.indexOf("radar-v15") === -1 && sw.indexOf("radar-v14") === -1 && sw.indexOf("radar-v13") === -1 && sw.indexOf("radar-v12") === -1 && sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
+t("sw.js: cache v22", sw.indexOf('CACHE = "radar-v22"') !== -1);
+t("sw.js: anciens caches v21/v20/v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v21") === -1 && sw.indexOf("radar-v20") === -1 && sw.indexOf("radar-v16") === -1 && sw.indexOf("radar-v15") === -1 && sw.indexOf("radar-v14") === -1 && sw.indexOf("radar-v13") === -1 && sw.indexOf("radar-v12") === -1 && sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
 t("sw.js: logic.js dans le shell", sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
 t("sw.js: shell réseau d'abord + repli cache (plus aucun skew HTML frais / JS périmé)",
@@ -1184,28 +1184,28 @@ t("v6.0 : stock — écarts vs ALLOC_BASE triés par |écart| décroissant (acti
 t("v6.0 : stock sans montants → note d'invitation (✏️), aucun écart inventé",
   L.decisionOf(DEC_D, DEC_R, {}).stock.ecarts.length === 0 &&
   L.decisionOf(DEC_D, DEC_R, { reels: { "Private equity": 99999 } }).stock.tot === 0);
-t("v6.0 : index.html — carte 🎯 Ma décision (ids complets) placée après la carte régime",
+t("v6.0 : index.html — carte 🎯 Ma décision (ids des 3 blocs) placée après la carte régime",
   html.indexOf('id="decisionCard"') !== -1 && html.indexOf('id="decFlux"') !== -1 &&
   html.indexOf('id="decSuppOut"') !== -1 && html.indexOf('id="decStock"') !== -1 &&
-  html.indexOf('id="decSuppMontant"') !== -1 && html.indexOf('id="decSuppMode"') !== -1 &&
-  html.indexOf('id="decSuppMonths"') !== -1 && html.indexOf('id="decSuppMonthsRow"') !== -1 &&
   html.indexOf("decisionCard") > html.indexOf("regimeCard"));
+t("v6.1 : PLUS DE DOUBLE SAISIE — aucun champ montant dans la carte 🎯 (le simulateur 🧮 reste l'unique outil) + renvoi explicite",
+  html.indexOf("decSuppMontant") === -1 && html.indexOf("decSuppMode") === -1 && html.indexOf("decSuppMonths") === -1 &&
+  html.indexOf("decSuppMonthsRow") === -1 && html.indexOf("decSaisie") === -1 && html.indexOf("DECSUPP_KEY") === -1 &&
+  html.indexOf("saisis le montant dans le simulateur 🧮") !== -1);
+t("v6.1 : clé v6.0 « radar-dec-supp » nettoyée au chargement (une seule occurrence : le removeItem)",
+  html.indexOf('localStorage.removeItem("radar-dec-supp")') !== -1 &&
+  (html.match(/radar-dec-supp/g) || []).length === 1);
 t("v6.0 : garde anti-skew sur decisionOf (logic.js périmé → carte omise, jamais de page blanche)",
   html.indexOf("typeof decisionOf") !== -1 && html.indexOf("typeof PATRIMOINE_ACTIFS") !== -1);
 t("v6.0 : tout le texte dynamique de la carte est échappé (esc sur lignes/warns/stances/notes)",
   (function () { var m = html.match(/function renderDecision[\s\S]*?\n}\n/); return m && (m[0].match(/esc\(/g) || []).length >= 8; })());
-t("v6.0 : montants réels et supplément en localStorage SÉPARÉ (jamais dans state ni l'export)",
-  html.indexOf('"radar-reels"') !== -1 && html.indexOf('"radar-dec-supp"') !== -1 &&
-  html.indexOf("REELS_KEY") !== -1 && html.indexOf("DECSUPP_KEY") !== -1 &&
+t("v6.0/v6.1 : montants réels en localStorage SÉPARÉ (jamais dans state ni l'export)",
+  html.indexOf('"radar-reels"') !== -1 && html.indexOf("REELS_KEY") !== -1 &&
   html.indexOf("data: state.data, history: state.history, refAlert: state.refAlert, episodes: state.episodes, postureOverride: state.postureOverride, postureOverrideDate: state.postureOverrideDate }, null, 2") !== -1);
 t("v6.0 : éditeur ✏️ dans la carte patrimoine (reelsEdit/reelsInputs/btnReelsSave) + montant affiché dans la ligne",
   html.indexOf('id="btnReelsEdit"') !== -1 && html.indexOf('id="reelsEdit"') !== -1 &&
   html.indexOf('id="reelsInputs"') !== -1 && html.indexOf('id="btnReelsSave"') !== -1 &&
   html.indexOf("fmtEUR(rv)") !== -1);
-t("v6.0 : les inputs du supplément sont statiques (jamais reconstruits au rendu — le focus survit)",
-  html.indexOf("decSuppMontant\").innerHTML") === -1 &&   // jamais d'innerHTML sur l'input
-  html.indexOf("decSuppMontant\").value") !== -1 &&        // ...mais sa valeur est lue/restaurée
-  html.indexOf("decSuppMonthsRow\").style.display") !== -1);
 
 // ---------- Bilan ----------
 var fail = results.filter(function (r) { return !r.ok; });

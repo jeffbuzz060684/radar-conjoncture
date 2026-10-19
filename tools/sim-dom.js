@@ -1,4 +1,4 @@
-/* Simulation DOM v6.0 (outillage) — rejoue le chargement complet de la page avec des stubs (aucun réseau).
+/* Simulation DOM v6.1 (outillage) — rejoue le chargement complet de la page avec des stubs (aucun réseau).
    Exécution : node sim.js  →  doit finir par "SIM OK" sans aucune erreur d'exécution. */
 "use strict";
 var fs = require("fs"), path = require("path"), vm = require("vm");
@@ -231,23 +231,17 @@ els.btnAlloc.click();
 ck("v5.12.1 : simulateur guéri — le bloc « Concrètement chez toi » revient",
   String(els.allocOut.innerHTML).indexOf("Concrètement chez toi") !== -1);
 
-// 9 octies. v6.0 : carte 🎯 Ma décision — flux / supplément / stock
+// 9 octies. v6.0/v6.1 : carte 🎯 Ma décision — flux / supplément (lecture) / stock
 ck("v6.0 : carte décision rendue — « Flux du mois » + SOCLE NORMAL sur les données du jour",
   txt("decFlux").indexOf("Flux du mois") !== -1 && txt("decFlux").indexOf("SOCLE NORMAL") !== -1);
-ck("v6.0 : bloc supplément sans montant → verdict du jour + top stances (aucune répartition inventée)",
-  txt("decSuppOut").indexOf("Supplément") !== -1 && txt("decSuppOut").indexOf("Entrée si tu en as un") !== -1 &&
-  (txt("decSuppOut").match(/INVESTIR|CONSERVER/g) || []).length >= 1);
+ck("v6.1 : bloc supplément = LECTURE pure — verdict du jour + top stances + renvoi vers le simulateur 🧮 (aucune saisie, aucune répartition inventée)",
+  txt("decSuppOut").indexOf("Supplément") !== -1 && txt("decSuppOut").indexOf("Entrée :") !== -1 &&
+  (txt("decSuppOut").match(/INVESTIR|CONSERVER/g) || []).length >= 1 &&
+  txt("decSuppOut").indexOf("saisis le montant dans le simulateur 🧮") !== -1);
+ck("v6.1 : plus de champ de saisie dans la carte 🎯 (v6.0 decSuppMontant supprimé)",
+  els.decSuppMontant === undefined && store["radar-dec-supp"] === undefined);
 ck("v6.0 : bloc stock sans montants réels → note d'invitation ✏️",
   txt("decStock").indexOf("Ton stock") !== -1 && txt("decStock").indexOf("✏️") !== -1);
-els.decSuppMontant.value = "5000";
-els.decSuppMontant.fire("input");
-var decSuppHtml = String(els.decSuppOut.innerHTML);
-ck("v6.0 : saisie 5 000 € → recompute immédiat : répartition affichée, somme exacte, destinations réelles",
-  decSuppHtml.indexOf("5 000 €") !== -1 && decSuppHtml.indexOf("→ PEA — DCAM") !== -1 &&
-  decSuppHtml.indexOf("Entrée :") !== -1);
-ck("v6.0 : le supplément saisi est persisté localStorage (radar-dec-supp), PAS dans l'état exporté",
-  (store["radar-dec-supp"] || "").indexOf("5000") !== -1 &&
-  (store["radar-conjoncture-v1"] || "").indexOf("radar-dec-supp") === -1);
 // éditeur ✏️ : saisie de montants réels → persistance + stock rendu
 els.btnReelsEdit.click();
 document.getElementById("reelIn0").value = "30000";   // Actions — MSCI World
@@ -275,4 +269,4 @@ var fail = checks.filter(function (c) { return !c.ok; });
 checks.forEach(function (c) { console.log((c.ok ? "✅ " : "❌ ") + c.name); });
 console.log("");
 if (fail.length) { console.log("SIM ÉCHECS : " + fail.length); process.exit(1); }
-console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul + synthèse à source partagée v5.10 + univers réel v5.11 + carte « Ton patrimoine réel » 7 actifs v5.12 + gardes anti-skew logic.js périmé v5.12.1 + lecture honnête ligne par ligne v5.13 + carte 🎯 Ma décision v6.0 : flux/supplément/stock + saisie persistée + éditeur ✏️ + skew).");
+console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul + synthèse à source partagée v5.10 + univers réel v5.11 + carte « Ton patrimoine réel » 7 actifs v5.12 + gardes anti-skew logic.js périmé v5.12.1 + lecture honnête ligne par ligne v5.13 + carte 🎯 Ma décision v6.0/v6.1 : flux/supplément-lecture/stock + plus de double saisie (renvoi 🧮) + éditeur ✏️ + skew).");

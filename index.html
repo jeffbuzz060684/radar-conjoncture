@@ -109,7 +109,7 @@
 <header>
   <div class="hrow">
     <h1>📡 Radar <span>Conjoncture</span></h1>
-    <span class="badge">🔄 Maj auto quotidienne · <b>v6.0</b></span>
+    <span class="badge">🔄 Maj auto quotidienne · <b>v6.1</b></span>
   </div>
   <div class="hrow" style="margin-top:6px">
     <span class="chip" id="dataChip">—</span>
@@ -129,10 +129,7 @@
 
     <div class="card" id="decisionCard">
       <h2>🎯 Ma décision</h2>
-      <div class="mut" style="margin-bottom:8px">La synthèse qui répond à « investir au bon moment, sur le bon actif » : ton flux du mois, un éventuel supplément, la lecture de ton stock. Tout dérive des fonctions déjà affichées plus bas (paliers, conseil, simulateur) — aucune donnée ni seuil nouveau. Les montants réels que tu saisis restent sur ton téléphone (jamais exportés, jamais sur GitHub).</div>
-      <div class="frow"><label>Supplément à placer (€, optionnel)<input id="decSuppMontant" type="number" inputmode="decimal" step="any" min="1" placeholder="ex. 5000"></label>
-      <label>Mode<select id="decSuppMode"><option value="une fois">en une fois</option><option value="dca">DCA (étalé)</option></select></label>
-      <label id="decSuppMonthsRow" style="display:none">Mensualités (2-24)<input id="decSuppMonths" type="number" inputmode="numeric" step="1" min="2" max="24" value="6"></label></div>
+      <div class="mut" style="margin-bottom:8px">La synthèse qui répond à « investir au bon moment, sur le bon actif » : ton flux du mois, la lecture d'un éventuel supplément, et ton stock. Tout dérive des fonctions déjà affichées plus bas (paliers, conseil, simulateur) — aucune donnée ni seuil nouveau. Pour la répartition exacte d'un apport, le simulateur 🧮 ci-dessous reste l'outil de saisie — la carte ne redemande jamais un montant. Les montants réels (bouton ✏️ de la carte 👤) restent sur ton téléphone, jamais exportés, jamais sur GitHub.</div>
       <div id="decFlux" class="verdict" style="margin-top:8px">—</div>
       <div id="decSuppOut" style="margin-top:8px">—</div>
       <div id="decStock" style="margin-top:8px">—</div>
@@ -425,34 +422,23 @@ function commitSnapshot(toastIf) {
   if (state.history.length > 120) state.history = state.history.slice(-120);
 }
 
-// ---- v6.0 : carte 🎯 Ma décision ----
-// Consolidation UI de decisionOf (logic.js) : flux du mois, supplément, lecture du stock.
-// Les montants réels (REELS_KEY) et le supplément saisi (DECSUPP_KEY) vivent UNIQUEMENT en
-// localStorage — jamais dans state, jamais dans l'export, jamais sur GitHub (dépôt public).
+// ---- v6.0/v6.1 : carte 🎯 Ma décision ----
+// Consolidation UI de decisionOf (logic.js) : flux du mois, lecture du supplément, stock.
+// La carte est une LECTURE : aucune saisie ici — la répartition exacte d'un apport se
+// calcule dans le simulateur 🧮 (v6.1 : plus de double saisie du montant, un seul outil).
+// Les montants réels (REELS_KEY) vivent UNIQUEMENT en localStorage — jamais dans state,
+// jamais dans l'export, jamais sur GitHub (dépôt public).
 var REELS_KEY = "radar-reels";
-var DECSUPP_KEY = "radar-dec-supp";
 function decLoadReels() {
   try { return (typeof sanitizeReels === "function") ? sanitizeReels(JSON.parse(localStorage.getItem(REELS_KEY) || "null")) : {}; }
   catch (e) { return {}; }
 }
 function decSaveReels(o) { try { localStorage.setItem(REELS_KEY, JSON.stringify(o)); } catch (e) {} }
-function decLoadSupp() {
-  try { var v = JSON.parse(localStorage.getItem(DECSUPP_KEY) || "null"); return (v && typeof v === "object") ? v : null; } catch (e) { return null; }
-}
-function decSaveSupp(o) { try { localStorage.setItem(DECSUPP_KEY, JSON.stringify(o)); } catch (e) {} }
-// Lecture des champs de saisie (les inputs sont STATIQUES : jamais reconstruits au rendu,
-// la valeur saisie ne perd jamais le focus).
-function decSaisie() {
-  var elM = $("decSuppMontant"), elMode = $("decSuppMode"), elMo = $("decSuppMonths");
-  var m = (elM && num(elM.value) !== null && num(elM.value) >= 1) ? num(elM.value) : null;
-  if (m === null) return null;
-  return { montant: m, mode: (elMode && elMode.value === "dca") ? "dca" : "une fois", months: (elMo && num(elMo.value) !== null) ? num(elMo.value) : null };
-}
 function renderDecision(d, radar) {
   if (typeof decisionOf !== "function") return;   // v6.0 : garde anti-skew — logic.js périmé → carte omise, page intacte (classe v5.12.1)
   var elF = $("decFlux"), elS = $("decSuppOut"), elK = $("decStock");
   if (!elF || !elS || !elK) return;
-  var dec = decisionOf(d, radar, { supplement: decSaisie(), reels: decLoadReels(), override: state.postureOverride });
+  var dec = decisionOf(d, radar, { reels: decLoadReels(), override: state.postureOverride });
 
   // 1 · Flux du mois
   var f = dec.flux;
@@ -463,31 +449,18 @@ function renderDecision(d, radar) {
     '<ul style="margin:6px 0 0 16px">' + f.lines.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") + "</ul>" +
     f.warns.map(function (w) { return '<div class="warnbox">⚠️ ' + esc(w) + "</div>"; }).join("");
 
-  // 2 · Supplément
+  // 2 · Supplément (LECTURE — v6.1 : la répartition exacte se calcule dans le simulateur 🧮)
   var s = dec.supplement;
-  if (s.alloc) {
-    var partsHtml = s.alloc.parts.filter(function (p) { return !p.exclu || p.euros > 0; }).map(function (p) {
-      return '<div class="palrow"><span class="st" style="width:auto;min-width:86px">' + p.icon + " " + esc(p.name) + '</span><span class="th">' + p.pct + " % · <b>" + fmtEUR(p.euros) + "</b>" + (p.ou ? " → " + esc(p.ou) : "") + "</span></div>";
-    }).join("");
-    elS.innerHTML =
-      "<b>2 · Supplément — " + fmtEUR(s.montant) + (s.alloc.mode === "dca" ? " en DCA (" + s.alloc.months + " mensualités de " + fmtEUR2(s.alloc.mensualite) + ")" : " en une fois") + "</b>" +
-      '<div class="verdict" style="margin-top:4px">Entrée : ' + esc(s.verdict.phrase) + " (" + s.verdict.pref + "/100). <b>Recommandé : " + esc(s.verdict.recommande) + "</b> — " + esc(s.verdict.label || "") + "</div>" +
-      '<div style="margin-top:4px">' + partsHtml + "</div>" +
-      (s.alloc.alerte ? '<div class="warnbox">⚠️ ' + esc(s.alloc.alerte) + "</div>" : "") +
-      (s.alloc.manquantes ? '<div class="mut" style="margin-top:4px">Données manquantes : ' + esc(s.alloc.manquantes.join(", ")) + " — lignes exclues.</div>" : "");
-  } else if (s.montant !== null) {
-    elS.innerHTML = "<b>2 · Supplément</b><div class=\"warnbox\">Montant ou paramètres non exploitables : vérifie le montant (≥ 1 €) et, en DCA, un nombre entier de mensualités entre 2 et 24.</div>";
-  } else {
-    var tops = s.topStances || [];
-    elS.innerHTML =
-      "<b>2 · Supplément (aucun montant saisi)</b>" +
-      '<div class="verdict" style="margin-top:4px">Entrée si tu en as un : ' + esc(s.verdict.phrase) + " (" + s.verdict.pref + "/100) — " + esc(s.verdict.label || "") + "</div>" +
-      (tops.length
-        ? '<div style="margin-top:4px">' + tops.map(function (a) {
-            return '<div class="palrow"><span class="st" style="width:auto;min-width:104px">' + a.icon + " " + esc(a.stance) + '</span><span class="th">' + esc(a.name) + ' <span style="font-size:11px">· ' + esc(a.why) + "</span></span><span class=\"fl\" style=\"color:" + (a.cls === "good" ? "var(--good)" : "var(--mid)") + '">' + a.verb + "</span></div>";
-          }).join("") + '<div class="mut" style="margin-top:4px">Saisis un montant ci-dessus pour la répartition exacte sur ton univers réel.</div>'
-        : "");
-  }
+  var tops = s.topStances || [];
+  elS.innerHTML =
+    "<b>2 · Supplément (prime, don, virement)</b>" +
+    '<div class="verdict" style="margin-top:4px">Entrée : ' + esc(s.verdict.phrase) + " (" + s.verdict.pref + "/100) — <b>" + esc(s.verdict.recommande) + "</b> : " + esc(s.verdict.label || "") + "</div>" +
+    (tops.length
+      ? '<div style="margin-top:4px">' + tops.map(function (a) {
+          return '<div class="palrow"><span class="st" style="width:auto;min-width:104px">' + a.icon + " " + esc(a.stance) + '</span><span class="th">' + esc(a.name) + ' <span style="font-size:11px">· ' + esc(a.why) + "</span></span><span class=\"fl\" style=\"color:" + (a.cls === "good" ? "var(--good)" : "var(--mid)") + '">' + a.verb + "</span></div>";
+        }).join("") + "</div>"
+      : "") +
+    '<div class="mut" style="margin-top:4px">Pour la répartition exacte au € sur ton univers réel : saisis le montant dans le simulateur 🧮 ci-dessous — le même moteur (aucune contradiction possible).</div>';
 
   // 3 · Stock (lecture, jamais un ordre)
   var st = dec.stock;
@@ -503,14 +476,6 @@ function renderDecision(d, radar) {
   } else {
     elK.innerHTML = "<b>3 · Ton stock</b><div class=\"mut\" style=\"margin-top:4px\">" + esc(st.note) + "</div>";
   }
-}
-// Recalcul de la carte décision depuis les saisies (handlers ci-dessous) — les data du jour
-// changent rarement à l'écran, mais on recalcule toujours sur l'état courant.
-function decUpdate() {
-  decSaveSupp(decSaisie());
-  var mr = $("decSuppMonthsRow"), modeEl = $("decSuppMode");
-  if (mr && modeEl) mr.style.display = modeEl.value === "dca" ? "" : "none";
-  if (state.data) renderDecision(state.data, radarAll(state.data));
 }
 // Éditeur ✏️ des montants réels (carte 👤 patrimoine)
 function renderReelsEditor(open) {
@@ -1011,21 +976,11 @@ var NOTIFY_OLD_KEY = "radar-telegram-v1"; // configs Telegram v5.1, lues et migr
   });
 })();
 
-// ---- v6.0 : carte 🎯 Ma décision — saisie du supplément (persistée sur ce téléphone) + montants réels ----
+// ---- v6.1 : carte 🎯 Ma décision — lecture pure (aucune saisie : le simulateur 🧮 reste l'outil) + montants réels ----
 (function () {
-  // Restauration du supplément saisi (localStorage, jamais exporté) AVANT le premier rendu.
-  var sv = decLoadSupp();
-  if (sv && num(sv.montant) !== null && num(sv.montant) >= 1) {
-    $("decSuppMontant").value = String(sv.montant);
-    if (sv.mode === "dca") {
-      $("decSuppMode").value = "dca";
-      $("decSuppMonthsRow").style.display = "";
-      if (num(sv.months) !== null) $("decSuppMonths").value = String(Math.floor(num(sv.months)));
-    }
-  }
-  $("decSuppMontant").addEventListener("input", decUpdate);
-  $("decSuppMode").addEventListener("change", decUpdate);
-  $("decSuppMonths").addEventListener("input", decUpdate);
+  // v6.1 : nettoyage de la clé v6.0 (le supplément ne vit plus dans localStorage —
+  // saisis un montant, quand tu en as un, directement dans le simulateur 🧮).
+  try { localStorage.removeItem("radar-dec-supp"); } catch (e) {}
   // Éditeur ✏️ des montants réels (carte 👤) — sauvegarde localStorage seule, puis re-rendu.
   $("btnReelsEdit").addEventListener("click", function () {
     renderReelsEditor($("reelsEdit").style.display === "none");
