@@ -372,6 +372,31 @@ function patReelsOf(patData) {
   return out;
 }
 
+// v7.3 : transparence — retourne les actifs de 💼 que patLineOf IGNORE (null), avec noms + total,
+// pour que l'omission soit VISIBLE dans la carte 👤 (fin du « tout mon patrimoine n'est pas pris
+// en compte » invisible : l'utilisateur voit exactement quels actifs demandent un mot-clé).
+// Jamais de valeur inventée : quantité × prix > 0 seulement, noms dédupliqués, gardes hostiles → vide.
+function patNonClassesOf(patData) {
+  var out = { noms: [], total: 0, count: 0 };
+  if (!patData || typeof patData !== "object" || !Array.isArray(patData.envelopes)) return out;
+  patData.envelopes.forEach(function (env) {
+    if (!env || !Array.isArray(env.assets)) return;
+    var isLivretEnv = /livret/i.test(String(env.type || "") + " " + String(env.name || ""));
+    env.assets.forEach(function (a) {
+      if (!a) return;
+      var val = (Number(a.quantity) || 0) * (Number(a.currentPrice) || 0);
+      if (!(val > 0)) return;
+      if (patLineOf(a, isLivretEnv) === null) {
+        out.count++;
+        out.total += val;
+        var nom = String(a.name || "sans nom").trim() || "sans nom";
+        if (out.noms.indexOf(nom) === -1) out.noms.push(nom);
+      }
+    });
+  });
+  return out;
+}
+
 function stanceOf(score, posture) {
   var c = isPosture(posture) ? CUTS[posture] : CUTS["Neutre"];   // inconnu/absent → base v5.6 (v5.10 : lit CUTS, plus de recalcul de rang)
   if (score >= c.sur) return { cls: "good", label: "Sur-pondérer", verb: "INVESTIR" };
@@ -957,7 +982,7 @@ if (typeof module !== "undefined" && module.exports) {
     regimePostureOf: regimePostureOf, POSTURES: POSTURES, ALLOC_EXCL: ALLOC_EXCL, ALLOC_MON_FLOOR: ALLOC_MON_FLOOR, CUTS: CUTS,
     isRealDate: isRealDate, isPosture: isPosture,
     decisionOf: decisionOf, sanitizeReels: sanitizeReels,   // v6.0 : carte 🎯 Ma décision
-    patReelsOf: patReelsOf, patLineOf: patLineOf,   // v7.0 : fusion app Patrimoine — classification auto vers les 7 lignes 👤
+    patReelsOf: patReelsOf, patLineOf: patLineOf, patNonClassesOf: patNonClassesOf,   // v7.0 : fusion app Patrimoine — classification auto vers les 7 lignes 👤 ; v7.3 : actifs ignorés rendus VISIBLES
     PATRIMOINE: PATRIMOINE, PATRIMOINE_HORS_RADAR: PATRIMOINE_HORS_RADAR, PATRIMOINE_ACTIFS: PATRIMOINE_ACTIFS   // v5.11/v5.12 : univers réel de Jade (mapping + liste des 7 actifs)
   };
 }
