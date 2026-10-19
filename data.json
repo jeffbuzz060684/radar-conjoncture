@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "dateData": "2026-10-18",
-  "note": "Maj hebdo — paliers passés en EUR (IWDA.AS)",
+  "dateData": "2026-10-19",
+  "note": "Maj hebdo lundi — or/BTC actualisés",
   "data": {
     "msci": 130.55,
     "msciHigh52": 132.26,
@@ -18,53 +18,53 @@
     "bund10": 3.42,
     "oat10": 4.79,
     "pmiZE": 53.1,
-    "orEUR": 3729.84,
+    "orEUR": 3724,
     "orHigh52": 4592,
     "orLow52": 3387.45,
-    "btcEUR": 72598,
+    "btcEUR": 72253,
     "btcHigh52": null,
     "imoRendement": 5
   },
   "sources": [
     [
-      "MSCI World (IWDA) : 130,55 € (clôture du 16/10/2026, IWDA.AS Euronext Amsterdam) ; plus haut 52 sem. 132,26 € (12/10/2026) ; plus bas 107,51 €",
+      "MSCI World (IWDA) : 130,55 € (clôture 16/10/2026, IWDA.AS Euronext Amsterdam) ; plus haut 52 sem. 132,26 € (12/10) ; plus bas 107,51 €",
       "Yahoo Finance (IWDA.AS)"
     ],
     [
-      "CAPE Shiller : 40,38 (2026-10-01, 98,9e percentile)",
+      "CAPE Shiller : 40,38 (octobre 2026)",
       "GuruFocus"
     ],
     [
       "VIX : 19,99 (+21,5 % — clôture 16/10/2026) ; moyenne 5 séances : 16,76",
-      "CBOE via Yahoo Finance"
+      "CBOE via Yahoo Finance / TradingView"
     ],
     [
-      "Inflation zone euro : 3,8 % (septembre, confirmé)",
+      "Inflation zone euro : 3,8 % (septembre 2026, confirmé le 16/10)",
       "Eurostat"
     ],
     [
-      "Inflation US : 3,7 % (septembre, +0,6 % m/m)",
+      "Inflation US : 3,7 % (septembre, publié le 14/10)",
       "BLS via CNBC / Trading Economics"
     ],
     [
-      "BCE : dépôt 2,50 % en hausse (+25 pb, effectif 16/09/2026) ; marché attend stable au 29/10 (90 %)",
-      "BCE / ECB Watch Tool (confirmé par l'API ECB Data Portal)"
+      "BCE : dépôt 2,50 % en hausse (+25 pb au 16/09/2026) ; marché attend stable au 29/10 (99 %)",
+      "BCE / ECB Watch Tool"
     ],
     [
       "Bund 3,42 % ; OAT 4,79 % ; spread ~137 pb (16/10/2026)",
       "Trading Economics"
     ],
     [
-      "PMI composite zone euro : 53,1 (septembre)",
+      "PMI composite zone euro : 53,1 (septembre, plus haut depuis 3 ans et demi)",
       "S&P Global"
     ],
     [
-      "Or : 3 729,84 €/once (4 186,70 $ / taux ECB 1,1225)",
-      "Yahoo Finance / BCE"
+      "Or : 3 724 €/once (4 180,10 $ au 18/10, taux ECB 1,1225)",
+      "Kitco / BCE"
     ],
     [
-      "Bitcoin : 72 598 € (17/10/2026)",
-      "CoinGecko"
+      "Bitcoin : 72 253 € (19/10/2026)",
+      "CoinMarketCap"
     ]
   ]
 }
