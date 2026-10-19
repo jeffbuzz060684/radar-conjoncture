@@ -72,10 +72,10 @@ function computeDerived(d) {
   der.ddMsci = pctDD(d.msci, d.msciHigh52);
   der.ddOr = pctDD(d.orEUR, d.orHigh52);
   der.ddBtc = pctDD(d.btcEUR, d.btcHigh52);
-  der.tauxReelZE = (num(d.bceDepot) !== null && num(d.inflZE) !== null) ? d.bceDepot - d.inflZE : null;   // dépôt BCE − inflation ZE
-  der.bundReal = (num(d.bund10) !== null && num(d.inflZE) !== null) ? d.bund10 - d.inflZE : null;         // rendement réel Bund
+  der.tauxReelZE = (num(d.bceDepot) !== null && num(d.inflZE) !== null) ? d.bceDepot - d.inflZE : null;   // dépôt BCE − inflation ZE (approximation : taux nominal − inflation OBSERVÉE, pas l'inflation anticipée)
+  der.bundReal = (num(d.bund10) !== null && num(d.inflZE) !== null) ? d.bund10 - d.inflZE : null;         // rendement réel Bund (même approximation : nominal − inflation observée)
   der.spreadOat = (num(d.oat10) !== null && num(d.bund10) !== null) ? (d.oat10 - d.bund10) * 100 : null;  // points de base
-  der.imoMarge = (num(d.imoRendement) !== null && num(d.oat10) !== null) ? d.imoRendement - d.oat10 : null; // rendement immo − coût crédit
+  der.imoMarge = (num(d.imoRendement) !== null && num(d.oat10) !== null) ? d.imoRendement - d.oat10 : null; // rendement locatif immo − OAT 10 ans (taux sans risque de référence, pas un coût de crédit)
   if (num(d.orEUR) !== null && num(d.orHigh52) !== null && num(d.orLow52) !== null && d.orHigh52 > d.orLow52) {
     der.posOr = (d.orEUR - d.orLow52) / (d.orHigh52 - d.orLow52) * 100;
   } else der.posOr = null;
@@ -118,7 +118,7 @@ function scoreObligations(d, der) {
     "plus le rendement d'entrée est haut, mieux c'est"));
   parts.push(mkPart("Rendement réel (Bund − inflation)",
     der.bundReal === null ? 0 : stepScore(der.bundReal, [[-2, -12], [-1, -8], [0, -4], [1, 4], [Infinity, 8]]),
-    der.bundReal === null ? "données manquantes" : (r1(der.bundReal) + " % réel : l'inflation " + (der.bundReal < 0 ? "ronge" : "respecte") + " le coupon")));
+    der.bundReal === null ? "données manquantes" : (r1(der.bundReal) + " % réel : l'inflation " + (der.bundReal < 0 ? "ronge" : "respecte") + " le coupon — approx. : taux nominal − inflation observée")));
   var dirPts = d.bceDir === "baisse" ? 12 : d.bceDir === "hausse" ? -10 : 0;
   parts.push(mkPart("Direction des taux BCE (" + d.bceDir + ")", dirPts,
     d.bceDir === "hausse" ? "les taux qui montent font baisser les obligations existantes" : "des taux qui baissent font monter les cours"));
@@ -153,7 +153,7 @@ function scoreMonetaire(d, der) {
     "rendement sans risque du monétaire"));
   parts.push(mkPart("Rendement réel (" + (der.tauxReelZE !== null ? r1(der.tauxReelZE) : "?") + " %)",
     der.tauxReelZE === null ? 0 : stepScore(der.tauxReelZE, [[0, -6], [1, 2], [Infinity, 6]]),
-    der.tauxReelZE !== null && der.tauxReelZE < 0 ? "l'inflation dépasse le taux : le monétaire perd du pouvoir d'achat" : "préserve le pouvoir d'achat"));
+    der.tauxReelZE !== null && der.tauxReelZE < 0 ? "l'inflation dépasse le taux : le monétaire perd du pouvoir d'achat (approx. : taux nominal − inflation observée)" : "préserve le pouvoir d'achat (approx. : taux nominal − inflation observée)"));
   var refuge = ((der.vixEff !== null && der.vixEff >= 25) || (der.ddMsci !== null && der.ddMsci <= -15)) ? 6 : 0;
   parts.push(mkPart("Rôle de refuge", refuge, refuge ? "marchés stressés : le monétaire protège" : "marchés calmes : peu d'avantage refuge"));
   return { id: "monetaire", icon: "🛡️", name: "Monétaire zone euro", score: clampScore(50 + parts.reduce(function (s, p) { return s + p.pts; }, 0)), parts: parts };
@@ -161,7 +161,7 @@ function scoreMonetaire(d, der) {
 
 function scoreImmo(d, der) {
   var parts = [];
-  parts.push(mkPart("Rendement − coût du crédit (" + (der.imoMarge !== null ? r1(der.imoMarge) : "?") + " pts)",
+  parts.push(mkPart("Rendement locatif vs OAT 10 ans (" + (der.imoMarge !== null ? r1(der.imoMarge) : "?") + " pts)",
     der.imoMarge === null ? 0 : stepScore(der.imoMarge, [[0, -15], [0.5, -5], [1.5, 5], [Infinity, 10]]),
     der.imoMarge === null ? "données manquantes" : "rendement locatif " + (der.imoMarge > 0 ? "au-dessus" : "sous") + " du taux OAT 10 ans"));
   var dirPts = d.bceDir === "baisse" ? 8 : d.bceDir === "hausse" ? -8 : 0;
@@ -243,6 +243,7 @@ function strategyOf(d, der, paliers, top) {
     var montant = (reserve !== null && reserve > 0) ? Math.round(reserve * 0.25) : null;
     lines.push("Palier −" + next.p + " % FRANCHI (cours " + num(d.msci) + " €, seuil " + next.seuil + " €)" + (montant !== null ? " → déployer 25 % de la réserve ≈ " + montant + " € sur DCAM, une seule fois cet épisode." : " → déployer 25 % de la réserve sur DCAM, une seule fois cet épisode."));
     lines.push("Après déploiement, marque le palier comme « déployé » ci-dessus pour l'ignorer jusqu'au prochain épisode.");
+    lines.push("Plusieurs seuils franchis d'un coup ? Politique explicite : UN seul déploiement par relevé — le premier palier franchi non déployé ; les suivants se déclencheront un par un aux relevés suivants (jamais de double tranche le même jour).");
   } else {
     var pending = paliers.filter(function (p) { return p.atteint; });
     if (pending.length) {
@@ -515,7 +516,7 @@ function adviceOf(d, radar, override) {
   if (d.bceDir === "hausse")
     res.contexte.push("BCE en relèvement : tant que le cycle n'est pas retourné, la poche obligations se limite aux maturités courtes ou au taux variable.");
   if (marge !== null && marge < 0)
-    res.contexte.push("Immobilier : rendement locatif (" + r1(num(d.imoRendement)) + " %) sous le coût du crédit (OAT " + r1(num(d.oat10)) + " %) — défavorable aux nouvelles souscriptions SCPI.");
+    res.contexte.push("Immobilier : rendement locatif (" + r1(num(d.imoRendement)) + " %) sous le taux sans risque OAT 10 ans (" + r1(num(d.oat10)) + " %) — défavorable aux nouvelles souscriptions SCPI.");
   // ---- signaux d'arbitrage / désinvestissement (uniquement DÉCLENCHÉS par le prix, jamais permanents) ----
   if (ddM !== null && ddM <= -5)
     res.desinv.push("Actions en drawdown (" + r1(ddM) + " %) — règle maison absolue : on ne vend JAMAIS sur la baisse ; les paliers tactiques achètent cette faiblesse au contraire.");
