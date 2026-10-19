@@ -335,6 +335,42 @@ var PATRIMOINE_ACTIFS = [
   { nom: "Private equity",        enceinte: "Hors radar",           radar: null,          reel: "illiquide — souscriptions aux fenêtres seulement, horizon long ; jamais alloué par le simulateur" }
 ];
 
+// v7.0 : fusion de l'app Patrimoine 💼 — classe les actifs de l'app Patrimoine (données de la
+// clé « suivi-patrimoine-v4 » du stockage du téléphone, même origine GitHub Pages que le Radar) vers les
+// 7 lignes de la carte 👤. Heuristique par mots-clés sur nom + catégorie + type d'enveloppe ;
+// L'ORDRE DES RÈGLES COMPTE : private equity AVANT actions (« Private Equity Europe » contient
+// « equity »), fonds euro avant actions, SCPI avant immo… Valeur retenue = valeur actuelle
+// (quantité × prix actuel). Actif non classé → ignoré (la ligne garde la valeur ✏️ manuelle,
+// qui reste TOUJOURS prioritaire ligne par ligne). Fonction pure, testée sous Node.
+function patLineOf(a, isLivretEnv) {
+  var s = (String(a.name || "") + " · " + String(a.category || "")).toLowerCase();
+  if (/private equity|capital investissement|fcpr|fcpi|fpci/.test(s)) return "Private equity";
+  if (/fonds ?€|fonds ?euro/.test(s)) return "Fonds euro";
+  if (/scpi/.test(s)) return "SCPI";
+  if (/\bor\b|gold|xau|métal/.test(s)) return "Or";
+  if (/bitcoin|btc|crypto|ethereum|solana|ripple|xrp/.test(s)) return "Bitcoin";
+  if (isLivretEnv) return "Livret";
+  if (/liquidit|monétaire|cash/.test(s)) return "Livret";       // cash = poche de précaution
+  if (/action|etf|equity|msci|world|monde|sp ?500|nasdaq|stoxx|cac ?40/.test(s)) return "Actions — MSCI World";
+  return null;   // non classé → jamais inventé
+}
+function patReelsOf(patData) {
+  var out = {};
+  if (!patData || typeof patData !== "object" || !Array.isArray(patData.envelopes)) return out;
+  patData.envelopes.forEach(function (env) {
+    if (!env || !Array.isArray(env.assets)) return;
+    var isLivretEnv = /livret/i.test(String(env.type || "") + " " + String(env.name || ""));
+    env.assets.forEach(function (a) {
+      if (!a) return;
+      var val = (Number(a.quantity) || 0) * (Number(a.currentPrice) || 0);
+      if (!(val > 0)) return;
+      var line = patLineOf(a, isLivretEnv);
+      if (line) out[line] = Math.round((out[line] || 0) + val);
+    });
+  });
+  return out;
+}
+
 function stanceOf(score, posture) {
   var c = isPosture(posture) ? CUTS[posture] : CUTS["Neutre"];   // inconnu/absent → base v5.6 (v5.10 : lit CUTS, plus de recalcul de rang)
   if (score >= c.sur) return { cls: "good", label: "Sur-pondérer", verb: "INVESTIR" };
@@ -920,6 +956,7 @@ if (typeof module !== "undefined" && module.exports) {
     regimePostureOf: regimePostureOf, POSTURES: POSTURES, ALLOC_EXCL: ALLOC_EXCL, ALLOC_MON_FLOOR: ALLOC_MON_FLOOR, CUTS: CUTS,
     isRealDate: isRealDate, isPosture: isPosture,
     decisionOf: decisionOf, sanitizeReels: sanitizeReels,   // v6.0 : carte 🎯 Ma décision
+    patReelsOf: patReelsOf, patLineOf: patLineOf,   // v7.0 : fusion app Patrimoine — classification auto vers les 7 lignes 👤
     PATRIMOINE: PATRIMOINE, PATRIMOINE_HORS_RADAR: PATRIMOINE_HORS_RADAR, PATRIMOINE_ACTIFS: PATRIMOINE_ACTIFS   // v5.11/v5.12 : univers réel de Jade (mapping + liste des 7 actifs)
   };
 }
