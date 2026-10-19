@@ -109,7 +109,7 @@
 <header>
   <div class="hrow">
     <h1>📡 Radar <span>Conjoncture</span></h1>
-    <span class="badge">🔄 Maj auto quotidienne · <b>v6.2</b></span>
+    <span class="badge">🔄 Maj auto quotidienne · <b>v6.3</b></span>
   </div>
   <div class="hrow" style="margin-top:6px">
     <span class="chip" id="dataChip">—</span>
@@ -516,29 +516,34 @@ function renderPatrimoine(radar) {
   // du score global : plus de contresens « score actions bas » affiché sous un conseil Offensive.
   // Les autres lignes affichent une « lecture marché » du SEGMENT — pas une note du produit
   // détenu (fonds euro : capital garanti ; livret : taux réglementé — pas de mark-to-market).
-  var unavail = '<span class="fl" style="color:var(--mut)">lecture indisponible (donnée manquante)</span>';
+  var unavail = "lecture indisponible (donnée manquante)";
   el.innerHTML = PATRIMOINE_ACTIFS.map(function (act) {
     var a = act.radar !== null ? byId[act.radar] : null, right;
-    if (act.radar === null) right = '<span class="fl" style="color:var(--mut)">hors radar — jamais alloué</span>';
+    if (act.radar === null) right = "hors radar — jamais alloué";
     else if (!a) right = unavail;
     else if (act.radar === "actions") {
       right = (a.timingScore === null || a.timingScore === undefined || a.score === null || a.score === undefined)
         ? unavail
-        : '<span class="fl">timing <b>' + a.timingScore + '/100</b> — pilote du conseil · global ' + a.score + "/100</span>";
+        : 'timing <b>' + a.timingScore + '/100</b> — pilote du conseil · global ' + a.score + "/100";
     } else {
       right = (a.score === null || a.score === undefined)
         ? unavail
-        : '<span class="fl">lecture marché ' + esc(a.name) + ' · <b>' + a.score + '/100</b>' + (a.partial ? " (partiel)" : "") + "</span>";
+        : 'lecture marché ' + esc(a.name) + ' · <b>' + a.score + '/100</b>' + (a.partial ? " (partiel)" : "");
     }
+    var muted = act.radar === null || right === unavail;
     var rv = Object.prototype.hasOwnProperty.call(reels, act.nom) ? reels[act.nom] : null;   // v6.0 : montant réel saisi (ou null)
-    // v6.2 : le montant vit SOUS le nom, dans la cellule de gauche — une 4e colonne nowrap
-    // (v6.0/v6.1) faisait déborder la ligne de la carte sur écran étroit.
+    // v6.3 : 2 colonnes seulement — nom (+ montant v6.2) à gauche, tout le reste dans la
+    // colonne flexible .th qui retourne à la ligne. La v6.2 avait déplacé le montant, mais
+    // la lecture restait une 3e colonne .fl nowrap (« timing … — pilote du conseil · global … ») :
+    // insécable, elle débordait SEULE de la carte sur écran étroit. La lecture vit maintenant
+    // SOUS l'enceinte en white-space:normal — plus rien ne peut déborder, quelle que soit la largeur.
     return '<div class="palrow">' +
       '<span class="st" style="width:auto;min-width:86px"><b>' + esc(act.nom) + "</b>" +
       (rv !== null ? '<span style="display:block;margin-top:2px;font-size:11.5px;color:var(--txt)"><b>' + fmtEUR(rv) + "</b></span>" : "") +
       "</span>" +
-      '<span class="th">' + esc(act.enceinte) + ' <span class="mut" style="font-size:11px">— ' + esc(act.reel) + "</span></span>" + right +
-      "</div>";
+      '<span class="th">' + esc(act.enceinte) + ' <span class="mut" style="font-size:11px">— ' + esc(act.reel) + "</span>" +
+      '<span class="fl" style="display:block;white-space:normal;margin-top:2px;color:' + (muted ? "var(--mut)" : "var(--txt)") + '">' + right + "</span>" +
+      "</span></div>";
   }).join("");
 }
 

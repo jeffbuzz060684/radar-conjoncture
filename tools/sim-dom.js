@@ -1,4 +1,4 @@
-/* Simulation DOM v6.2 (outillage) — rejoue le chargement complet de la page avec des stubs (aucun réseau).
+/* Simulation DOM v6.3 (outillage) — rejoue le chargement complet de la page avec des stubs (aucun réseau).
    Exécution : node sim.js  →  doit finir par "SIM OK" sans aucune erreur d'exécution. */
 "use strict";
 var fs = require("fs"), path = require("path"), vm = require("vm");
@@ -255,6 +255,10 @@ ck("v6.0 : la carte 👤 patrimoine affiche le montant saisi dans la ligne",
 ck("v6.2 : le montant est SOUS le nom (plus de 4e colonne nowrap qui débordait de la carte)",
   String(els.patrimoineList.innerHTML).indexOf("display:block;margin-top:2px") !== -1 &&
   String(els.patrimoineList.innerHTML).indexOf("min-width:70px") === -1);
+ck("v6.3 : les 7 lectures sont SOUS l'enceinte en white-space:normal — plus aucune colonne .fl nowrap dans la carte patrimoine",
+  (function () { var h = txt("patrimoineList");
+    return (h.match(/class="fl"/g) || []).length === 7 &&
+           (h.match(/class="fl" style="display:block;white-space:normal/g) || []).length === 7; })());
 // skew : logic.js périmé (pas de decisionOf) → carte omise SANS erreur
 var DEC_SAVED = sandbox.decisionOf;
 sandbox.decisionOf = undefined;
@@ -272,4 +276,4 @@ var fail = checks.filter(function (c) { return !c.ok; });
 checks.forEach(function (c) { console.log((c.ok ? "✅ " : "❌ ") + c.name); });
 console.log("");
 if (fail.length) { console.log("SIM ÉCHECS : " + fail.length); process.exit(1); }
-console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul + synthèse à source partagée v5.10 + univers réel v5.11 + carte « Ton patrimoine réel » 7 actifs v5.12 + gardes anti-skew logic.js périmé v5.12.1 + lecture honnête ligne par ligne v5.13 + carte 🎯 Ma décision v6.0/v6.1 : flux/supplément-lecture/stock + plus de double saisie (renvoi 🧮) + éditeur ✏️ + skew + ligne patrimoine sans débordement v6.2).");
+console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul + synthèse à source partagée v5.10 + univers réel v5.11 + carte « Ton patrimoine réel » 7 actifs v5.12 + gardes anti-skew logic.js périmé v5.12.1 + lecture honnête ligne par ligne v5.13 + carte 🎯 Ma décision v6.0/v6.1 : flux/supplément-lecture/stock + plus de double saisie (renvoi 🧮) + éditeur ✏️ + skew + ligne patrimoine sans débordement v6.2 + lecture sous l'enceinte wrappable v6.3).");
