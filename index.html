@@ -109,7 +109,7 @@
 <header>
   <div class="hrow">
     <h1>📡 Radar <span>Conjoncture</span></h1>
-    <span class="badge">🔄 Maj auto quotidienne · <b>v6.1</b></span>
+    <span class="badge">🔄 Maj auto quotidienne · <b>v6.2</b></span>
   </div>
   <div class="hrow" style="margin-top:6px">
     <span class="chip" id="dataChip">—</span>
@@ -531,10 +531,13 @@ function renderPatrimoine(radar) {
         : '<span class="fl">lecture marché ' + esc(a.name) + ' · <b>' + a.score + '/100</b>' + (a.partial ? " (partiel)" : "") + "</span>";
     }
     var rv = Object.prototype.hasOwnProperty.call(reels, act.nom) ? reels[act.nom] : null;   // v6.0 : montant réel saisi (ou null)
+    // v6.2 : le montant vit SOUS le nom, dans la cellule de gauche — une 4e colonne nowrap
+    // (v6.0/v6.1) faisait déborder la ligne de la carte sur écran étroit.
     return '<div class="palrow">' +
-      '<span class="st" style="width:auto;min-width:86px"><b>' + esc(act.nom) + '</b></span>' +
+      '<span class="st" style="width:auto;min-width:86px"><b>' + esc(act.nom) + "</b>" +
+      (rv !== null ? '<span style="display:block;margin-top:2px;font-size:11.5px;color:var(--txt)"><b>' + fmtEUR(rv) + "</b></span>" : "") +
+      "</span>" +
       '<span class="th">' + esc(act.enceinte) + ' <span class="mut" style="font-size:11px">— ' + esc(act.reel) + "</span></span>" + right +
-      (rv !== null ? '<span class="fl" style="color:var(--txt);min-width:70px"><b>' + fmtEUR(rv) + "</b></span>" : "") +
       "</div>";
   }).join("");
 }
