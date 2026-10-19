@@ -177,7 +177,7 @@
 <header>
   <div class="hrow">
     <h1>📡 Radar <span>Conjoncture</span></h1>
-    <span class="badge">🔄 Maj auto quotidienne · <b>v7.2</b></span>
+    <span class="badge">🔄 Maj auto quotidienne · <b>v7.3</b></span>
   </div>
   <div class="hrow" style="margin-top:6px">
     <span class="chip" id="dataChip">—</span>
@@ -1587,6 +1587,15 @@ function renderPatrimoine(radar) {
       '<span class="fl" style="display:block;white-space:normal;margin-top:2px;color:' + (muted ? "var(--mut)" : "var(--txt)") + '">' + right + "</span>" +
       "</span></div>";
   }).join("");
+  // v7.3 : transparence — les actifs 💼 que la classification ignore sont AFFICHÉS (noms + total),
+  // fin de l'omission silencieuse (« tout mon patrimoine n'est pas pris en compte » devient lisible).
+  // Garde anti-skew : logic.js périmé (patNonClassesOf absent) → indicateur omis, page intacte.
+  if (typeof patNonClassesOf === "function") {
+    try {
+      var patNc = patNonClassesOf(JSON.parse(localStorage.getItem("suivi-patrimoine-v4") || "null"));
+      if (patNc && patNc.count > 0) el.innerHTML += '<div class="warnbox" style="margin-top:8px">⚠️ ' + patNc.count + " actif" + (patNc.count > 1 ? "s" : "") + " de l'onglet 💼 non classé" + (patNc.count > 1 ? "s" : "") + " : " + patNc.noms.map(function (n) { return esc(n); }).join(", ") + " — " + fmtEUR(patNc.total) + " non pris en compte dans cette carte. Envoie ces noms à ton assistant (ou corrige le libellé dans 💼) pour qu'ils comptent.</div>";
+    } catch (e) {}
+  }
 }
 
 function renderRadar() {
