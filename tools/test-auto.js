@@ -369,8 +369,8 @@ t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === 
 // ---------- index.html, logic.js, sw.js, auto.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v6.3", html.indexOf("<b>v6.3</b>") !== -1);
-t("index.html: aucun ancien badge v6.2/v6.1/v6.0/v5.13/v5.12.1/v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v6.2</b>", "<b>v6.1</b>", "<b>v6.0</b>", "<b>v5.13</b>", "<b>v5.12.1</b>", "<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
+t("index.html: badge v7.0", html.indexOf("<b>v7.0</b>") !== -1);
+t("index.html: aucun ancien badge v6.3/v6.2/v6.1/v6.0/v5.13/v5.12.1/v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v6.3</b>", "<b>v6.2</b>", "<b>v6.1</b>", "<b>v6.0</b>", "<b>v5.13</b>", "<b>v5.12.1</b>", "<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: logic.js chargé entre vehicles.js et le script UI inline",
   html.indexOf('<script src="vehicles.js"></script>') !== -1 &&
@@ -396,8 +396,8 @@ t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: VIX lissé utilisé dans le scoring (vixEff, désormais dans logic.js)", srcLogic.indexOf("der.vixEff") !== -1 && srcLogic.indexOf("vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v24", sw.indexOf('CACHE = "radar-v24"') !== -1);
-t("sw.js: anciens caches v23/v22/v21/v20/v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v23") === -1 && sw.indexOf("radar-v22") === -1 && sw.indexOf("radar-v21") === -1 && sw.indexOf("radar-v20") === -1 && sw.indexOf("radar-v16") === -1 && sw.indexOf("radar-v15") === -1 && sw.indexOf("radar-v14") === -1 && sw.indexOf("radar-v13") === -1 && sw.indexOf("radar-v12") === -1 && sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
+t("sw.js: cache v25", sw.indexOf('CACHE = "radar-v25"') !== -1);
+t("sw.js: anciens caches v24/v23/v22/v21/v20/v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v24") === -1 && sw.indexOf("radar-v23") === -1 && sw.indexOf("radar-v22") === -1 && sw.indexOf("radar-v21") === -1 && sw.indexOf("radar-v20") === -1 && sw.indexOf("radar-v16") === -1 && sw.indexOf("radar-v15") === -1 && sw.indexOf("radar-v14") === -1 && sw.indexOf("radar-v13") === -1 && sw.indexOf("radar-v12") === -1 && sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
 t("sw.js: logic.js dans le shell", sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
 t("sw.js: shell réseau d'abord + repli cache (plus aucun skew HTML frais / JS périmé)",
@@ -1215,6 +1215,55 @@ t("v6.3 : la lecture (timing/« lecture marché »/« hors radar ») vit SOUS l'
     (m[0].match(/class="fl"/g) || []).length === 1 &&
     m[0].indexOf('</span></span>" + right') === -1 &&
     m[0].indexOf("var(--mut)") !== -1; })());
+t("v7.0 : patReelsOf + patLineOf exportés par logic.js",
+  typeof L.patReelsOf === "function" && typeof L.patLineOf === "function");
+var PAT_FIXTURE = { envelopes: [
+  { name: "PEA Bourse Direct", type: "PEA", assets: [
+      { name: "DCAM Amundi PEA Monde", category: "ETF", quantity: 10, currentPrice: 130 },
+      { name: "ETF MSCI World", category: "ETF", quantity: 5, currentPrice: 100 } ] },
+  { name: "AV Linxia", type: "Assurance-vie", assets: [
+      { name: "Fonds euro", category: "Fonds", quantity: 1, currentPrice: 5000 },
+      { name: "SCPI Epargne Pierre", category: "SCPI", quantity: 2, currentPrice: 1000 } ] },
+  { name: "Livret A", type: "Livret / Épargne", assets: [ { name: "Livret A", category: "Liquidités", quantity: 1, currentPrice: 3000 } ] },
+  { name: "CTO", type: "Compte-titres", assets: [
+      { name: "Or (SGLD)", category: "Métal", quantity: 3, currentPrice: 2000 },
+      { name: "Bitcoin", category: "Crypto", quantity: 1, currentPrice: 40000 },
+      { name: "Private Equity Europe", category: "Autre", quantity: 1, currentPrice: 8000 },
+      { name: "Art contemporain", category: "Art", quantity: 1, currentPrice: 500 },
+      { name: "Ligne zéro", category: "ETF", quantity: 0, currentPrice: 100 } ] } ] };
+var PR = L.patReelsOf(PAT_FIXTURE);
+t("v7.0 : classification des 7 lignes (mots-clés + type d'enveloppe) — Actions 1 800 €, Fonds euro 5 000 €, SCPI 2 000 €, Livret 3 000 €, Or 6 000 €, Bitcoin 40 000 €, Private equity 8 000 €",
+  PR["Actions — MSCI World"] === 1800 && PR["Fonds euro"] === 5000 && PR.SCPI === 2000 && PR.Livret === 3000 &&
+  PR.Or === 6000 && PR.Bitcoin === 40000 && PR["Private equity"] === 8000);
+t("v7.0 : « Private Equity Europe » classé private equity (PAS actions malgré « equity » — l'ordre des règles compte) ; non classé ignoré ; quantité 0 ignorée",
+  Object.keys(PR).length === 7 && PR["Art contemporain"] === undefined);
+t("v7.0 : gardes patReelsOf — null / objet vide / envelopes non tableau → {} (jamais de valeur inventée)",
+  JSON.stringify(L.patReelsOf(null)) === "{}" && JSON.stringify(L.patReelsOf({})) === "{}" && JSON.stringify(L.patReelsOf({ envelopes: "x" })) === "{}");
+t("v7.0 : module patrimoine intégré — IIFE (aucun global qui fuit), clé localStorage suivi-patrimoine-v4 inchangée, cibles retargetées, SW retiré (le Radar enregistre le sien)",
+  (function () {
+    var blocks = html.match(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g) || [];
+    var first = (blocks[0] || "").replace(/^<script[^>]*>/, "").replace(/<\/script>$/, "").trim();
+    return first.indexOf("(function () {") === 0 && first.indexOf('"suivi-patrimoine-v4"') !== -1 &&
+      first.indexOf("patrimoineRoot") !== -1 && first.indexOf("pat-modal-root") !== -1 &&
+      first.indexOf('navigator.serviceWorker.register("sw.js")') === -1 &&
+      html.indexOf('getElementById("app")') === -1;
+  })());
+t("v7.0 : onglet 💼 Patrimoine (nav + section + racine modales) + hook PatrimoineRender appelé à l'ouverture de l'onglet",
+  html.indexOf('data-v="patrimoine"') !== -1 && html.indexOf('id="view-patrimoine"') !== -1 &&
+  html.indexOf('id="pat-modal-root"') !== -1 &&
+  html.indexOf('b.dataset.v === "patrimoine" && window.PatrimoineRender') !== -1);
+t("v7.0 : nav interne du module en <div class=\"bottom\"> (le sélecteur global nav{} du Radar est position:fixed — jamais de <nav> dans le module)",
+  html.indexOf('<div class="bottom"><div class="nav-in">') !== -1 && html.indexOf('<nav class="bottom">') === -1);
+t("v7.0 : CSS du module scopé sous #patrimoineRoot/#pat-modal-root — les variables patrimoine (--border/--sky/…) ne fuient pas sur le Radar",
+  html.indexOf("#patrimoineRoot .card, #pat-modal-root .card") !== -1 && html.indexOf("--border:") === -1 && html.indexOf("--sky:") === -1);
+t("v7.0 : montants fusionnés — patAutoReels (garde typeof patReelsOf, clé inchangée) + decMergedReels (✏️ prioritaire ligne par ligne, auto 💼 complète)",
+  html.indexOf('typeof patReelsOf !== "function"') !== -1 &&
+  html.indexOf('"suivi-patrimoine-v4") || "null"') !== -1 &&
+  html.indexOf("function decMergedReels()") !== -1 &&
+  html.indexOf("reels: decMergedReels()") !== -1 &&
+  html.indexOf("hasManuel") !== -1 && html.indexOf("· auto 💼") !== -1);
+t("v7.0 : retour sur l'onglet Radar → renderRadar (les montants auto 💼 ou ✏️ ont pu changer dans l'onglet Patrimoine)",
+  html.indexOf('b.dataset.v === "radar") renderRadar()') !== -1);
 
 // ---------- Bilan ----------
 var fail = results.filter(function (r) { return !r.ok; });

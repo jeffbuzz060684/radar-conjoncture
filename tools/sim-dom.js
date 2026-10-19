@@ -1,4 +1,4 @@
-/* Simulation DOM v6.3 (outillage) — rejoue le chargement complet de la page avec des stubs (aucun réseau).
+/* Simulation DOM v7.0 (outillage) — rejoue le chargement complet de la page avec des stubs (aucun réseau).
    Exécution : node sim.js  →  doit finir par "SIM OK" sans aucune erreur d'exécution. */
 "use strict";
 var fs = require("fs"), path = require("path"), vm = require("vm");
@@ -55,6 +55,16 @@ sandbox.window = sandbox;
 sandbox.self = sandbox;
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
+
+// v7.0 : données de l'app Patrimoine pré-sensibilisées — comme sur le téléphone de Jade où
+// l'ancienne app 💼 a déjà tout : même origine GitHub Pages → même stockage → zéro ressaisie.
+store["suivi-patrimoine-v4"] = JSON.stringify({ savedAt: 1, envelopes: [
+  { id: "e1", name: "PEA Bourse Direct", type: "PEA", assets: [
+      { id: "a1", name: "DCAM Amundi PEA Monde", category: "ETF", quantity: 10, currentPrice: 130, buyPrice: 120 } ] },
+  { id: "e2", name: "AV Linxia Spirit", type: "Assurance-vie", assets: [
+      { id: "a2", name: "Fonds euro", category: "Fonds", quantity: 1, currentPrice: 5000, buyPrice: 5000 },
+      { id: "a3", name: "SCPI Epargne Pierre", category: "SCPI", quantity: 2, currentPrice: 1000, buyPrice: 1000 } ] }
+] });
 
 function run(src, name) {
   try { vm.runInContext(src, sandbox, { filename: name }); return null; }
@@ -240,16 +250,16 @@ ck("v6.1 : bloc supplément = LECTURE pure — verdict du jour + top stances + r
   txt("decSuppOut").indexOf("saisis le montant dans le simulateur 🧮") !== -1);
 ck("v6.1 : plus de champ de saisie dans la carte 🎯 (v6.0 decSuppMontant supprimé)",
   els.decSuppMontant === undefined && store["radar-dec-supp"] === undefined);
-ck("v6.0 : bloc stock sans montants réels → note d'invitation ✏️",
-  txt("decStock").indexOf("Ton stock") !== -1 && txt("decStock").indexOf("✏️") !== -1);
+ck("v6.0/v7.0 : bloc stock à l'ouverture — l'auto 💼 alimente déjà le stock (1 300 + 5 000 + 2 000 = 8 300 €, écarts rendus) ; l'invitation ✏️ reste le comportement sans aucun montant (testé au harnais)",
+  txt("decStock").indexOf("Ton stock") !== -1 && txt("decStock").indexOf("8 300 €") !== -1);
 // éditeur ✏️ : saisie de montants réels → persistance + stock rendu
 els.btnReelsEdit.click();
 document.getElementById("reelIn0").value = "30000";   // Actions — MSCI World
 document.getElementById("reelIn1").value = "10000";   // Fonds euro
 els.btnReelsSave.click();
-ck("v6.0 : montants réels persistés (radar-reels) + écarts du stock affichés (40 000 € hors PE)",
+ck("v6.0/v7.0 : montants réels persistés (radar-reels) + stock affiché — 30 000 + 10 000 ✏️ et 2 000 € auto 💼 SCPI = 42 000 € hors PE",
   (store["radar-reels"] || "").indexOf("30000") !== -1 &&
-  txt("decStock").indexOf("40 000 €") !== -1 && txt("decStock").indexOf("pts") !== -1);
+  txt("decStock").indexOf("42 000 €") !== -1 && txt("decStock").indexOf("pts") !== -1);
 ck("v6.0 : la carte 👤 patrimoine affiche le montant saisi dans la ligne",
   txt("patrimoineList").indexOf("30 000 €") !== -1);
 ck("v6.2 : le montant est SOUS le nom (plus de 4e colonne nowrap qui débordait de la carte)",
@@ -259,6 +269,20 @@ ck("v6.3 : les 7 lectures sont SOUS l'enceinte en white-space:normal — plus au
   (function () { var h = txt("patrimoineList");
     return (h.match(/class="fl"/g) || []).length === 7 &&
            (h.match(/class="fl" style="display:block;white-space:normal/g) || []).length === 7; })());
+
+// v7.0 : fusion app Patrimoine 💼 — un seul app, données automatiques
+ck("v7.0 : module 💼 intégré en IIFE — aucun global qui fuit (fmtEur/uid/APP_VERSION/viewResume privés), KEY du Radar intact",
+  sandbox.fmtEur === undefined && sandbox.uid === undefined && sandbox.APP_VERSION === undefined &&
+  sandbox.viewResume === undefined && sandbox.KEY === "radar-conjoncture-v1");
+ck("v7.0 : onglet 💼 rendu — Résumé/Enveloppes/Actifs/Historique + total des données seedées (8 300 €)",
+  /8[\u202f\u00a0 ]300/.test(txt("patrimoineRoot")) && txt("patrimoineRoot").indexOf("Résumé") !== -1 &&
+  txt("patrimoineRoot").indexOf("Enveloppes") !== -1 && txt("patrimoineRoot").indexOf("Historique") !== -1);
+ck("v7.0 : montants auto 💼 dans la carte 👤 — SCPI 2 000 € taguée « auto 💼 » ; Actions/Fonds euro manuels ✏️ sans tag (priorité manuelle)",
+  (function () { var h = txt("patrimoineList");
+    return h.indexOf("2 000 €") !== -1 && (h.match(/auto 💼/g) || []).length === 1; })());
+sandbox.window.PatrimoineRender();
+ck("v7.0 : hook PatrimoineRender — re-render idempotent de l'onglet 💼 (comme au changement d'onglet, aucune erreur)",
+  /8[\u202f\u00a0 ]300/.test(txt("patrimoineRoot")));
 // skew : logic.js périmé (pas de decisionOf) → carte omise SANS erreur
 var DEC_SAVED = sandbox.decisionOf;
 sandbox.decisionOf = undefined;
@@ -276,4 +300,4 @@ var fail = checks.filter(function (c) { return !c.ok; });
 checks.forEach(function (c) { console.log((c.ok ? "✅ " : "❌ ") + c.name); });
 console.log("");
 if (fail.length) { console.log("SIM ÉCHECS : " + fail.length); process.exit(1); }
-console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul + synthèse à source partagée v5.10 + univers réel v5.11 + carte « Ton patrimoine réel » 7 actifs v5.12 + gardes anti-skew logic.js périmé v5.12.1 + lecture honnête ligne par ligne v5.13 + carte 🎯 Ma décision v6.0/v6.1 : flux/supplément-lecture/stock + plus de double saisie (renvoi 🧮) + éditeur ✏️ + skew + ligne patrimoine sans débordement v6.2 + lecture sous l'enceinte wrappable v6.3).");
+console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul + synthèse à source partagée v5.10 + univers réel v5.11 + carte « Ton patrimoine réel » 7 actifs v5.12 + gardes anti-skew logic.js périmé v5.12.1 + lecture honnête ligne par ligne v5.13 + carte 🎯 Ma décision v6.0/v6.1 : flux/supplément-lecture/stock + plus de double saisie (renvoi 🧮) + éditeur ✏️ + skew + ligne patrimoine sans débordement v6.2 + lecture sous l'enceinte wrappable v6.3 + fusion app Patrimoine 💼 v7.0 : module v11 en IIFE, montants auto vers les 7 lignes 👤, ✏️ prioritaire, hook PatrimoineRender).");
