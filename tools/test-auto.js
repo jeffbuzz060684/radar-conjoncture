@@ -369,8 +369,8 @@ t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === 
 // ---------- index.html, logic.js, sw.js, auto.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v7.1", html.indexOf("<b>v7.1</b>") !== -1);
-t("index.html: aucun ancien badge v7.0/v6.3/v6.2/v6.1/v6.0/v5.13/v5.12.1/v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v7.0</b>", "<b>v6.3</b>", "<b>v6.2</b>", "<b>v6.1</b>", "<b>v6.0</b>", "<b>v5.13</b>", "<b>v5.12.1</b>", "<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
+t("index.html: badge v7.2", html.indexOf("<b>v7.2</b>") !== -1);
+t("index.html: aucun ancien badge v7.1/v7.0/v6.3/v6.2/v6.1/v6.0/v5.13/v5.12.1/v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v7.1</b>", "<b>v7.0</b>", "<b>v6.3</b>", "<b>v6.2</b>", "<b>v6.1</b>", "<b>v6.0</b>", "<b>v5.13</b>", "<b>v5.12.1</b>", "<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: logic.js chargé entre vehicles.js et le script UI inline",
   html.indexOf('<script src="vehicles.js"></script>') !== -1 &&
@@ -396,8 +396,8 @@ t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: VIX lissé utilisé dans le scoring (vixEff, désormais dans logic.js)", srcLogic.indexOf("der.vixEff") !== -1 && srcLogic.indexOf("vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v26", sw.indexOf('CACHE = "radar-v26"') !== -1);
-t("sw.js: anciens caches v25/v24/v23/v22/v21/v20/v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v25") === -1 && sw.indexOf("radar-v24") === -1 && sw.indexOf("radar-v23") === -1 && sw.indexOf("radar-v22") === -1 && sw.indexOf("radar-v21") === -1 && sw.indexOf("radar-v20") === -1 && sw.indexOf("radar-v16") === -1 && sw.indexOf("radar-v15") === -1 && sw.indexOf("radar-v14") === -1 && sw.indexOf("radar-v13") === -1 && sw.indexOf("radar-v12") === -1 && sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
+t("sw.js: cache v27", sw.indexOf('CACHE = "radar-v27"') !== -1);
+t("sw.js: anciens caches v26/v25/v24/v23/v22/v21/v20/v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v26") === -1 && sw.indexOf("radar-v25") === -1 && sw.indexOf("radar-v24") === -1 && sw.indexOf("radar-v23") === -1 && sw.indexOf("radar-v22") === -1 && sw.indexOf("radar-v21") === -1 && sw.indexOf("radar-v20") === -1 && sw.indexOf("radar-v16") === -1 && sw.indexOf("radar-v15") === -1 && sw.indexOf("radar-v14") === -1 && sw.indexOf("radar-v13") === -1 && sw.indexOf("radar-v12") === -1 && sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
 t("sw.js: logic.js dans le shell", sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
 t("sw.js: shell réseau d'abord + repli cache (plus aucun skew HTML frais / JS périmé)",
@@ -1268,6 +1268,16 @@ t("v7.0 : montants fusionnés — patAutoReels (garde typeof patReelsOf, clé in
   html.indexOf("hasManuel") !== -1 && html.indexOf("· auto 💼") !== -1);
 t("v7.0 : retour sur l'onglet Radar → renderRadar (les montants auto 💼 ou ✏️ ont pu changer dans l'onglet Patrimoine)",
   html.indexOf('b.dataset.v === "radar") renderRadar()') !== -1);
+
+// ---------- v7.2 : audit externe — 4 correctifs d'honnêteté (label immo, seuil indicatif, politique multi-paliers, approximation taux réel) ----------
+t("v7.2 : label immobilier corrigé — « Rendement locatif vs OAT 10 ans » présent dans logic.js, l'ancien libellé faux « Rendement − coût du crédit » absent (l'OAT est un taux sans risque, PAS le coût du crédit)",
+  srcLogic.indexOf("Rendement locatif vs OAT 10 ans (") !== -1 && srcLogic.indexOf("Rendement − coût du crédit") === -1 && srcLogic.indexOf("coût du crédit") === -1);
+t("v7.2 : la carte paliers dit que les seuils sont INDICATIFS — référence IWDA.AS ≠ support DCAM acheté, un seuil touché n'est pas un ordre",
+  html.indexOf("Seuils <b>indicatifs</b>") !== -1 && html.indexOf("IWDA.AS (Euronext Amsterdam, €)") !== -1 && html.indexOf("pas exactement le support DCAM acheté") !== -1 && html.indexOf("Un seuil touché n'est pas un ordre") !== -1);
+t("v7.2 : politique multi-paliers explicite dans strategyOf — UN seul déploiement par relevé, séquentiel (le premier franchi non déployé ; jamais de double tranche le même jour)",
+  srcLogic.indexOf("UN seul déploiement par relevé") !== -1 && srcLogic.indexOf("les suivants se déclencheront un par un aux relevés suivants") !== -1 && srcLogic.indexOf("jamais de double tranche le même jour") !== -1);
+t("v7.2 : taux réels affichés comme approximation — « taux nominal − inflation observée » visible dans les justifications obligations ET monétaire de logic.js (pas une mesure exacte de taux réel prospectif)",
+  srcLogic.indexOf("approx. : taux nominal − inflation observée") !== -1 && (srcLogic.match(/approx\. : taux nominal − inflation observée/g) || []).length >= 2);
 
 // ---------- Bilan ----------
 var fail = results.filter(function (r) { return !r.ok; });
