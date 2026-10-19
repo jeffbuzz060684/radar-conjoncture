@@ -104,12 +104,80 @@
   .toggle { background: var(--card2); border: 1px solid var(--line); color: var(--mut); border-radius: 99px; font-size: 11.5px; padding: 3px 10px; cursor: pointer; }
   .toggle.on { border-color: var(--good); color: var(--good); }
 </style>
+
+  /* ============ 💼 App Patrimoine v11 intégrée (fusion v7.0) — CSS scopé sous #patrimoineRoot / #pat-modal-root : aucun impact sur le style du Radar ============ */
+#patrimoineRoot h1, #pat-modal-root h1 { font-size:20px;font-weight:800;letter-spacing:-.02em }
+#patrimoineRoot header.top, #pat-modal-root header.top { display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px }
+#patrimoineRoot .date, #pat-modal-root .date { font-size:12px;color:#64748b;text-transform:capitalize }
+#patrimoineRoot .badge, #pat-modal-root .badge { font-size:10px;font-weight:600;color:var(--mut);background:#1e293b;border-radius:999px;padding:4px 10px;white-space:nowrap }
+#patrimoineRoot .card, #pat-modal-root .card { background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px }
+#patrimoineRoot .label, #pat-modal-root .label { font-size:11px;text-transform:uppercase;letter-spacing:.18em;color:var(--mut) }
+#patrimoineRoot .hero .total, #pat-modal-root .hero .total { font-size:36px;font-weight:800;letter-spacing:-.02em;margin-top:4px }
+#patrimoineRoot .pill, #pat-modal-root .pill { display:inline-flex;gap:4px;align-items:center;font-size:12px;font-weight:600;border-radius:999px;padding:4px 10px;margin-top:10px }
+#patrimoineRoot .pill.up, #pat-modal-root .pill.up { background:rgba(52,211,153,.15);color:var(--good) }
+#patrimoineRoot .pill.down, #pat-modal-root .pill.down { background:rgba(251,113,133,.15);color:var(--bad) }
+#patrimoineRoot .stats, #pat-modal-root .stats { display:flex;gap:24px;margin-top:14px }
+#patrimoineRoot .stat .k, #pat-modal-root .stat .k { font-size:11px;color:var(--mut) }
+#patrimoineRoot .stat .v, #pat-modal-root .stat .v { font-size:16px;font-weight:700 }
+#patrimoineRoot .row-btn, #pat-modal-root .row-btn { display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;color:var(--txt);cursor:pointer;margin-bottom:8px }
+#patrimoineRoot .row-btn.sm, #pat-modal-root .row-btn.sm { padding:8px 10px;margin-bottom:6px }
+#patrimoineRoot .env-ic, #pat-modal-root .env-ic { width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px;flex:none }
+#patrimoineRoot .big, #pat-modal-root .big { font-weight:700 }
+#patrimoineRoot .ellipsis, #pat-modal-root .ellipsis { overflow:hidden;text-overflow:ellipsis;white-space:nowrap }
+#patrimoineRoot .sub, #pat-modal-root .sub { font-size:12px;color:var(--mut) }
+#patrimoineRoot .right, #pat-modal-root .right { text-align:right;flex:none }
+#patrimoineRoot .grow, #pat-modal-root .grow { flex:1;min-width:0 }
+#patrimoineRoot .up-t, #pat-modal-root .up-t { color:var(--good);font-size:12px;font-weight:600 }
+#patrimoineRoot .down-t, #pat-modal-root .down-t { color:var(--bad);font-size:12px;font-weight:600 }
+#patrimoineRoot h3.sec, #pat-modal-root h3.sec { font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:var(--mut);font-weight:700;margin:18px 0 10px }
+#patrimoineRoot .donut-wrap, #pat-modal-root .donut-wrap { display:flex;gap:16px;align-items:center }
+#patrimoineRoot .donut, #pat-modal-root .donut { width:110px;height:110px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center }
+#patrimoineRoot .donut-hole, #pat-modal-root .donut-hole { width:62px;height:62px;border-radius:50%;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center }
+#patrimoineRoot .donut-hole b, #pat-modal-root .donut-hole b { font-size:12px }
+#patrimoineRoot .legend, #pat-modal-root .legend { flex:1;min-width:0 }
+#patrimoineRoot .legend-item, #pat-modal-root .legend-item { display:flex;align-items:center;gap:8px;font-size:12px;padding:3px 0 }
+#patrimoineRoot .dot, #pat-modal-root .dot { width:10px;height:10px;border-radius:50%;flex:none }
+#patrimoineRoot .nm, #pat-modal-root .nm { flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap }
+#patrimoineRoot .val, #pat-modal-root .val { color:var(--mut);white-space:nowrap }
+#patrimoineRoot .pct, #pat-modal-root .pct { color:var(--mut);width:38px;text-align:right }
+#patrimoineRoot .chart, #pat-modal-root .chart { width:100%;height:150px;display:block }
+#patrimoineRoot .note, #pat-modal-root .note { font-size:11px;color:var(--mut);line-height:1.5;margin:8px 0 }
+#patrimoineRoot .btn-primary, #pat-modal-root .btn-primary { display:block;width:100%;background:var(--acc);color:#041022;border:none;border-radius:12px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin:8px 0 }
+#patrimoineRoot .btn-line, #pat-modal-root .btn-line { display:block;width:100%;background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;margin:8px 0 }
+#patrimoineRoot .btn-del, #pat-modal-root .btn-del { display:block;width:100%;background:transparent;color:var(--bad);border:1px solid rgba(251,113,133,.4);border-radius:12px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;margin:8px 0 }
+#patrimoineRoot .empty, #pat-modal-root .empty { text-align:center;padding:40px 0 }
+#patrimoineRoot .empty .big-ic, #pat-modal-root .empty .big-ic { font-size:44px }
+#patrimoineRoot .empty .t, #pat-modal-root .empty .t { font-weight:800;font-size:18px;margin-top:10px }
+#patrimoineRoot .empty .s, #pat-modal-root .empty .s { color:var(--mut);font-size:13px;margin-top:6px;padding:0 24px;line-height:1.5 }
+#patrimoineRoot .seg, #pat-modal-root .seg { display:flex;gap:8px;margin:0 0 12px }
+#patrimoineRoot .seg button, #pat-modal-root .seg button { flex:1;padding:9px 10px;border:1px solid var(--line);background:var(--card);border-radius:12px;font-size:12px;font-weight:600;color:var(--mut);cursor:pointer }
+#patrimoineRoot .seg button.on, #pat-modal-root .seg button.on { color:#fff;border-color:var(--acc);background:rgba(56,189,248,.12) }
+#patrimoineRoot .bottom, #pat-modal-root .bottom { position:sticky;bottom:74px;background:rgba(2,6,23,.92);backdrop-filter:blur(8px);border-top:1px solid var(--line);border-radius:14px 14px 0 0 }   /* v7.0 : sticky AU-DESSUS de la nav fixe du Radar (body padding-bottom 74px), jamais par-dessus */
+#patrimoineRoot .nav-in, #pat-modal-root .nav-in { display:flex;max-width:560px;margin:0 auto;padding:0 8px;align-items:center }
+#patrimoineRoot .tab, #pat-modal-root .tab { flex:1;background:none;border:none;color:#64748b;font-size:10px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0;cursor:pointer }
+#patrimoineRoot .tab .ic, #pat-modal-root .tab .ic { font-size:18px;line-height:1 }
+#patrimoineRoot .tab.on, #pat-modal-root .tab.on { color:var(--acc) }
+#patrimoineRoot .fab, #pat-modal-root .fab { width:52px;height:52px;border-radius:50%;background:var(--acc);color:#041022;border:none;font-size:26px;font-weight:700;cursor:pointer;margin-top:-22px;flex:none }
+#patrimoineRoot .overlay, #pat-modal-root .overlay { position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(2,6,23,.7);display:flex;align-items:flex-end;justify-content:center;z-index:50 }
+#patrimoineRoot .sheet, #pat-modal-root .sheet { background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;padding:16px;width:100%;max-width:560px;max-height:86vh;overflow:auto }
+#patrimoineRoot .sheet-head, #pat-modal-root .sheet-head { display:flex;justify-content:space-between;align-items:center;margin-bottom:12px }
+#patrimoineRoot .sheet-head h2, #pat-modal-root .sheet-head h2 { font-size:17px;font-weight:800 }
+#patrimoineRoot .x-btn, #pat-modal-root .x-btn { background:none;border:none;color:var(--mut);font-size:18px;cursor:pointer }
+#patrimoineRoot .field, #pat-modal-root .field { display:flex;flex-direction:column;gap:4px;margin-bottom:12px }
+#patrimoineRoot .field span, #pat-modal-root .field span { font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--mut);font-weight:600 }
+#patrimoineRoot .field input, #pat-modal-root .field input, #patrimoineRoot .field select, #pat-modal-root .field select { background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;color:var(--txt);font-size:15px;width:100% }
+#patrimoineRoot .grid2, #pat-modal-root .grid2 { display:grid;grid-template-columns:1fr 1fr;gap:10px }
+#patrimoineRoot .grid3, #pat-modal-root .grid3 { display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px }
+#patrimoineRoot .color-dots, #pat-modal-root .color-dots { display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px }
+#patrimoineRoot .color-dot, #pat-modal-root .color-dot { width:30px;height:30px;border-radius:50%;border:2px solid transparent;cursor:pointer }
+#patrimoineRoot .color-dot.sel, #pat-modal-root .color-dot.sel { border-color:#fff }
+#patrimoineRoot .err, #pat-modal-root .err { color:var(--bad);font-size:12px;font-weight:600;margin:6px 0 }
 </head>
 <body>
 <header>
   <div class="hrow">
     <h1>📡 Radar <span>Conjoncture</span></h1>
-    <span class="badge">🔄 Maj auto quotidienne · <b>v6.3</b></span>
+    <span class="badge">🔄 Maj auto quotidienne · <b>v7.0</b></span>
   </div>
   <div class="hrow" style="margin-top:6px">
     <span class="chip" id="dataChip">—</span>
@@ -173,11 +241,11 @@
 
     <div class="card" id="patrimoineCard">
       <h2>👤 Ton patrimoine réel — tes 7 actifs</h2>
-      <div class="mut" style="margin-bottom:10px">Tout ce que tu détiens, visible en permanence — pas seulement via le simulateur : chaque actif est relié à la ligne du radar qui le note — une LECTURE DU MARCHÉ du segment, pas une note du produit (le fonds euro reste à capital garanti, le livret à taux réglementé) ; la ligne Actions montre le timing, le pilote du conseil. Le private equity reste hors radar (illiquide, jamais alloué). Le socle des 1 000 €/mois reste PEA seul ; le livret (épargne de précaution) n'entre jamais dans la capacité paliers.</div>
+      <div class="mut" style="margin-bottom:10px">Tout ce que tu détiens, visible en permanence — pas seulement via le simulateur : chaque actif est relié à la ligne du radar qui le note — une LECTURE DU MARCHÉ du segment, pas une note du produit (le fonds euro reste à capital garanti, le livret à taux réglementé) ; la ligne Actions montre le timing, le pilote du conseil. Le private equity reste hors radar (illiquide, jamais alloué). Le socle des 1 000 €/mois reste PEA seul ; le livret (épargne de précaution) n'entre jamais dans la capacité paliers. v7.0 : les montants se remplissent automatiquement depuis l'onglet 💼 Patrimoine (même stockage que ton ancienne app — zéro ressaisie) ; le bouton ✏️ force une valeur ligne par ligne (elle prime sur l'auto).</div>
       <div id="patrimoineList"></div>
       <div class="frow" style="margin-top:8px"><button class="toggle" id="btnReelsEdit">✏️ Saisir mes montants réels</button></div>
       <div id="reelsEdit" style="display:none;margin-top:8px">
-        <div class="mut" style="margin-bottom:6px">Montants en €, un par actif (vide = non renseigné). Stockés UNIQUEMENT sur ce téléphone (localStorage, jamais dans l'export ni sur GitHub) — ils alimentent le bloc « stock » de la carte 🎯 Ma décision. Le private equity compte pour information, il n'entre jamais dans les écarts.</div>
+        <div class="mut" style="margin-bottom:6px">Montants en €, un par actif (vide = non renseigné). Stockés UNIQUEMENT sur ce téléphone (localStorage, jamais dans l'export ni sur GitHub) — il alimentent le bloc « stock » de la carte 🎯 Ma décision. Le private equity compte pour information, il n'entre jamais dans les écarts. Une valeur saisie ici PRIME sur le montant automatique 💼 de la ligne.</div>
         <div id="reelsInputs"></div>
         <div class="frow" style="margin-top:6px"><button class="toggle" id="btnReelsSave">Enregistrer</button> <button class="toggle" id="btnReelsClear">Tout effacer</button></div>
       </div>
@@ -272,17 +340,970 @@
       <div class="mut" id="tgStatus" style="margin-top:6px"></div>
     </div>
   </section>
+
+  <!-- v7.0 : app Patrimoine 💼 intégrée (fusion) — même clé localStorage « suivi-patrimoine-v4 » que l'ancienne app : les données sont là, automatiquement, zéro ressaisie -->
+  <section id="view-patrimoine">
+    <div id="patrimoineRoot"></div>
+  </section>
 </main>
 
 <nav>
   <button data-v="radar" class="on"><span class="ni">📡</span>Radar</button>
   <button data-v="donnees"><span class="ni">✏️</span>Données</button>
   <button data-v="suivi"><span class="ni">📈</span>Suivi</button>
+  <button data-v="patrimoine"><span class="ni">💼</span>Patrimoine</button>
 </nav>
 <div class="toast" id="toast"></div>
+<div id="pat-modal-root"></div>
 
 <script src="vehicles.js"></script>
 <script src="logic.js"></script>
+<script>
+(function () {
+"use strict";
+// ============ 💼 App Patrimoine v11 — module intégré (fusion v7.0) ============
+// Source : jeffbuzz060684/patrimoine-app (v11 web). Clé localStorage inchangée
+// (« suivi-patrimoine-v4 ») : les données saisies dans l'ancienne app 💼 sont là, automatiquement.
+// ---------- Constantes ----------
+var KEY = "suivi-patrimoine-v4";
+var APP_VERSION = "v11";
+var ENVELOPE_TYPES = ["PEA","PEA-PME","Assurance-vie","Compte-titres","Livret / Épargne","Compte courant","Immobilier","Crypto","SCPI","Crowdfunding","Autre"];
+var CATEGORIES = ["Actions","ETF","Obligations","Fonds","Crypto","Immobilier","Liquidités","Métal","SCPI","Crowdfunding","Art","Défiscalisation","Autre"];
+var PALETTE = ["#38bdf8","#34d399","#fbbf24","#f472b6","#a78bfa","#fb7185","#4ade80","#f97316","#22d3ee","#e879f9"];
+var CAT_COLORS = {"Actions":"#38bdf8","ETF":"#34d399","Obligations":"#a78bfa","Fonds":"#fbbf24","Crypto":"#f472b6","Immobilier":"#f97316","Liquidités":"#4ade80","Métal":"#e879f9","SCPI":"#f59e0b","Crowdfunding":"#60a5fa","Art":"#e11d48","Défiscalisation":"#a16207","Autre":"#94a3b8"};
+var TYPE_ICONS = {"PEA":"📈","PEA-PME":"📈","Assurance-vie":"🛡️","Compte-titres":"📊","Livret / Épargne":"🏦","Compte courant":"💳","Immobilier":"🏠","Crypto":"₿","SCPI":"🏢","Crowdfunding":"🤝","Autre":"📦"};
+var TYPE_COLORS = {};
+ENVELOPE_TYPES.forEach(function(t, i){ TYPE_COLORS[t] = PALETTE[i % PALETTE.length]; });
+
+// ---------- Helpers ----------
+function uid() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+function fmtEur(n, dec) {
+  if (dec === undefined) dec = 0;
+  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: dec, maximumFractionDigits: dec }).format(n);
+}
+function fmtPct(n) {
+  return (n >= 0 ? "+" : "") + new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(n) + " %";
+}
+function parseNum(v) {
+  var n = parseFloat(String(v).replace(/\s/g, "").replace(",", "."));
+  return isFinite(n) ? n : NaN;
+}
+function esc(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function assetValue(a) { return a.quantity * a.currentPrice; }
+function assetInvested(a) { return a.quantity * a.buyPrice; }
+function envValue(e) { return e.assets.reduce(function(s,a){ return s + assetValue(a); }, 0); }
+function envInvested(e) { return e.assets.reduce(function(s,a){ return s + assetInvested(a); }, 0); }
+
+// ---------- État ----------
+var PAT_DEFAULT_DATA = { "savedAt": 0, "envelopes": [] };
+function load() {
+  try {
+    var raw = localStorage.getItem(KEY);
+    if (raw) {
+      var p = JSON.parse(raw);
+      var pSaved = p.savedAt || 0;
+      var dSaved = (PAT_DEFAULT_DATA && PAT_DEFAULT_DATA.savedAt) || 0;
+      if (pSaved >= dSaved) {
+        return {
+          envelopes: Array.isArray(p.envelopes) ? p.envelopes : [],
+          snapshots: Array.isArray(p.snapshots) ? p.snapshots : []
+        };
+      }
+      // stockage plus ancien que le fichier ouvert -> ignorer
+    }
+  } catch (e) {}
+  if (typeof PAT_DEFAULT_DATA !== "undefined" && PAT_DEFAULT_DATA && Array.isArray(PAT_DEFAULT_DATA.envelopes)) {
+    return { envelopes: JSON.parse(JSON.stringify(PAT_DEFAULT_DATA.envelopes)), snapshots: [] };
+  }
+  return { envelopes: [], snapshots: [] };
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify({ envelopes: state.envelopes, snapshots: state.snapshots, savedAt: Date.now() })); } catch (e) {}
+}
+function recordSnapshot() {
+  var total = state.envelopes.reduce(function(s,e){ return s + envValue(e); }, 0);
+  var today = new Date().toISOString().slice(0, 10);
+  var i = state.snapshots.findIndex(function(s){ return s.date === today; });
+  var entry = { date: today, total: Math.round(total * 100) / 100 };
+  if (i >= 0) state.snapshots[i] = entry;
+  else state.snapshots.push(entry);
+  state.snapshots.sort(function(a,b){ return a.date < b.date ? -1 : 1; });
+  if (state.snapshots.length > 365) state.snapshots = state.snapshots.slice(-365);
+  save();
+}
+var state = load();
+var tab = "resume";
+var openEnvId = null;
+var assetSort = "value";
+var PERSIST_MSG = "";
+
+function makeSample() {
+  return [
+    { id: uid(), name: "PEA", type: "PEA", color: "#38bdf8", assets: [
+      { id: uid(), name: "ETF MSCI World", category: "ETF", quantity: 8, buyPrice: 98.4, currentPrice: 112.6 },
+      { id: uid(), name: "Airbus", category: "Actions", quantity: 10, buyPrice: 142, currentPrice: 158.5 }
+    ]},
+    { id: uid(), name: "Assurance-vie", type: "Assurance-vie", color: "#a78bfa", assets: [
+      { id: uid(), name: "Fonds euros", category: "Fonds", quantity: 120, buyPrice: 100, currentPrice: 103.2 }
+    ]},
+    { id: uid(), name: "Livret A", type: "Livret / Épargne", color: "#34d399", assets: [
+      { id: uid(), name: "Épargne de précaution", category: "Liquidités", quantity: 1, buyPrice: 7500, currentPrice: 7500 }
+    ]}
+  ];
+}
+
+// ---------- Fragments HTML ----------
+function gainPill(gain, pct) {
+  var pos = gain >= 0;
+  return '<span class="pill ' + (pos ? "up" : "down") + '">' +
+    (pos ? "▲" : "▼") + " " + fmtEur(Math.abs(gain)) + " (" + fmtPct(pct) + ")</span>";
+}
+function envelopeCard(env, noType) {
+  var invested = envInvested(env);
+  var value = envValue(env);
+  var perf = invested > 0 ? ((value - invested) / invested) * 100 : null;
+  return '<button class="row-btn" data-action="open-env" data-id="' + env.id + '">' +
+    '<span class="env-ic" style="background:' + env.color + '26">' + (TYPE_ICONS[env.type] || "📦") + "</span>" +
+    '<span class="grow"><span class="big ellipsis" style="display:block">' + esc(env.name) + "</span>" +
+    '<span class="sub ellipsis" style="display:block">' + (noType ? "" : esc(env.type) + " · ") + env.assets.length + " actif" + (env.assets.length > 1 ? "s" : "") + "</span></span>" +
+    '<span class="right"><span class="big" style="display:block">' + fmtEur(value) + "</span>" +
+    (perf !== null ? '<span class="' + (perf >= 0 ? "up-t" : "down-t") + '">' + fmtPct(perf) + "</span>" : "") +
+    "</span></button>";
+}
+function assetRow(asset, envName) {
+  var v = assetValue(asset);
+  var inv = assetInvested(asset);
+  var gain = v - inv;
+  return '<button class="row-btn sm" data-action="open-asset" data-env-id="' + asset.__envId + '" data-id="' + asset.id + '">' +
+    '<span class="grow"><span class="big ellipsis" style="display:block">' + esc(asset.name) + "</span>" +
+    '<span class="sub ellipsis" style="display:block">' + (envName ? esc(envName) + " · " : "") + esc(asset.category) + " · " + asset.quantity + " × " + fmtEur(asset.currentPrice, 2) + "</span></span>" +
+    '<span class="right"><span class="big" style="display:block">' + fmtEur(v) + "</span>" +
+    (inv > 0 ? '<span class="' + (gain >= 0 ? "up-t" : "down-t") + '">' + (gain >= 0 ? "+" : "") + fmtEur(gain) + " · " + fmtPct(gain / inv * 100) + "</span>" : "") +
+    "</span></button>";
+}
+function donutCSS(data) {
+  var total = data.reduce(function(s,d){ return s + d.value; }, 0);
+  if (total <= 0) return "transparent";
+  var stops = [], acc = 0;
+  data.forEach(function(d) {
+    var start = acc / total * 360; acc += d.value; var end = acc / total * 360;
+    stops.push(d.color + " " + start.toFixed(2) + "deg " + end.toFixed(2) + "deg");
+  });
+  return "conic-gradient(" + stops.join(",") + ")";
+}
+function pieCard(title, data) {
+  var total = data.reduce(function(s,d){ return s + d.value; }, 0);
+  if (total <= 0) {
+    return '<div class="card"><h3 class="sec" style="margin:0 0 4px">' + title + '</h3><p class="note" style="padding:16px 0;text-align:center">Aucun actif pour l\u2019instant.</p></div>';
+  }
+  var legend = data.map(function(d) {
+    return '<div class="legend-item"><span class="dot" style="background:' + d.color + '"></span>' +
+      '<span class="nm">' + esc(d.name) + '</span><span class="val">' + fmtEur(d.value) + "</span>" +
+      '<span class="pct">' + Math.round(d.value / total * 100) + "%</span></div>";
+  }).join("");
+  return '<div class="card"><h3 class="sec" style="margin:0 0 10px">' + title + "</h3>" +
+    '<div class="donut-wrap"><div class="donut" style="background:' + donutCSS(data) + '">' +
+    '<div class="donut-hole"><b>Total</b><span style="font-size:11px;color:#94a3b8">' + fmtEur(total) + "</span></div></div>" +
+    '<div class="legend">' + legend + "</div></div></div>";
+}
+function lineSVG(snaps, color) {
+  if (snaps.length < 2) return "";
+  var w = 320, h = 150, pad = 10;
+  var vals = snaps.map(function(s){ return s.total; });
+  var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+  var range = (max - min) || 1;
+  var pts = snaps.map(function(s, i) {
+    var x = pad + (i / (snaps.length - 1)) * (w - 2 * pad);
+    var y = h - pad - ((s.total - min) / range) * (h - 2 * pad);
+    return [x, y];
+  });
+  var line = pts.map(function(p){ return p[0].toFixed(1) + "," + p[1].toFixed(1); }).join(" ");
+  var area = (pad + "," + (h - pad) + " ") + line + (" " + (w - pad) + "," + (h - pad));
+  var last = pts[pts.length - 1];
+  return '<svg class="chart" viewBox="0 0 ' + w + " " + h + '" preserveAspectRatio="none">' +
+    '<polygon points="' + area + '" fill="' + color + '22"/>' +
+    '<polyline points="' + line + '" fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>' +
+    '<circle cx="' + last[0] + '" cy="' + last[1] + '" r="4" fill="' + color + '"/></svg>';
+}
+function xLabels(snaps) {
+  if (snaps.length < 2) return "";
+  var fmt = new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit" });
+  var first = snaps[0], last = snaps[snaps.length - 1];
+  return '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted)">' +
+    '<span>' + fmt.format(new Date(first.date)) + "</span><span>" + fmt.format(new Date(last.date)) + "</span></div>";
+}
+
+// ---------- Vues ----------
+function groupedEnvelopes() {
+  var groups = {};
+  state.envelopes.forEach(function(e){ (groups[e.type] = groups[e.type] || []).push(e); });
+  var list = Object.keys(groups).map(function(t) {
+    var envs = groups[t].slice().sort(function(a,b){ return envValue(b) - envValue(a); });
+    var val = envs.reduce(function(s,e){ return s + envValue(e); }, 0);
+    var inv = envs.reduce(function(s,e){ return s + envInvested(e); }, 0);
+    return { type: t, envs: envs, value: val, inv: inv };
+  }).sort(function(a,b){ return b.value - a.value; });
+  return list.map(function(g) {
+    var perf = g.inv > 0 ? ((g.value - g.inv) / g.inv) * 100 : null;
+    return '<div class="card"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">' +
+      '<span class="env-ic" style="width:34px;height:34px;border-radius:10px;font-size:16px;background:rgba(148,163,184,.15)">' + (TYPE_ICONS[g.type] || "📦") + "</span>" +
+      '<span class="grow"><b style="display:block">' + esc(g.type) + "</b>" +
+      '<span class="sub">' + g.envs.length + " enveloppe" + (g.envs.length > 1 ? "s" : "") + "</span></span>" +
+      '<span class="right"><span class="big" style="display:block">' + fmtEur(g.value) + "</span>" +
+      (perf !== null ? '<span class="' + (perf >= 0 ? "up-t" : "down-t") + '">' + fmtPct(perf) + "</span>" : "") +
+      "</span></div>" +
+      g.envs.map(function(e){ return envelopeCard(e, true); }).join("") +
+      "</div>";
+  }).join("");
+}
+function viewResume() {
+  var total = state.envelopes.reduce(function(s,e){ return s + envValue(e); }, 0);
+  var invested = state.envelopes.reduce(function(s,e){ return s + envInvested(e); }, 0);
+  var gain = total - invested;
+  var perf = invested > 0 ? (gain / invested) * 100 : 0;
+
+  var html = '<div class="card hero"><div class="label">Patrimoine total</div>' +
+    '<div class="total">' + fmtEur(total) + "</div>" +
+    (invested > 0 ? gainPill(gain, perf) : "") +
+    '<div class="stats"><div class="stat"><div class="k">Investi</div><div class="v">' + fmtEur(invested) + '</div></div>' +
+    '<div class="stat"><div class="k">Enveloppes</div><div class="v">' + state.envelopes.length + "</div></div></div></div>";
+
+  if (state.envelopes.length === 0) {
+    html += '<div class="empty"><div class="big-ic">💼</div><p class="t">Bienvenue !</p>' +
+      '<p class="s">Pour tout récupérer d\u2019un coup : onglet Historique → Importer CSV (ton fichier Finary). Sinon, crée ta première enveloppe avec le bouton ＋ ci-dessous.</p></div>';
+    return html;
+  }
+
+  var typeGroups = {};
+  state.envelopes.forEach(function(e){ typeGroups[e.type] = (typeGroups[e.type] || 0) + envValue(e); });
+  var envData = Object.keys(typeGroups).map(function(t){ return { name: t, value: typeGroups[t], color: TYPE_COLORS[t] || "#94a3b8" }; })
+    .sort(function(a,b){ return b.value - a.value; });
+  var catMap = {};
+  state.envelopes.forEach(function(e) {
+    e.assets.forEach(function(a) {
+      catMap[a.category] = (catMap[a.category] || 0) + assetValue(a);
+    });
+  });
+  var catData = Object.keys(catMap).map(function(k){ return { name: k, value: catMap[k], color: CAT_COLORS[k] || "#94a3b8" }; })
+    .sort(function(a,b){ return b.value - a.value; });
+
+  html += pieCard("Répartition par type", envData);
+  html += pieCard("Répartition par catégorie", catData);
+  if (state.snapshots.length >= 2) {
+    html += '<div class="card"><h3 class="sec" style="margin:0 0 10px">Évolution du patrimoine</h3>' +
+      lineSVG(state.snapshots, "#38bdf8") + xLabels(state.snapshots) + "</div>";
+  }
+  html += '<h3 class="sec">Mes enveloppes</h3>' + groupedEnvelopes();
+  return html;
+}
+function viewEnvelopeDetail(env) {
+  var invested = envInvested(env);
+  var value = envValue(env);
+  var gain = value - invested;
+  var perf = invested > 0 ? (gain / invested) * 100 : 0;
+  var html = '<button class="btn-line" data-action="back" style="margin-bottom:12px">← Retour</button>' +
+    '<div class="card"><div style="display:flex;align-items:center;gap:12px">' +
+    '<span class="env-ic" style="background:' + env.color + '26">' + (TYPE_ICONS[env.type] || "📦") + "</span>" +
+    '<span class="grow"><b style="display:block">' + esc(env.name) + '</b><span class="sub">' + esc(env.type) + "</span></span>" +
+    '<span class="right"><span class="big" style="display:block">' + fmtEur(value) + "</span>" +
+    (invested > 0 ? '<span class="' + (gain >= 0 ? "up-t" : "down-t") + '">' + (gain >= 0 ? "+" : "") + fmtEur(gain) + (invested > 0 ? " · " + fmtPct(perf) : "") + "</span>" : "") +
+    "</span></div>" +
+    '<div class="stats"><div class="stat"><div class="k">Investi</div><div class="v">' + fmtEur(invested) + '</div></div>' +
+    '<div class="stat"><div class="k">Actifs</div><div class="v">' + env.assets.length + "</div></div></div></div>";
+  var sorted = env.assets.slice().sort(function(a,b){ return assetValue(b) - assetValue(a); });
+  sorted.forEach(function(a) {
+    var copy = Object.assign({}, a, { __envId: env.id });
+    html += assetRow(copy, null);
+  });
+  html += '<button class="btn-primary" data-action="add-asset" data-id="' + env.id + '">＋ Ajouter un actif</button>';
+  html += '<button class="btn-line" data-action="edit-env" data-id="' + env.id + '">✏️ Modifier l\u2019enveloppe</button>';
+  return html;
+}
+function viewEnvelopes() {
+  var env = state.envelopes.find(function(e){ return e.id === openEnvId; });
+  if (env) return viewEnvelopeDetail(env);
+  if (state.envelopes.length === 0) {
+    return '<div class="empty"><div class="big-ic">🗂️</div><p class="t">Aucune enveloppe</p>' +
+      '<p class="s">Ajoutez votre première enveloppe avec le bouton ＋ ci-dessous.</p></div>';
+  }
+  var sorted = state.envelopes.slice().sort(function(a,b){ return envValue(b) - envValue(a); });
+  var html = '<h3 class="sec">Mes enveloppes</h3>';
+  sorted.forEach(function(e){ html += envelopeCard(e); });
+  return html;
+}
+function viewAssets() {
+  var rows = [];
+  state.envelopes.forEach(function(e) {
+    e.assets.forEach(function(a) {
+      rows.push({ asset: a, envId: e.id, envName: e.name });
+    });
+  });
+  function perfOf(r) {
+    var inv = assetInvested(r.asset);
+    return inv > 0 ? (assetValue(r.asset) - inv) / inv : -Infinity;
+  }
+  rows.sort(function(x,y){
+    if (assetSort === "perf") return perfOf(y) - perfOf(x);
+    return assetValue(y.asset) - assetValue(x.asset);
+  });
+  if (rows.length === 0) {
+    return '<div class="empty"><div class="big-ic">📊</div><p class="t">Aucun actif</p>' +
+      '<p class="s">Ajoutez des actifs dans vos enveloppes pour les voir ici.</p></div>';
+  }
+  var total = rows.reduce(function(s,r){ return s + assetValue(r.asset); }, 0);
+  var html = '<div class="card"><div class="label">Total actifs</div><div class="total" style="font-size:30px;font-weight:800;margin-top:4px">' + fmtEur(total) + "</div></div>" +
+    '<div class="seg">' +
+    '<button data-action="sort-assets" data-sort="value" class="' + (assetSort === "value" ? "on" : "") + '">💰 Valeur</button>' +
+    '<button data-action="sort-assets" data-sort="perf" class="' + (assetSort === "perf" ? "on" : "") + '">📈 Performance</button>' +
+    "</div>";
+  rows.forEach(function(r) {
+    var copy = Object.assign({}, r.asset, { __envId: r.envId });
+    html += assetRow(copy, r.envName);
+  });
+  return html;
+}
+function viewHistorique() {
+  var html = '<h3 class="sec">Historique quotidien</h3>';
+  if (state.snapshots.length === 0) {
+    html += '<p class="note">Une photo de votre patrimoine est prise chaque jour à l\u2019ouverture de l\u2019app.</p>';
+  } else {
+    html += '<div class="card">';
+    var list = state.snapshots.slice().reverse();
+    var prev = null;
+    list.forEach(function(s) {
+      var d = new Date(s.date).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "long" });
+      var diff = prev !== null ? s.total - prev : null;
+      html += '<div class="legend-item"><span class="nm">' + d + '</span><span class="val">' + fmtEur(s.total) + "</span>" +
+        (diff !== null ? '<span class="' + (diff >= 0 ? "up-t" : "down-t") + '" style="font-size:11px">' + (diff >= 0 ? "+" : "") + fmtEur(diff) + "</span>" : "") + "</div>";
+      prev = s.total;
+    });
+    html += "</div>";
+    if (state.snapshots.length >= 2) {
+      html += '<div class="card"><h3 class="sec" style="margin:0 0 10px">Évolution</h3>' +
+        lineSVG(state.snapshots, "#38bdf8") + xLabels(state.snapshots) + "</div>";
+    }
+  }
+  html += '<div class="card"><h3 class="sec" style="margin:0 0 8px">💾 Sauvegarde des données</h3>' +
+    '<p class="note">✔️ Sauvegarde automatique : tes données sont enregistrées sur ton téléphone à chaque modification et reviennent seules à l\u2019ouverture. ' + PERSIST_MSG + '</p>' +
+    '<button class="btn-primary" data-action="export-data">⤓ Exporter une copie de secours (JSON)</button>' +
+    '<button class="btn-line" data-action="import-data">⤒ Importer JSON</button>' +
+    '<button class="btn-line" data-action="export-csv">⤓ Exporter CSV (Excel / Sheets)</button>' +
+    '<button class="btn-line" data-action="import-csv">⤒ Importer CSV (Excel / Sheets)</button>' +
+    '<input type="file" id="import-file" accept=".json,application/json" style="display:none">' +
+    '<input type="file" id="import-csv-file" accept=".csv,text/csv,text/plain" style="display:none"></div>';
+  return html;
+}
+
+// ---------- Rendu principal ----------
+function render() {
+  var app = document.getElementById("patrimoineRoot");
+  var todayLabel = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+  var view = "";
+  if (tab === "resume") view = viewResume();
+  else if (tab === "enveloppes") view = viewEnvelopes();
+  else if (tab === "actifs") view = viewAssets();
+  else view = viewHistorique();
+
+  app.innerHTML =
+    '<header class="top"><div><h1>Mon patrimoine</h1><div class="date">' + todayLabel + '</div></div>' +
+    '<span class="badge">💾 Sauvegarde auto · ' + APP_VERSION + '</span></header>' + view +
+    '<div class="bottom"><div class="nav-in">' +
+    navBtn("resume", "◎", "Résumé") + navBtn("enveloppes", "🗂️", "Enveloppes") +
+    '<button class="fab" data-action="fab" aria-label="Ajouter">＋</button>' +
+    navBtn("actifs", "📊", "Actifs") + navBtn("historique", "📅", "Historique") +
+    "</div></div>";
+}
+function navBtn(t, ic, label) {
+  var on = tab === t && !(t === "enveloppes" && openEnvId);
+  return '<button class="tab ' + (on ? "on" : "") + '" data-action="tab" data-tab="' + t + '"><span class="ic">' + ic + "</span> " + label + "</button>";
+}
+
+// ---------- Modales & formulaires ----------
+var modalRoot = document.getElementById("pat-modal-root");
+var formColor = PALETTE[0];
+
+function closeModal() { modalRoot.innerHTML = ""; }
+
+function openEnvForm(env) {
+  formColor = env ? env.color : PALETTE[0];
+  var type = env ? env.type : ENVELOPE_TYPES[0];
+  var typeList = ENVELOPE_TYPES.slice();
+  if (type && typeList.indexOf(type) < 0) typeList.unshift(type);
+  var typeOpts = typeList.map(function(t) {
+    return '<option value="' + esc(t) + '"' + (t === type ? " selected" : "") + ">" + (TYPE_ICONS[t] || "") + " " + t + "</option>";
+  }).join("");
+  var colorDots = PALETTE.map(function(c) {
+    return '<button type="button" class="color-dot' + (c === formColor ? " sel" : "") + '" data-action="pick-color" data-color="' + c + '" style="background:' + c + '"></button>';
+  }).join("");
+  modalRoot.innerHTML =
+    '<div class="overlay" data-overlay="1"><div class="sheet">' +
+    '<div class="sheet-head"><h2>' + (env ? "Modifier l\u2019enveloppe" : "Nouvelle enveloppe") + '</h2>' +
+    '<button class="x-btn" data-action="close-modal">✕</button></div>' +
+    '<form id="env-form">' +
+    '<div class="field"><span>Nom</span><input id="ef-name" placeholder="Ex. PEA Bourse Direct…" value="' + (env ? esc(env.name) : "") + '"></div>' +
+    '<div class="field"><span>Type</span><select id="ef-type">' + typeOpts + "</select></div>" +
+    '<div class="field"><span>Couleur</span><div class="color-dots">' + colorDots + "</div></div>" +
+    '<button class="btn-primary" type="submit">Valider</button>' +
+    "</form>" +
+    (env ? '<button class="btn-del" data-action="del-env" data-id="' + env.id + '">🗑 Supprimer l\u2019enveloppe</button>' : "") +
+    "</div></div>";
+  document.getElementById("env-form").addEventListener("submit", function(e) {
+    e.preventDefault();
+    var name = document.getElementById("ef-name").value.trim();
+    if (!name) { alert("Donnez un nom à l\u2019enveloppe."); return; }
+    var typeVal = document.getElementById("ef-type").value;
+    if (env) {
+      env.name = name;
+      env.type = typeVal;
+      env.color = formColor;
+    } else {
+      state.envelopes.push({ id: uid(), name: name, type: typeVal, color: formColor, assets: [] });
+    }
+    save(); recordSnapshot(); closeModal(); render();
+  });
+}
+
+function openAssetForm(envId, asset) {
+  var envList = state.envelopes.map(function(e) {
+    return '<option value="' + e.id + '"' + (e.id === envId ? " selected" : "") + ">" + esc(e.name) + "</option>";
+  }).join("");
+  if (!envList) { alert("Créez d\u2019abord une enveloppe."); return; }
+  var cat = asset ? asset.category : CATEGORIES[0];
+  var catList = CATEGORIES.slice();
+  if (cat && catList.indexOf(cat) < 0) catList.unshift(cat);
+  var catOpts = catList.map(function(c) {
+    return '<option value="' + esc(c) + '"' + (c === cat ? " selected" : "") + ">" + c + "</option>";
+  }).join("");
+  modalRoot.innerHTML =
+    '<div class="overlay" data-overlay="1"><div class="sheet">' +
+    '<div class="sheet-head"><h2>' + (asset ? "Modifier l\u2019actif" : "Nouvel actif") + '</h2>' +
+    '<button class="x-btn" data-action="close-modal">✕</button></div>' +
+    '<form id="asset-form">' +
+    '<div class="field"><span>Nom</span><input id="af-name" placeholder="Ex. ETF MSCI World…" value="' + (asset ? esc(asset.name) : "") + '"></div>' +
+    '<div class="grid2"><div class="field"><span>Catégorie</span><select id="af-cat">' + catOpts + "</select></div>" +
+    '<div class="field"><span>Enveloppe</span><select id="af-env">' + envList + "</select></div></div>" +
+    '<div class="grid3">' +
+    '<div class="field"><span>Quantité</span><input id="af-qty" inputmode="decimal" placeholder="10" value="' + (asset ? asset.quantity : "") + '"></div>' +
+    '<div class="field"><span>Prix achat €</span><input id="af-buy" inputmode="decimal" placeholder="100" value="' + (asset ? asset.buyPrice : "") + '"></div>' +
+    '<div class="field"><span>Valeur €</span><input id="af-cur" inputmode="decimal" placeholder="120" value="' + (asset ? asset.currentPrice : "") + '"></div></div>' +
+    '<div class="err" id="af-err" style="display:none"></div>' +
+    '<button class="btn-primary" type="submit">Valider</button>' +
+    "</form>" +
+    (asset ? '<button class="btn-del" data-action="del-asset" data-env-id="' + envId + '" data-id="' + asset.id + '">🗑 Supprimer l\u2019actif</button>' : "") +
+    "</div></div>";
+  document.getElementById("asset-form").addEventListener("submit", function(e) {
+    e.preventDefault();
+    var errEl = document.getElementById("af-err");
+    var name = document.getElementById("af-name").value.trim();
+    var q = parseNum(document.getElementById("af-qty").value);
+    var b = parseNum(document.getElementById("af-buy").value);
+    var c = parseNum(document.getElementById("af-cur").value);
+    function fail(m) { errEl.textContent = m; errEl.style.display = "block"; }
+    if (!name) { fail("Donnez un nom à l\u2019actif."); return; }
+    if (!isFinite(q) || q <= 0) { fail("Quantité invalide."); return; }
+    if (!isFinite(b) || b < 0) { fail("Prix d\u2019achat invalide."); return; }
+    if (!isFinite(c) || c < 0) { fail("Valeur actuelle invalide."); return; }
+    var env = state.envelopes.find(function(x){ return x.id === assetFormEnvId(); });
+    if (!env) { fail("Enveloppe introuvable."); return; }
+    var catVal = document.getElementById("af-cat").value;
+    if (asset && envId && asset.quantity !== undefined) {
+      // édition : déplacer si besoin
+      var oldEnv = state.envelopes.find(function(x){ return x.id === envId; });
+      if (oldEnv && oldEnv !== env) {
+        oldEnv.assets = oldEnv.assets.filter(function(a){ return a.id !== asset.id; });
+        env.assets.push(asset);
+      }
+      asset.name = name; asset.category = catVal;
+      asset.quantity = q; asset.buyPrice = b; asset.currentPrice = c;
+    } else {
+      env.assets.push({ id: uid(), name: name, category: catVal, quantity: q, buyPrice: b, currentPrice: c });
+    }
+    save(); recordSnapshot(); closeModal(); render();
+  });
+}
+function assetFormEnvId() {
+  var sel = document.getElementById("af-env");
+  if (sel) return sel.value;
+  var env = state.envelopes.find(function(x){ return x.id === openEnvId; });
+  if (env) return env.id;
+  return state.envelopes[0] ? state.envelopes[0].id : "";
+}
+function deleteEnvelope(id) {
+  state.envelopes = state.envelopes.filter(function(e){ return e.id !== id; });
+  if (openEnvId === id) openEnvId = null;
+  save(); recordSnapshot(); closeModal(); render();
+}
+function deleteAsset(envId, assetId) {
+  var env = state.envelopes.find(function(e){ return e.id === envId; });
+  if (!env) return;
+  env.assets = env.assets.filter(function(a){ return a.id !== assetId; });
+  save(); recordSnapshot(); closeModal(); render();
+}
+
+// ---------- Export / Import JSON ----------
+function exportData() {
+  try {
+    var blob = new Blob([JSON.stringify({ envelopes: state.envelopes, snapshots: state.snapshots }, null, 2)], { type: "application/json" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "patrimoine-" + new Date().toISOString().slice(0, 10) + ".json";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
+  } catch (e) { alert("Export impossible : " + e.message); }
+}
+function importData() {
+  var input = document.getElementById("import-file");
+  if (!input) return;
+  input.value = "";
+  input.onchange = function() {
+    var file = input.files && input.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function() {
+      try {
+        var p = JSON.parse(reader.result);
+        if (!p || !Array.isArray(p.envelopes)) throw new Error("fichier invalide");
+        state = {
+          envelopes: p.envelopes,
+          snapshots: Array.isArray(p.snapshots) ? p.snapshots : []
+        };
+        save(); recordSnapshot(); render();
+        alert("Données importées : " + state.envelopes.length + " enveloppe(s).");
+      } catch (err) {
+        alert("Import impossible : " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+// ---------- CSV ----------
+function csvNum(n) { return String(n).replace(".", ","); }
+function buildCSV() {
+  var rows = [["Enveloppe", "Type enveloppe", "Couleur", "Actif", "Catégorie", "Quantité", "Prix d'achat (€)", "Valeur actuelle (€)"]];
+  state.envelopes.forEach(function(e) {
+    e.assets.forEach(function(a) {
+      rows.push([e.name, e.type, e.color, a.name, a.category, csvNum(a.quantity), csvNum(a.buyPrice), csvNum(a.currentPrice)]);
+    });
+  });
+  if (rows.length <= 1) return "";
+  return rows.map(function(r) {
+    return r.map(function(c) {
+      var s = String(c);
+      if (/[";\n]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+      return s;
+    }).join(";");
+  }).join("\r\n");
+}
+function exportCSV() {
+  var csv = buildCSV();
+  if (!csv) { alert("Aucun actif à exporter : ajoutez d'abord des actifs."); return; }
+  try {
+    var blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "patrimoine-" + new Date().toISOString().slice(0, 10) + ".csv";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
+  } catch (e) { alert("Export CSV impossible : " + e.message); }
+}
+function normHeader(s) {
+  return String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[\u2019\u2018\u02bc`]/g, "'").toLowerCase().trim();
+}
+function detectSep(line) {
+  var s = 0, c = 0, t = 0;
+  for (var i = 0; i < line.length; i++) {
+    if (line[i] === ";") s++;
+    else if (line[i] === ",") c++;
+    else if (line[i] === "\t") t++;
+  }
+  if (s >= c && s >= t) return ";";
+  if (t > c) return "\t";
+  return ",";
+}
+function parseCSVLine(line, sep) {
+  var out = [], cur = "", inQ = false;
+  for (var i = 0; i < line.length; i++) {
+    var ch = line[i];
+    if (inQ) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') { cur += '"'; i++; }
+        else inQ = false;
+      } else cur += ch;
+    } else if (ch === '"') inQ = true;
+    else if (ch === sep) { out.push(cur); cur = ""; }
+    else cur += ch;
+  }
+  out.push(cur);
+  return out;
+}
+function stripNum(v) {
+  return String(v == null ? "" : v)
+    .replace(/[\s\u00a0\u202f\u2009]/g, "")
+    .replace(/[€$£]/g, "")
+    .trim();
+}
+function parseNumWith(s, decSep) {
+  s = stripNum(s);
+  if (s === "" || s === "-") return NaN;
+  if (/^\(.*\)$/.test(s)) s = "-" + s.slice(1, -1);
+  if (decSep === ",") s = s.replace(/\./g, "").replace(/,/g, ".");
+  else s = s.replace(/,/g, "");
+  if (!/^[-+]?[\d]*\.?[\d]+$/.test(s)) return NaN;
+  var n = parseFloat(s);
+  return isFinite(n) ? n : NaN;
+}
+function parseNumAuto(s) {
+  s = stripNum(s);
+  if (s === "") return NaN;
+  var lastDot = s.lastIndexOf(".");
+  var lastCom = s.lastIndexOf(",");
+  var dec = ".";
+  if (lastDot >= 0 && lastCom >= 0) dec = (lastCom > lastDot) ? "," : ".";
+  else if (lastCom >= 0) dec = ",";
+  return parseNumWith(s, dec);
+}
+function decideDecSep(vals) {
+  var dot = 0, comma = 0;
+  vals.forEach(function(v) {
+    var s = stripNum(v);
+    if (/\.\d{1,2}$/.test(s)) dot++;
+    if (/,\d{1,2}$/.test(s)) comma++;
+  });
+  return comma > dot ? "," : ".";
+}
+var CSV_SYN = {
+  env: { exact: ["enveloppe", "compte", "envelope", "portefeuille", "institution", "banque", "courtier"] },
+  name: { exact: ["support", "actif", "actif / support", "nom", "libelle", "titre", "ligne", "position"] },
+  buy: { contains: ["investi", "achat", "capital", "montant"], not: ["vente", "actuel", "valeur", "moyenne", "restant", "dû", "du", "initial"] },
+  cur: { contains: ["valeur", "actuel", "value"], not: ["achat", "investi", "plus-value", "plusvalue", "plus value", "performance", "moyenne"] },
+  type: { exact: ["type", "type enveloppe", "categorie", "classe", "classe d'actif", "categorie enveloppe"] },
+  cat: { exact: ["categorie actif", "type actif", "classe actif", "sous-classe"] },
+  color: { exact: ["couleur", "color"] },
+  qty: { exact: ["quantite", "qte", "nombre", "parts", "unites", "quantity"] }
+};
+var ENV_TYPE_ALIASES = {
+  "epargne": "Livret / Épargne",
+  "banque": "Compte courant",
+  "livret": "Livret / Épargne",
+  "compte bancaire": "Compte courant",
+  "compte titre": "Compte-titres",
+  "compte a terme": "Livret / Épargne"
+};
+var ASSET_CAT_ALIASES = {
+  "epargne": "Liquidités",
+  "livret": "Liquidités",
+  "assurance-vie": "Fonds",
+  "assurance vie": "Fonds",
+  "fonds euro": "Fonds",
+  "fonds euros": "Fonds",
+  "obligation": "Obligations"
+};
+function normTxt(s) {
+  return normHeader(s).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+}
+function aliasEnvType(v) {
+  var n = normTxt(v);
+  if (!n) return null;
+  for (var i = 0; i < ENVELOPE_TYPES.length; i++) {
+    if (normTxt(ENVELOPE_TYPES[i]) === n) return ENVELOPE_TYPES[i];
+  }
+  if (ENV_TYPE_ALIASES.hasOwnProperty(n)) return ENV_TYPE_ALIASES[n];
+  return null;
+}
+function aliasAssetCat(v) {
+  var n = normTxt(v);
+  if (!n) return null;
+  for (var i = 0; i < CATEGORIES.length; i++) {
+    if (normTxt(CATEGORIES[i]) === n) return CATEGORIES[i];
+  }
+  if (ASSET_CAT_ALIASES.hasOwnProperty(n)) return ASSET_CAT_ALIASES[n];
+  return null;
+}
+function detectColumns(cols) {
+  var map = { env: -1, name: -1, qty: -1, buy: -1, cur: -1, color: -1, typeCand: [], typeCol: -1, catCol: -1 };
+  var used = {};
+  function take(idx) {
+    if (idx < 0 || used[idx]) return false;
+    used[idx] = true;
+    return true;
+  }
+  for (var i = 0; i < cols.length; i++) {
+    var c = cols[i];
+    if (c === "") continue;
+    if (map.env < 0 && CSV_SYN.env.exact.indexOf(c) >= 0) { map.env = i; take(i); continue; }
+    if (map.name < 0 && CSV_SYN.name.exact.indexOf(c) >= 0) { map.name = i; take(i); continue; }
+    if (map.color < 0 && CSV_SYN.color.exact.indexOf(c) >= 0) { map.color = i; take(i); continue; }
+    if (map.qty < 0 && CSV_SYN.qty.exact.indexOf(c) >= 0) { map.qty = i; take(i); continue; }
+  }
+  for (var j = 0; j < cols.length; j++) {
+    var h = cols[j];
+    if (h === "" || used[j]) continue;
+    if (map.buy < 0) {
+      var okBuy = false;
+      for (var k = 0; k < CSV_SYN.buy.contains.length; k++) {
+        if (h.indexOf(CSV_SYN.buy.contains[k]) >= 0) { okBuy = true; break; }
+      }
+      if (okBuy) {
+        var bad = false;
+        for (var k2 = 0; k2 < CSV_SYN.buy.not.length; k2++) {
+          if (h.indexOf(CSV_SYN.buy.not[k2]) >= 0) { bad = true; break; }
+        }
+        if (!bad) { map.buy = j; take(j); continue; }
+      }
+    }
+    if (map.cur < 0) {
+      var okCur = false;
+      for (var k3 = 0; k3 < CSV_SYN.cur.contains.length; k3++) {
+        if (h.indexOf(CSV_SYN.cur.contains[k3]) >= 0) { okCur = true; break; }
+      }
+      if (okCur) {
+        var bad2 = false;
+        for (var k4 = 0; k4 < CSV_SYN.cur.not.length; k4++) {
+          if (h.indexOf(CSV_SYN.cur.not[k4]) >= 0) { bad2 = true; break; }
+        }
+        if (!bad2) { map.cur = j; take(j); continue; }
+      }
+    }
+    if (CSV_SYN.type.exact.indexOf(h) >= 0) map.typeCand.push(j);
+    if (CSV_SYN.cat.exact.indexOf(h) >= 0) map.catCol = j;
+  }
+  return map;
+}
+function typeMatchRatio(rows, colIdx) {
+  if (colIdx < 0) return 0;
+  var match = 0, total = 0;
+  for (var i = 1; i < rows.length && i <= 60; i++) {
+    var cells = rows[i];
+    if (!cells || colIdx >= cells.length) continue;
+    var v = String(cells[colIdx] || "").trim();
+    if (!v) continue;
+    total++;
+    if (aliasEnvType(v)) match++;
+  }
+  return total > 0 ? match / total : 0;
+}
+function importCSVText(text) {
+  if (!text || !String(text).trim()) throw new Error("fichier vide");
+  text = String(text).replace(/^\uFEFF/, "");
+  var lines = text.split(/\r\n|\r|\n/).filter(function(l) { return l.trim() !== ""; });
+  if (lines.length < 2) throw new Error("aucune donnée trouvée");
+  // détection du séparateur : colonnes stables et les plus nombreuses
+  var seps = [";", ",", "\t"];
+  var sep = null, bestScore = -1, bestRef = 0;
+  for (var si = 0; si < seps.length; si++) {
+    var sp = seps[si];
+    var ref = parseCSVLine(lines[0], sp).length;
+    var score = 0, count = 0;
+    for (var li = 0; li < lines.length && li < 30; li++) {
+      var n = parseCSVLine(lines[li], sp).length;
+      score += Math.abs(n - ref);
+      count++;
+    }
+    score = score / Math.max(1, count);
+    if (ref < 2) continue;
+    if (bestScore < 0 || score < bestScore || (score === bestScore && ref > bestRef)) {
+      bestScore = score; bestRef = ref; sep = sp;
+    }
+  }
+  if (!sep) throw new Error("séparateur non détecté");
+  var rows = lines.map(function(l) { return parseCSVLine(l, sep); });
+  var headers = rows[0].map(normTxt);
+  var map = detectColumns(headers);
+  if (map.env < 0 || map.name < 0 || map.buy < 0 || map.cur < 0) {
+    if (rows[0].length === 8) {
+      map.env = 0; map.name = 3; map.qty = 5; map.buy = 6; map.cur = 7;
+      map.typeCol = 1; map.catCol = 4; map.color = 2;
+    } else {
+      throw new Error("colonnes attendues : Enveloppe, Actif, Prix d'achat (ou Investi), Valeur actuelle");
+    }
+  } else {
+    // désambiguïsation Type vs Catégorie par le contenu
+    var cands = map.typeCand.slice(0);
+    if (map.catCol >= 0 && cands.indexOf(map.catCol) < 0) cands.push(map.catCol);
+    cands.sort(function(a, b) { return a - b; });
+    if (cands.length > 0) {
+      var bestCol = -1, bestRatio = 0;
+      for (var ci = 0; ci < cands.length; ci++) {
+        var r = typeMatchRatio(rows, cands[ci]);
+        if (r > bestRatio) { bestRatio = r; bestCol = cands[ci]; }
+      }
+      if (bestRatio >= 0.1) {
+        map.typeCol = bestCol;
+        map.catCol = -1;
+        for (var ci2 = 0; ci2 < cands.length; ci2++) {
+          if (cands[ci2] !== bestCol) { map.catCol = cands[ci2]; break; }
+        }
+      } else {
+        map.catCol = cands[0];
+        map.typeCol = -1;
+      }
+    }
+  }
+  // décimales par colonne
+  var buyVals = [], curVals = [], qtyVals = [];
+  for (var r2 = 1; r2 < rows.length; r2++) {
+    if (rows[r2][map.buy] !== undefined) buyVals.push(rows[r2][map.buy]);
+    if (rows[r2][map.cur] !== undefined) curVals.push(rows[r2][map.cur]);
+    if (map.qty >= 0 && rows[r2][map.qty] !== undefined) qtyVals.push(rows[r2][map.qty]);
+  }
+  var buyDec = decideDecSep(buyVals);
+  var curDec = decideDecSep(curVals);
+  var qtyDec = decideDecSep(qtyVals);
+  // import avec fusion
+  var added = 0, updated = 0, newEnv = 0, skipped = 0;
+  for (var r3 = 1; r3 < rows.length; r3++) {
+    var cells = rows[r3];
+    var envName = String(cells[map.env] || "").trim();
+    var assetName = String(cells[map.name] || "").trim();
+    if (!envName || !assetName || envName === "—" || assetName === "—" ||
+        /^(total|somme|solde total)/i.test(envName) || /^(total)/i.test(assetName)) {
+      skipped++;
+      continue;
+    }
+    var b = parseNumWith(cells[map.buy], buyDec);
+    var v = parseNumWith(cells[map.cur], curDec);
+    var q = (map.qty >= 0) ? parseNumWith(cells[map.qty], qtyDec) : 1;
+    if (isNaN(q) || q <= 0) q = 1;
+    if (isNaN(b) && !isNaN(v)) b = 0;
+    if (isNaN(v) && !isNaN(b)) v = b;
+    if (isNaN(b) || isNaN(v)) { skipped++; continue; }
+    if (b === 0 && v === 0) { skipped++; continue; }
+    var typeVal = (typeof map.typeCol === "number" && map.typeCol >= 0) ? String(cells[map.typeCol] || "").trim() : "";
+    var catVal = (typeof map.catCol === "number" && map.catCol >= 0) ? aliasAssetCat(cells[map.catCol]) : null;
+    var colorVal = (map.color >= 0) ? String(cells[map.color] || "").trim() : "";
+    var env = null, envLow = envName.toLowerCase();
+    for (var ei = 0; ei < state.envelopes.length; ei++) {
+      if (state.envelopes[ei].name.toLowerCase() === envLow) { env = state.envelopes[ei]; break; }
+    }
+    if (!env) {
+      var t = aliasEnvType(typeVal) || "Autre";
+      var col = /^#[0-9a-f]{3,8}$/i.test(colorVal) ? colorVal : PALETTE[(newEnv + state.envelopes.length) % PALETTE.length];
+      env = { id: uid(), name: envName, type: t, color: col, assets: [] };
+      state.envelopes.push(env);
+      newEnv++;
+    }
+    var asset = null, assetLow = assetName.toLowerCase();
+    for (var ai = 0; ai < env.assets.length; ai++) {
+      if (env.assets[ai].name.toLowerCase() === assetLow) { asset = env.assets[ai]; break; }
+    }
+    if (asset) {
+      asset.quantity = q; asset.buyPrice = b; asset.currentPrice = v;
+      if (catVal) asset.category = catVal;
+      updated++;
+    } else {
+      env.assets.push({ id: uid(), name: assetName, category: catVal || "Autre", quantity: q, buyPrice: b, currentPrice: v });
+      added++;
+    }
+  }
+  if (added + updated === 0) throw new Error("aucune ligne exploitable trouvée");
+  return "Import CSV : " + (added + updated) + " actif(s) traité(s) — " + added + " ajouté(s) — " +
+    updated + " mis à jour — " + newEnv + " nouvelle(s) enveloppe(s) — " + skipped + " ligne(s) ignorée(s)";
+}
+function importCSV() {
+  var input = document.getElementById("import-csv-file");
+  if (!input) return;
+  input.value = "";
+  input.onchange = function() {
+    var file = input.files && input.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function() {
+      try {
+        var msg = importCSVText(reader.result);
+        save(); recordSnapshot(); render();
+        alert(msg);
+      } catch (err) {
+        alert("Import CSV impossible : " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+function handleFab() {
+  var env = state.envelopes.find(function(e){ return e.id === openEnvId; });
+  if (tab === "enveloppes" && env) openAssetForm(env.id, null);
+  else if (tab === "actifs" && state.envelopes.length > 0) openAssetForm(null, null);
+  else openEnvForm(null);
+}
+
+// ---------- Événements ----------
+document.getElementById("patrimoineRoot").addEventListener("click", function(e) {
+  var el = e.target.closest("[data-action]");
+  if (!el) return;
+  var act = el.dataset.action;
+  if (act === "tab") { tab = el.dataset.tab; openEnvId = null; render(); }
+  else if (act === "fab") handleFab();
+  else if (act === "open-env") { openEnvId = el.dataset.id; tab = "enveloppes"; render(); }
+  else if (act === "back") { openEnvId = null; render(); }
+  else if (act === "add-env") openEnvForm(null);
+  else if (act === "edit-env") openEnvForm(state.envelopes.find(function(x){ return x.id === el.dataset.id; }));
+  else if (act === "add-asset") openAssetForm(el.dataset.id, null);
+  else if (act === "open-asset") {
+    var env = state.envelopes.find(function(x){ return x.id === el.dataset.envId; });
+    if (!env) return;
+    var asset = env.assets.find(function(a){ return a.id === el.dataset.id; });
+    if (asset) openAssetForm(env.id, asset);
+  }
+  else if (act === "sort-assets") { assetSort = el.dataset.sort; render(); }
+  else if (act === "export-data") exportData();
+  else if (act === "import-data") importData();
+  else if (act === "export-csv") exportCSV();
+  else if (act === "import-csv") importCSV();
+});
+modalRoot.addEventListener("click", function(e) {
+  if (e.target.hasAttribute && e.target.hasAttribute("data-overlay")) { closeModal(); return; }
+  var el = e.target.closest("[data-action]");
+  if (!el) return;
+  var act = el.dataset.action;
+  if (act === "close-modal") closeModal();
+  else if (act === "pick-color") {
+    formColor = el.dataset.color;
+    var dots = modalRoot.querySelectorAll(".color-dot");
+    for (var i = 0; i < dots.length; i++) {
+      dots[i].classList.toggle("sel", dots[i].dataset.color === formColor);
+    }
+  }
+  else if (act === "del-env") {
+    if (el.classList.contains("confirm")) deleteEnvelope(el.dataset.id);
+    else { el.classList.add("confirm"); el.textContent = "Confirmer la suppression ?"; }
+  }
+  else if (act === "del-asset") {
+    if (el.classList.contains("confirm")) deleteAsset(el.dataset.envId, el.dataset.id);
+    else { el.classList.add("confirm"); el.textContent = "Confirmer la suppression ?"; }
+  }
+});
+
+// ---------- Démarrage ----------
+try {
+  if (typeof navigator !== "undefined" && navigator.storage && navigator.storage.persist) {
+    navigator.storage.persist().then(function(ok){
+      PERSIST_MSG = ok ? "Stockage permanent activé : ton téléphone ne nettoie pas ces données." : "Pense à faire un export JSON de temps en temps par sécurité.";
+      render();
+    }).catch(function(){});
+  }
+} catch (e) {}
+// v7.0 fusion : pas d'enregistrement SW ici — le Radar enregistre déjà le sien (radar-v25)
+closeModal();
+recordSnapshot();
+render();
+
+// v7.0 fusion : hook exposé au Radar — appelé à chaque ouverture de l'onglet 💼 (données toujours fraîches)
+window.PatrimoineRender = function () { load(); render(); };
+
+})();
+</script>
 <script>
 // ================== Couche UI ==================
 var KEY = "radar-conjoncture-v1";
@@ -362,6 +1383,8 @@ Array.prototype.forEach.call(document.querySelectorAll("nav button"), function (
     b.classList.add("on");
     $("view-" + b.dataset.v).classList.add("on");
     if (b.dataset.v === "suivi") renderSuivi();
+    if (b.dataset.v === "patrimoine" && window.PatrimoineRender) window.PatrimoineRender();   // v7.0 : données 💼 toujours fraîches à l'ouverture de l'onglet
+    if (b.dataset.v === "radar") renderRadar();   // v7.0 : retour au Radar → re-render (les montants auto 💼 ou ✏️ ont pu bouger)
   });
 });
 
@@ -434,11 +1457,27 @@ function decLoadReels() {
   catch (e) { return {}; }
 }
 function decSaveReels(o) { try { localStorage.setItem(REELS_KEY, JSON.stringify(o)); } catch (e) {} }
+// v7.0 : fusion app Patrimoine 💼 — montants AUTOMATIQUES depuis l'onglet Patrimoine (même localStorage,
+// clé « suivi-patrimoine-v4 » inchangée : les données de l'ancienne app 💼 sont là, zéro ressaisie).
+// Garde anti-skew : logic.js périmé (patReelsOf absent) → {} silencieux (classe v5.12.1, jamais de page blanche).
+function patAutoReels() {
+  try {
+    if (typeof patReelsOf !== "function") return {};
+    return patReelsOf(JSON.parse(localStorage.getItem("suivi-patrimoine-v4") || "null"));
+  } catch (e) { return {}; }
+}
+// v7.0 : sources fusionnées — le ✏️ manuel reste PRIORITAIRE ligne par ligne, l'auto 💼 complète le reste.
+function decMergedReels() {
+  var manuel = decLoadReels();
+  var auto = patAutoReels();
+  Object.keys(auto).forEach(function (k) { if (!Object.prototype.hasOwnProperty.call(manuel, k)) manuel[k] = auto[k]; });
+  return manuel;
+}
 function renderDecision(d, radar) {
   if (typeof decisionOf !== "function") return;   // v6.0 : garde anti-skew — logic.js périmé → carte omise, page intacte (classe v5.12.1)
   var elF = $("decFlux"), elS = $("decSuppOut"), elK = $("decStock");
   if (!elF || !elS || !elK) return;
-  var dec = decisionOf(d, radar, { reels: decLoadReels(), override: state.postureOverride });
+  var dec = decisionOf(d, radar, { reels: decMergedReels(), override: state.postureOverride });   // v7.0 : ✏️ + auto 💼 fusionnés
 
   // 1 · Flux du mois
   var f = dec.flux;
@@ -506,7 +1545,8 @@ function renderPatrimoine(radar) {
   if (typeof PATRIMOINE_ACTIFS === "undefined") return;   // v5.12.1 : logic.js périmé servi par le cache SW/CDN pendant la bascule → JAMAIS bloquer la page (carte absente, tout le reste rendu ; guérit au prochain chargement complet)
   // v6.0 : montants réels éventuels (localStorage « radar-reels », jamais exportés) affichés
   // dans chaque ligne — la saisie se fait par le bouton ✏️ ci-dessous.
-  var reels = (typeof sanitizeReels === "function") ? decLoadReels() : {};
+  var manuel = (typeof sanitizeReels === "function") ? decLoadReels() : {};
+  var reels = decMergedReels();   // v7.0 : ✏️ manuel prioritaire ligne par ligne, auto 💼 en complément
   var byId = {};
   radar.list.forEach(function (a) { byId[a.id] = a; });
   // v5.13 : la colonne de droite distingue STRICTEMENT les cas. « hors radar — jamais alloué »
@@ -531,7 +1571,8 @@ function renderPatrimoine(radar) {
         : 'lecture marché ' + esc(a.name) + ' · <b>' + a.score + '/100</b>' + (a.partial ? " (partiel)" : "");
     }
     var muted = act.radar === null || right === unavail;
-    var rv = Object.prototype.hasOwnProperty.call(reels, act.nom) ? reels[act.nom] : null;   // v6.0 : montant réel saisi (ou null)
+    var hasManuel = Object.prototype.hasOwnProperty.call(manuel, act.nom);   // v7.0 : ✏️ l'emporte sur l'auto 💼
+    var rv = Object.prototype.hasOwnProperty.call(reels, act.nom) ? reels[act.nom] : null;   // v6.0/v7.0 : montant (✏️ ou auto 💼)
     // v6.3 : 2 colonnes seulement — nom (+ montant v6.2) à gauche, tout le reste dans la
     // colonne flexible .th qui retourne à la ligne. La v6.2 avait déplacé le montant, mais
     // la lecture restait une 3e colonne .fl nowrap (« timing … — pilote du conseil · global … ») :
@@ -539,7 +1580,7 @@ function renderPatrimoine(radar) {
     // SOUS l'enceinte en white-space:normal — plus rien ne peut déborder, quelle que soit la largeur.
     return '<div class="palrow">' +
       '<span class="st" style="width:auto;min-width:86px"><b>' + esc(act.nom) + "</b>" +
-      (rv !== null ? '<span style="display:block;margin-top:2px;font-size:11.5px;color:var(--txt)"><b>' + fmtEUR(rv) + "</b></span>" : "") +
+      (rv !== null ? '<span style="display:block;margin-top:2px;font-size:11.5px;color:var(--txt)"><b>' + fmtEUR(rv) + "</b>" + (hasManuel ? "" : ' <span class="mut" style="font-size:10px">· auto 💼</span>') + "</span>" : "") +
       "</span>" +
       '<span class="th">' + esc(act.enceinte) + ' <span class="mut" style="font-size:11px">— ' + esc(act.reel) + "</span>" +
       '<span class="fl" style="display:block;white-space:normal;margin-top:2px;color:' + (muted ? "var(--mut)" : "var(--txt)") + '">' + right + "</span>" +
