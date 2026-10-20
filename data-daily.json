@@ -1,19 +1,19 @@
 {
   "version": 1,
-  "dateData": "2026-10-16",
+  "dateData": "2026-10-19",
   "note": "relevé quotidien automatique (marchés EUR + macro officiel)",
   "data": {
-    "msci": 130.55,
+    "msci": 130.67,
     "msciHigh52": 132.26,
     "msciLow52": 107.51,
-    "vix": 19.99,
-    "vix5": 16.76,
+    "vix": 17.31,
+    "vix5": 17.81,
     "bceDepot": 2.5,
     "bceDir": "hausse"
   },
   "sources": [
     [
-      "MSCI World (IWDA) : 130.55 € — clôture du 2026-10-16 (IWDA.AS, Euronext Amsterdam, EUR)",
+      "MSCI World (IWDA) : 130.67 € — clôture du 2026-10-19 (IWDA.AS, Euronext Amsterdam, EUR)",
       "Yahoo Finance"
     ],
     [
@@ -21,7 +21,7 @@
       "Yahoo Finance"
     ],
     [
-      "VIX : 19.99 ; moyenne 5 séances : 16.76",
+      "VIX : 17.31 ; moyenne 5 séances : 17.81",
       "Yahoo Finance (^VIX)"
     ],
     [
@@ -29,7 +29,7 @@
       "ECB Data Portal (FM/B.U2.EUR.4F.KR.DFR.LEV)"
     ],
     [
-      "Garde-fous : plausibilité + écart max une séance vs le relevé vérifié du 2026-10-16 — champs écartés : aucun ; inflZE écartée (période 2025-12 trop ancienne (10 mois))",
+      "Garde-fous : plausibilité + écart max une séance vs le dernier relevé quotidien accepté — champs écartés : aucun ; inflZE écartée (période 2025-12 trop ancienne (10 mois))",
       "tools/fetch-daily.js"
     ]
   ]
