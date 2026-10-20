@@ -343,6 +343,27 @@ var PATRIMOINE_ACTIFS = [
 // « equity »), fonds euro avant actions, SCPI avant immo… Valeur retenue = valeur actuelle
 // (quantité × prix actuel). Actif non classé → ignoré (la ligne garde la valeur ✏️ manuelle,
 // qui reste TOUJOURS prioritaire ligne par ligne). Fonction pure, testée sous Node.
+// v7.4 : repli sur la CATÉGORIE quand aucun mot-clé nom+catégorie n'a matché — demande de Jade
+// (« s'aider de la catégorie »). La catégorie est une donnée STRUCTURÉE du module 💼 (liste fermée
+// de 13 valeurs via le select, et l'import CSV Finary y ramène tout via ASSET_CAT_ALIASES :
+// « assurance vie »/« fonds euro » → Fonds, « obligation » → Obligations, « livret » → Liquidités),
+// donc plus fiable que le nom. Mapping conscient de l'univers réel : Obligations/Fonds → Fonds euro
+// (l'exposition obligataire réelle = fonds euro AV ; l'ETF IEGA/CTO est en pause), Immobilier → SCPI
+// (l'immo de Jade = SCPI AV). Crowdfunding/Art/Défiscalisation/Autre restent non classés — jamais
+// devinés (le crowdfunding n'est pas forcément de l'immo, la défiscalisation pas forcément du PE) :
+// ils sont AFFICHÉS par leur nom dans la carte 👤 (indicateur v7.3). Les mots-clés ci-dessus gardent
+// la priorité (un nom explicite est plus spécifique que la catégorie).
+var PATRIMOINE_CAT_LINES = {
+  "actions": "Actions — MSCI World",
+  "etf": "Actions — MSCI World",
+  "obligations": "Fonds euro",
+  "fonds": "Fonds euro",
+  "crypto": "Bitcoin",
+  "immobilier": "SCPI",
+  "liquidités": "Livret",
+  "métal": "Or",
+  "scpi": "SCPI"
+};
 function patLineOf(a, isLivretEnv) {
   var s = (String(a.name || "") + " · " + String(a.category || "")).toLowerCase();
   if (/private equity|capital investissement|fcpr|fcpi|fpci/.test(s)) return "Private equity";
@@ -353,7 +374,9 @@ function patLineOf(a, isLivretEnv) {
   if (isLivretEnv) return "Livret";
   if (/liquidit|monétaire|cash/.test(s)) return "Livret";       // cash = poche de précaution
   if (/action|etf|equity|msci|world|monde|sp ?500|nasdaq|stoxx|cac ?40/.test(s)) return "Actions — MSCI World";
-  return null;   // non classé → jamais inventé
+  var catLine = PATRIMOINE_CAT_LINES[String(a.category || "").toLowerCase().trim()];
+  if (catLine) return catLine;   // v7.4 : repli catégorie (liste fermée du module 💼)
+  return null;   // non classé → jamais inventé (v7.3 : affiché par son nom dans la carte 👤)
 }
 function patReelsOf(patData) {
   var out = {};

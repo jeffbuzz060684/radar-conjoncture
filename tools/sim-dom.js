@@ -61,7 +61,7 @@ vm.createContext(sandbox);
 store["suivi-patrimoine-v4"] = JSON.stringify({ savedAt: 1, envelopes: [
   { id: "e1", name: "PEA Bourse Direct", type: "PEA", assets: [
       { id: "a1", name: "DCAM Amundi PEA Monde", category: "ETF", quantity: 10, currentPrice: 130, buyPrice: 120 },
-      { id: "a4", name: "PEA EUROPE", category: "OPCVM", quantity: 2, currentPrice: 100, buyPrice: 95 } ] },
+      { id: "a4", name: "PEA EUROPE", category: "Autre", quantity: 2, currentPrice: 100, buyPrice: 95 } ] },
   { id: "e2", name: "AV Linxia Spirit", type: "Assurance-vie", assets: [
       { id: "a2", name: "Fonds euro", category: "Fonds", quantity: 1, currentPrice: 5000, buyPrice: 5000 },
       { id: "a3", name: "SCPI Epargne Pierre", category: "SCPI", quantity: 2, currentPrice: 1000, buyPrice: 1000 } ] }
