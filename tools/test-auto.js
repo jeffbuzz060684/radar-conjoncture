@@ -369,8 +369,8 @@ t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === 
 // ---------- index.html, logic.js, sw.js, auto.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v7.3", html.indexOf("<b>v7.3</b>") !== -1);
-t("index.html: aucun ancien badge v7.2/v7.1/v7.0/v6.3/v6.2/v6.1/v6.0/v5.13/v5.12.1/v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v7.2</b>", "<b>v7.1</b>", "<b>v7.0</b>", "<b>v6.3</b>", "<b>v6.2</b>", "<b>v6.1</b>", "<b>v6.0</b>", "<b>v5.13</b>", "<b>v5.12.1</b>", "<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
+t("index.html: badge v7.4", html.indexOf("<b>v7.4</b>") !== -1);
+t("index.html: aucun ancien badge v7.3/v7.2/v7.1/v7.0/v6.3/v6.2/v6.1/v6.0/v5.13/v5.12.1/v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v7.3</b>", "<b>v7.2</b>", "<b>v7.1</b>", "<b>v7.0</b>", "<b>v6.3</b>", "<b>v6.2</b>", "<b>v6.1</b>", "<b>v6.0</b>", "<b>v5.13</b>", "<b>v5.12.1</b>", "<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: logic.js chargé entre vehicles.js et le script UI inline",
   html.indexOf('<script src="vehicles.js"></script>') !== -1 &&
@@ -396,8 +396,8 @@ t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: VIX lissé utilisé dans le scoring (vixEff, désormais dans logic.js)", srcLogic.indexOf("der.vixEff") !== -1 && srcLogic.indexOf("vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v28", sw.indexOf('CACHE = "radar-v28"') !== -1);
-t("sw.js: anciens caches v27/v26/v25/v24/v23/v22/v21/v20/v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v27") === -1 && sw.indexOf("radar-v26") === -1 && sw.indexOf("radar-v25") === -1 && sw.indexOf("radar-v24") === -1 && sw.indexOf("radar-v23") === -1 && sw.indexOf("radar-v22") === -1 && sw.indexOf("radar-v21") === -1 && sw.indexOf("radar-v20") === -1 && sw.indexOf("radar-v16") === -1 && sw.indexOf("radar-v15") === -1 && sw.indexOf("radar-v14") === -1 && sw.indexOf("radar-v13") === -1 && sw.indexOf("radar-v12") === -1 && sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
+t("sw.js: cache v29", sw.indexOf('CACHE = "radar-v29"') !== -1);
+t("sw.js: anciens caches v28/v27/v26/v25/v24/v23/v22/v21/v20/v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v28") === -1 && sw.indexOf("radar-v27") === -1 && sw.indexOf("radar-v26") === -1 && sw.indexOf("radar-v25") === -1 && sw.indexOf("radar-v24") === -1 && sw.indexOf("radar-v23") === -1 && sw.indexOf("radar-v22") === -1 && sw.indexOf("radar-v21") === -1 && sw.indexOf("radar-v20") === -1 && sw.indexOf("radar-v16") === -1 && sw.indexOf("radar-v15") === -1 && sw.indexOf("radar-v14") === -1 && sw.indexOf("radar-v13") === -1 && sw.indexOf("radar-v12") === -1 && sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
 t("sw.js: logic.js dans le shell", sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
 t("sw.js: shell réseau d'abord + repli cache (plus aucun skew HTML frais / JS périmé)",
@@ -1286,13 +1286,13 @@ t("v7.3 : patNonClassesOf exporté + gardes hostiles (null / {} / envelopes non 
   (function () { var v = L.patNonClassesOf({}); return v.count === 0; })() &&
   (function () { var v = L.patNonClassesOf({ envelopes: "x" }); return v.count === 0; })() &&
   (function () { var v = L.patNonClassesOf({ envelopes: [{ assets: "x" }] }); return v.count === 0; })());
-t("v7.3 : patNonClassesOf — « PEA EUROPE » (catégorie OPCVM, aucun mot-clé) compté non classé avec noms + total (200 + 150 = 350 €, noms DÉDUPLIQUÉS), les actifs classés (DCAM/fonds euro/SCPI) exclus du non-classé",
+t("v7.3 : patNonClassesOf — « PEA EUROPE » (catégorie Autre, aucun mot-clé) compté non classé avec noms + total (200 + 150 = 350 €, noms DÉDUPLIQUÉS), les actifs classés (DCAM/fonds euro/SCPI) exclus du non-classé",
   (function () {
     var nc = L.patNonClassesOf({ envelopes: [
       { name: "PEA", type: "PEA", assets: [
         { name: "DCAM Amundi PEA Monde", category: "ETF", quantity: 10, currentPrice: 130 },
-        { name: "PEA EUROPE", category: "OPCVM", quantity: 2, currentPrice: 100 },
-        { name: "PEA EUROPE", category: "OPCVM", quantity: 3, currentPrice: 50 } ] },
+        { name: "PEA EUROPE", category: "Autre", quantity: 2, currentPrice: 100 },
+        { name: "PEA EUROPE", category: "Autre", quantity: 3, currentPrice: 50 } ] },
       { name: "AV", type: "Assurance-vie", assets: [
         { name: "Fonds euro", category: "Fonds", quantity: 1, currentPrice: 5000 },
         { name: "SCPI Epargne Pierre", category: "SCPI", quantity: 2, currentPrice: 1000 } ] } ] });
@@ -1309,6 +1309,40 @@ t("v7.3 : index.html — indicateur des non-classés DANS la carte 👤 (warnbox
   html.indexOf('typeof patNonClassesOf === "function"') !== -1 &&
   html.indexOf("de l'onglet 💼 non classé") !== -1 &&
   html.indexOf("non pris en compte dans cette carte") !== -1);
+
+// ---------- v7.4 : la CATÉGORIE pilote la répartition (demande de Jade — liste fermée des 13 catégories du module 💼) ----------
+t("v7.4 : repli catégorie — « Immobilier » → SCPI, « Obligations » → Fonds euro, « Fonds » → Fonds euro (exposition obligataire réelle = AV ; alias CSV « assurance vie »/« fonds euro » → Fonds), même sans mot-clé dans le nom",
+  (function () {
+    var r = L.patReelsOf({ envelopes: [ { name: "AV", type: "Assurance-vie", assets: [
+      { name: "Mandat Sécurité", category: "Fonds", quantity: 1, currentPrice: 4000 },
+      { name: "Obligations d'État", category: "Obligations", quantity: 1, currentPrice: 2500 },
+      { name: "Immobilière Europe", category: "Immobilier", quantity: 1, currentPrice: 1500 } ] } ] });
+    return r["Fonds euro"] === 6500 && r.SCPI === 1500;
+  })());
+t("v7.4 : le NOM garde la priorité sur le repli catégorie (mot-clé plus spécifique) — « Bitcoin » catégorie « Autre » → Bitcoin ; « Fonds euro » catégorie « Autre » → Fonds euro ; « Private Equity Europe » catégorie « Actions » → Private equity",
+  L.patLineOf({ name: "Bitcoin", category: "Autre" }, false) === "Bitcoin" &&
+  L.patLineOf({ name: "Fonds euro", category: "Autre" }, false) === "Fonds euro" &&
+  L.patLineOf({ name: "Private Equity Europe", category: "Actions" }, false) === "Private equity");
+t("v7.4 : Crowdfunding / Art / Défiscalisation / Autre restent NON classés (jamais devinés : le crowdfunding n'est pas forcément de l'immo, la défiscalisation pas forcément du PE) → visibles par leur nom via l'indicateur v7.3",
+  (function () {
+    var nc = L.patNonClassesOf({ envelopes: [ { name: "CTO", type: "CTO", assets: [
+      { name: "Lendix", category: "Crowdfunding", quantity: 1, currentPrice: 800 },
+      { name: "Tableau maître", category: "Art", quantity: 1, currentPrice: 300 },
+      { name: "Placement défisc", category: "Défiscalisation", quantity: 1, currentPrice: 200 },
+      { name: "Inconnu", category: "Autre", quantity: 1, currentPrice: 100 } ] } ] });
+    return nc.count === 4 && Math.round(nc.total) === 1400 && nc.noms.indexOf("Lendix") !== -1;
+  })());
+t("v7.4 : cohérence de la répartition — classés (patReelsOf) + non-classés (patNonClassesOf) = total exact du portefeuille (aucune valeur perdue ni doublée), et le fixture v7.0 reste intact (Art ignoré, 7 clés)",
+  (function () {
+    var data = { envelopes: [ { name: "Pat", type: "Assurance-vie", assets: [
+      { name: "Fonds euro", category: "Fonds", quantity: 1, currentPrice: 5000 },
+      { name: "Immobilière Europe", category: "Immobilier", quantity: 2, currentPrice: 750 },
+      { name: "Lendix", category: "Crowdfunding", quantity: 1, currentPrice: 800 } ] } ] };
+    var cls = L.patReelsOf(data), nc = L.patNonClassesOf(data);
+    var sumCls = Object.keys(cls).reduce(function (t, k) { return t + cls[k]; }, 0);
+    return cls["Fonds euro"] === 5000 && cls.SCPI === 1500 && nc.count === 1 && nc.noms[0] === "Lendix" && Math.round(sumCls + nc.total) === 7300 &&
+      Object.keys(PR).length === 7 && PR["Art contemporain"] === undefined;
+  })());
 
 // ---------- Bilan ----------
 var fail = results.filter(function (r) { return !r.ok; });
