@@ -1,70 +1,70 @@
 {
   "version": 1,
-  "dateData": "2026-10-26",
-  "note": "Maj hebdo lundi — PMI flash, OAT > 5 %",
+  "dateData": "2026-11-02",
+  "note": "Maj hebdo lundi — or en forte correction",
   "data": {
-    "msci": 129.89,
+    "msci": 129.7,
     "msciHigh52": 132.26,
     "msciHigh52Date": "2026-10-12",
     "msciLow52": 107.51,
-    "dateMacro": "2026-10-23",
-    "cape": 40.4,
-    "vix": 19.45,
-    "vix5": 18.18,
+    "dateMacro": "2026-10-30",
+    "cape": 39.96,
+    "vix": 19.42,
+    "vix5": 17.89,
     "inflZE": 3.8,
     "inflUS": 3.7,
     "bceDepot": 2.5,
     "bceDir": "hausse",
-    "bund10": 3.33,
-    "oat10": 5.05,
-    "pmiZE": 51.9,
-    "orEUR": 3589,
+    "bund10": 3.34,
+    "oat10": 4.93,
+    "pmiZE": 51.7,
+    "orEUR": 3473,
     "orHigh52": 4592,
     "orLow52": 3387.45,
-    "btcEUR": 72033,
+    "btcEUR": 69728,
     "btcHigh52": null,
     "imoRendement": 5
   },
   "sources": [
     [
-      "MSCI World (IWDA) : 129,89 € (clôture 23/10/2026, IWDA.AS Euronext Amsterdam) ; plus haut 52 sem. 132,26 € (12/10) ; plus bas 107,51 €",
-      "Yahoo Finance (IWDA.AS)"
+      "MSCI World (IWDA) : 129,70 € (clôture 30/10/2026, IWDA.AS Euronext Amsterdam) ; plus haut 52 sem. 132,26 € (12/10) ; plus bas 107,51 €",
+      "Yahoo Finance (IWDA.AS) / Fortuneo"
     ],
     [
-      "CAPE Shiller : 40,4 (octobre 2026)",
+      "CAPE Shiller : 39,96 (octobre 2026, en baisse depuis 40,4)",
       "GuruFocus"
     ],
     [
-      "VIX : 19,45 (+2,2 % — clôture 23/10/2026) ; moyenne 5 séances : 18,18",
-      "CBOE via FRED / Yahoo Finance"
+      "VIX : 19,42 (+12,9 %, clôture 30/10/2026, spike intraday 22,31) ; moyenne 5 séances : 17,89",
+      "CBOE via Yahoo Finance / FRED"
     ],
     [
-      "Inflation zone euro : 3,8 % (septembre 2026, confirmé le 16/10)",
+      "Inflation zone euro : 3,8 % (septembre 2026, inchangé — pas de publication plus récente disponible)",
       "Eurostat"
     ],
     [
-      "Inflation US : 3,7 % (septembre — CPI d'octobre non publié, valeur inchangée)",
+      "Inflation US : 3,7 % (septembre — CPI d'octobre attendu le 10/11, valeur inchangée)",
       "BLS"
     ],
     [
-      "BCE : dépôt 2,50 % en hausse (+25 pb au 16/09/2026) ; décision suivante le 29/10, stable attendu",
-      "BCE / ECB Watch"
+      "BCE : dépôt 2,50 %, taux inchangés au 29/10/2026 (statu quo attendu) ; dernière variation : +25 pb le 16/09 ; prochaine réunion 17/12",
+      "BCE"
     ],
     [
-      "Bund 3,33 % ; OAT 5,05 % ; spread ~172 pb, plus haut depuis la crise de la dette (23/10/2026)",
-      "Trading Economics / ideal-investisseur"
+      "Bund 3,34 % ; OAT 4,93 % ; spread ~159 pb (30/10/2026, en repli depuis le pic ~172 pb)",
+      "Trading Economics"
     ],
     [
-      "PMI composite zone euro : 51,9 (octobre, flash du 23/10, en baisse depuis 53,1)",
+      "PMI composite zone euro : 51,7 (octobre, final S&P Global, en baisse depuis 53,1)",
       "S&P Global"
     ],
     [
-      "Or : 3 589 €/once (4 020,50 $ au 25/10, EUR/USD 1,1204)",
-      "Yahoo Finance"
+      "Or : 3 473 €/once (31/10/2026, 3 875 $ — mois d'octobre −4 %, près du bas 52 sem. 3 387 €)",
+      "Gold.fr / Yahoo Finance"
     ],
     [
-      "Bitcoin : 72 033 € (24/10/2026)",
-      "Investir Mag / CoinGecko"
+      "Bitcoin : 69 728 € (01/11/2026)",
+      "Boursier.com / Investing"
     ]
   ]
 }
