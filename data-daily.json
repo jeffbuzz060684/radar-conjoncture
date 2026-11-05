@@ -1,19 +1,19 @@
 {
   "version": 1,
-  "dateData": "2026-11-02",
+  "dateData": "2026-11-03",
   "note": "relevé quotidien automatique (marchés EUR + macro officiel)",
   "data": {
-    "msci": 129.95,
+    "msci": 128.95,
     "msciHigh52": 132.26,
     "msciLow52": 107.51,
-    "vix": 21.15,
-    "vix5": 18.44,
+    "vix": 16.61,
+    "vix5": 19.04,
     "bceDepot": 2.5,
     "bceDir": "hausse"
   },
   "sources": [
     [
-      "MSCI World (IWDA) : 129.95 € — clôture du 2026-11-02 (IWDA.AS, Euronext Amsterdam, EUR)",
+      "MSCI World (IWDA) : 128.95 € — clôture du 2026-11-03 (IWDA.AS, Euronext Amsterdam, EUR)",
       "Yahoo Finance"
     ],
     [
@@ -21,7 +21,7 @@
       "Yahoo Finance"
     ],
     [
-      "VIX : 21.15 ; moyenne 5 séances : 18.44",
+      "VIX : 16.61 ; moyenne 5 séances : 19.04",
       "Yahoo Finance (^VIX)"
     ],
     [
