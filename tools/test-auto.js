@@ -369,8 +369,8 @@ t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === 
 // ---------- index.html, logic.js, sw.js, auto.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v7.4", html.indexOf("<b>v7.4</b>") !== -1);
-t("index.html: aucun ancien badge v7.3/v7.2/v7.1/v7.0/v6.3/v6.2/v6.1/v6.0/v5.13/v5.12.1/v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v7.3</b>", "<b>v7.2</b>", "<b>v7.1</b>", "<b>v7.0</b>", "<b>v6.3</b>", "<b>v6.2</b>", "<b>v6.1</b>", "<b>v6.0</b>", "<b>v5.13</b>", "<b>v5.12.1</b>", "<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
+t("index.html: badge v7.5", html.indexOf("<b>v7.5</b>") !== -1);
+t("index.html: aucun ancien badge v7.4/v7.3/v7.2/v7.1/v7.0/v6.3/v6.2/v6.1/v6.0/v5.13/v5.12.1/v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v7.4</b>", "<b>v7.3</b>", "<b>v7.2</b>", "<b>v7.1</b>", "<b>v7.0</b>", "<b>v6.3</b>", "<b>v6.2</b>", "<b>v6.1</b>", "<b>v6.0</b>", "<b>v5.13</b>", "<b>v5.12.1</b>", "<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: logic.js chargé entre vehicles.js et le script UI inline",
   html.indexOf('<script src="vehicles.js"></script>') !== -1 &&
@@ -396,8 +396,8 @@ t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: VIX lissé utilisé dans le scoring (vixEff, désormais dans logic.js)", srcLogic.indexOf("der.vixEff") !== -1 && srcLogic.indexOf("vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v29", sw.indexOf('CACHE = "radar-v29"') !== -1);
-t("sw.js: anciens caches v28/v27/v26/v25/v24/v23/v22/v21/v20/v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4/v3 absents", sw.indexOf("radar-v28") === -1 && sw.indexOf("radar-v27") === -1 && sw.indexOf("radar-v26") === -1 && sw.indexOf("radar-v25") === -1 && sw.indexOf("radar-v24") === -1 && sw.indexOf("radar-v23") === -1 && sw.indexOf("radar-v22") === -1 && sw.indexOf("radar-v21") === -1 && sw.indexOf("radar-v20") === -1 && sw.indexOf("radar-v16") === -1 && sw.indexOf("radar-v15") === -1 && sw.indexOf("radar-v14") === -1 && sw.indexOf("radar-v13") === -1 && sw.indexOf("radar-v12") === -1 && sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1 && sw.indexOf("radar-v3") === -1);
+t("sw.js: cache v30", sw.indexOf('CACHE = "radar-v30"') !== -1);
+t("sw.js: anciens caches v29/v28/v27/v26/v25/v24/v23/v22/v21/v20/v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4 absents (v3 omis : préfixe du cache v30, comme v1/v2 l'ont été aux époques v10/v20)", sw.indexOf("radar-v29") === -1 && sw.indexOf("radar-v28") === -1 && sw.indexOf("radar-v27") === -1 && sw.indexOf("radar-v26") === -1 && sw.indexOf("radar-v25") === -1 && sw.indexOf("radar-v24") === -1 && sw.indexOf("radar-v23") === -1 && sw.indexOf("radar-v22") === -1 && sw.indexOf("radar-v21") === -1 && sw.indexOf("radar-v20") === -1 && sw.indexOf("radar-v16") === -1 && sw.indexOf("radar-v15") === -1 && sw.indexOf("radar-v14") === -1 && sw.indexOf("radar-v13") === -1 && sw.indexOf("radar-v12") === -1 && sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1);
 t("sw.js: logic.js dans le shell", sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
 t("sw.js: shell réseau d'abord + repli cache (plus aucun skew HTML frais / JS périmé)",
@@ -1343,6 +1343,86 @@ t("v7.4 : cohérence de la répartition — classés (patReelsOf) + non-classés
     return cls["Fonds euro"] === 5000 && cls.SCPI === 1500 && nc.count === 1 && nc.noms[0] === "Lendix" && Math.round(sumCls + nc.total) === 7300 &&
       Object.keys(PR).length === 7 && PR["Art contemporain"] === undefined;
   })());
+
+// ---------- v7.5 : 🏆 Meilleure opportunité — dropdown des actifs à avoir (demande de Jade) ----------
+t("v7.5: opportuniteOf exporté (logic.js, module.exports)",
+  typeof L.opportuniteOf === "function" && srcLogic.indexOf("function opportuniteOf") !== -1 && srcLogic.indexOf("opportuniteOf: opportuniteOf") !== -1);
+t("v7.5: consolidation PURE — sur les données du jour, l'or (76, Sur-pondérer) est la meilleure opportunité INVESTIR, verdict d'entrée dca (même entryPrefOf que conseil/simulateur/🎯)",
+  (function () {
+    var o = L.opportuniteOf(L.DEFAULT_DATA, RAD0, null);
+    var actA = RAD0.list.filter(function (a) { return a.id === "actions"; })[0];
+    var ep = L.entryPrefOf(L.DEFAULT_DATA, RAD0.der, actA.timingScore);
+    return o.top.id === "or" && o.top.verb === "INVESTIR" && o.top.stance === "Sur-pondérer" && o.aucun === false &&
+      o.classe.length === 6 && o.verdict.recommande === ep.recommande && o.verdict.pref === ep.pref && o.verdict.phrase === ep.phrase &&
+      o.posture === "Prudente" && o.override === null;
+  })());
+t("v7.5: classement — les INVESTIR d'abord, tri interne par rang puis score PILOTE (timing pour les actions : sortScore 44, pas le global 20 verrouillé par le CAPE)",
+  (function () {
+    var o = L.opportuniteOf(L.DEFAULT_DATA, RAD0, null);
+    var ok = o.classe[0].verb === "INVESTIR";
+    for (var i = 1; i < o.classe.length; i++) {
+      if (o.classe[i - 1].rank < o.classe[i].rank) ok = false;
+      if (o.classe[i - 1].rank === o.classe[i].rank && o.classe[i - 1].sortScore < o.classe[i].sortScore) ok = false;
+    }
+    var acts = o.classe.filter(function (a) { return a.id === "actions"; })[0];
+    return ok && acts.sortScore === 44 && acts.timingScore === 44 && o.classe[0].id === "or";
+  })());
+t("v7.5: univers du dropdown = exactement les 6 lignes du radar — jamais livret ni private equity ; chaque ligne porte sa destination réelle (ou/reel de PATRIMOINE)",
+  (function () {
+    var o = L.opportuniteOf(L.DEFAULT_DATA, RAD0, null);
+    var ids = o.classe.map(function (a) { return a.id; }).sort().join(",");
+    var orL = o.classe.filter(function (a) { return a.id === "or"; })[0];
+    var actsL = o.classe.filter(function (a) { return a.id === "actions"; })[0];
+    return ids === "actions,crypto,immo,monetaire,obligations,or" && o.classe.length === 6 &&
+      orL.ou === "Or détenu" && orL.reel.indexOf("SGLD") !== -1 && actsL.ou === "PEA — DCAM";
+  })());
+t("v7.5: AUCUN signal INVESTIR (radar synthétique tout bas) → aucun=true, top=null, la meilleure LECTURE Conserver est désignée SANS devenir un signal d'achat",
+  (function () {
+    var RR = { der: { ddMsci: -1.3, ddOr: null, tauxReelZE: null, imoMarge: null }, list: [
+      { id: "or", icon: "🥇", name: "Or (physique / ETF or)", score: 30, parts: [] },
+      { id: "monetaire", icon: "🛡️", name: "Monétaire zone euro", score: 50, parts: [] },
+      { id: "actions", icon: "🌍", name: "Actions monde (MSCI World)", score: 20, timingScore: 30, parts: [] },
+      { id: "obligations", icon: "📜", name: "Obligations zone euro (Bund 10 ans)", score: 30, parts: [] },
+      { id: "immo", icon: "🏠", name: "Immobilier (SCPI / ETF immo)", score: 30, parts: [] },
+      { id: "crypto", icon: "₿", name: "Crypto (BTC)", score: 30, parts: [] }
+    ] };
+    var o = L.opportuniteOf({ cape: null }, RR, null);
+    return o.aucun === true && o.top === null && o.conserve !== null && o.conserve.id === "monetaire" &&
+      o.note.indexOf("pas un conseil d'achat") !== -1;
+  })());
+t("v7.5: le forçage manuel déplace les seuils → le classement suit le même jour (Offensive : les stances remontent — actions timing 44 passent de « Ne pas renforcer » (rang 1) à « Conserver » (rang 2), l'or reste la vedette INVESTIR)",
+  (function () {
+    var o1 = L.opportuniteOf(L.DEFAULT_DATA, RAD0, null);
+    var o2 = L.opportuniteOf(L.DEFAULT_DATA, RAD0, "Offensive");
+    var a1 = o1.classe.filter(function (a) { return a.id === "actions"; })[0];
+    var a2 = o2.classe.filter(function (a) { return a.id === "actions"; })[0];
+    return a1.stance === "Ne pas renforcer" && a1.rank === 1 && a2.stance === "Conserver" && a2.rank === 2 &&
+      o2.override === "Offensive" && o2.posture === "Offensive" &&
+      o2.classe.filter(function (a) { return a.verb === "INVESTIR"; })[0].id === "or";
+  })());
+t("v7.5: garde d'honnêteté desinvTop — un signal d'arbitrage du conseil qui concerne l'actif vedette est retourné avec lui (jamais un bandeau « INVESTIR l'or » qui taiderait une prise de profit conseillée le même jour)",
+  (function () {
+    var RR = { der: { ddMsci: -1.3, ddOr: 0, tauxReelZE: 1, imoMarge: null }, list: [
+      { id: "or", icon: "🥇", name: "Or (physique / ETF or)", score: 50, parts: [] },
+      { id: "monetaire", icon: "🛡️", name: "Monétaire zone euro", score: 40, parts: [] },
+      { id: "actions", icon: "🌍", name: "Actions monde (MSCI World)", score: 20, timingScore: 44, parts: [] },
+      { id: "obligations", icon: "📜", name: "Obligations zone euro (Bund 10 ans)", score: 41, parts: [] },
+      { id: "immo", icon: "🏠", name: "Immobilier (SCPI / ETF immo)", score: 43, parts: [] },
+      { id: "crypto", icon: "₿", name: "Crypto (BTC)", score: 44, parts: [] }
+    ] };
+    var o = L.opportuniteOf(L.DEFAULT_DATA, RR, "Offensive");   // Offensive : or 50 ≥ ren 45 → Renforcer/INVESTIR → vedette ; desinv or (score < 55, ddOr 0 > −3, taux réel 1 > 0) déclenché
+    return o.top.id === "or" && o.desinvTop.length === 1 && o.desinvTop[0].indexOf("Or") === 0;
+  })());
+t("v7.5: index.html — carte 🏆 (oppCard) : bandeau oppTop + dropdown oppSel + détail oppDetail, appelée par renderRadar, garde anti-skew typeof opportuniteOf (logic.js périmé → carte omise, page intacte)",
+  html.indexOf('id="oppCard"') !== -1 && html.indexOf('id="oppTop"') !== -1 && html.indexOf('id="oppSel"') !== -1 && html.indexOf('id="oppDetail"') !== -1 &&
+  html.indexOf("renderOpp(d, radar)") !== -1 && html.indexOf('typeof opportuniteOf !== "function"') !== -1 &&
+  html.indexOf("Meilleure opportunité") !== -1);
+t("v7.5: le dropdown liste les actifs à avoir DANS L'ORDRE du classement (n° 1 en tête), la sélection persiste entre rendus (oppSelId) et un changement re-rend SEUL le détail (oppLast)",
+  html.indexOf("oppSelId") !== -1 && html.indexOf("oppLast") !== -1 &&
+  html.indexOf("opp.classe.map(function (a, i)") !== -1);
+t("v7.5: le détail de l'actif affiche la destination réelle (« Chez toi ») et, pour les actions, le contexte paliers + la règle « Jamais vendre sur la baisse »",
+  html.indexOf("Chez toi") !== -1 && html.indexOf("Jamais vendre sur la baisse — les paliers achètent la faiblesse") !== -1 &&
+  html.indexOf("renderOppDetail(d, radar, opp, oppSelId)") !== -1);
 
 // ---------- Bilan ----------
 var fail = results.filter(function (r) { return !r.ok; });
