@@ -369,8 +369,8 @@ t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === 
 // ---------- index.html, logic.js, sw.js, auto.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v7.5", html.indexOf("<b>v7.5</b>") !== -1);
-t("index.html: aucun ancien badge v7.4/v7.3/v7.2/v7.1/v7.0/v6.3/v6.2/v6.1/v6.0/v5.13/v5.12.1/v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v7.4</b>", "<b>v7.3</b>", "<b>v7.2</b>", "<b>v7.1</b>", "<b>v7.0</b>", "<b>v6.3</b>", "<b>v6.2</b>", "<b>v6.1</b>", "<b>v6.0</b>", "<b>v5.13</b>", "<b>v5.12.1</b>", "<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
+t("index.html: badge v7.6", html.indexOf("<b>v7.6</b>") !== -1);
+t("index.html: aucun ancien badge v7.5/v7.4/v7.3/v7.2/v7.1/v7.0/v6.3/v6.2/v6.1/v6.0/v5.13/v5.12.1/v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v7.5</b>", "<b>v7.4</b>", "<b>v7.3</b>", "<b>v7.2</b>", "<b>v7.1</b>", "<b>v7.0</b>", "<b>v6.3</b>", "<b>v6.2</b>", "<b>v6.1</b>", "<b>v6.0</b>", "<b>v5.13</b>", "<b>v5.12.1</b>", "<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: logic.js chargé entre vehicles.js et le script UI inline",
   html.indexOf('<script src="vehicles.js"></script>') !== -1 &&
@@ -396,8 +396,8 @@ t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: VIX lissé utilisé dans le scoring (vixEff, désormais dans logic.js)", srcLogic.indexOf("der.vixEff") !== -1 && srcLogic.indexOf("vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v30", sw.indexOf('CACHE = "radar-v30"') !== -1);
-t("sw.js: anciens caches v29/v28/v27/v26/v25/v24/v23/v22/v21/v20/v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4 absents (v3 omis : préfixe du cache v30, comme v1/v2 l'ont été aux époques v10/v20)", sw.indexOf("radar-v29") === -1 && sw.indexOf("radar-v28") === -1 && sw.indexOf("radar-v27") === -1 && sw.indexOf("radar-v26") === -1 && sw.indexOf("radar-v25") === -1 && sw.indexOf("radar-v24") === -1 && sw.indexOf("radar-v23") === -1 && sw.indexOf("radar-v22") === -1 && sw.indexOf("radar-v21") === -1 && sw.indexOf("radar-v20") === -1 && sw.indexOf("radar-v16") === -1 && sw.indexOf("radar-v15") === -1 && sw.indexOf("radar-v14") === -1 && sw.indexOf("radar-v13") === -1 && sw.indexOf("radar-v12") === -1 && sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1);
+t("sw.js: cache v31", sw.indexOf('CACHE = "radar-v31"') !== -1);
+t("sw.js: anciens caches v30/v29/v28/v27/v26/v25/v24/v23/v22/v21/v20/v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4 absents (v3 omis : préfixe des caches v30/v31, comme v1/v2 l'ont été aux époques v10/v20)", sw.indexOf("radar-v30") === -1 && sw.indexOf("radar-v29") === -1 && sw.indexOf("radar-v28") === -1 && sw.indexOf("radar-v27") === -1 && sw.indexOf("radar-v26") === -1 && sw.indexOf("radar-v25") === -1 && sw.indexOf("radar-v24") === -1 && sw.indexOf("radar-v23") === -1 && sw.indexOf("radar-v22") === -1 && sw.indexOf("radar-v21") === -1 && sw.indexOf("radar-v20") === -1 && sw.indexOf("radar-v16") === -1 && sw.indexOf("radar-v15") === -1 && sw.indexOf("radar-v14") === -1 && sw.indexOf("radar-v13") === -1 && sw.indexOf("radar-v12") === -1 && sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1);
 t("sw.js: logic.js dans le shell", sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
 t("sw.js: shell réseau d'abord + repli cache (plus aucun skew HTML frais / JS périmé)",
@@ -1423,6 +1423,56 @@ t("v7.5: le dropdown liste les actifs à avoir DANS L'ORDRE du classement (n° 1
 t("v7.5: le détail de l'actif affiche la destination réelle (« Chez toi ») et, pour les actions, le contexte paliers + la règle « Jamais vendre sur la baisse »",
   html.indexOf("Chez toi") !== -1 && html.indexOf("Jamais vendre sur la baisse — les paliers achètent la faiblesse") !== -1 &&
   html.indexOf("renderOppDetail(d, radar, opp, oppSelId)") !== -1);
+
+// ---------- v7.6 : 📉 Drawdown par actif — la lecture « vs sommet 52 sem. » étendue du MSCI World à tout l'univers ----------
+t("v7.6: ddAssetOf exporté (logic.js, module.exports)",
+  typeof L.ddAssetOf === "function" && srcLogic.indexOf("function ddAssetOf") !== -1 && srcLogic.indexOf("ddAssetOf: ddAssetOf") !== -1);
+t("v7.6: consolidation PURE — sur les données du jour : actions −1,3 %, or −18,8 % (références affichées), et JAMAIS de valeur inventée pour les lignes sans cours suivi (note obligatoire sur chaque dd null)",
+  (function () {
+    var o = L.ddAssetOf(L.DEFAULT_DATA, RAD0);
+    var by = {};
+    o.forEach(function (e) { by[e.id] = e; });
+    return o.length === 6 &&
+      L.r1(by.actions.dd) === -1.3 && by.actions.ref.indexOf("pilote les paliers") !== -1 &&
+      L.r1(by.or.dd) === -18.8 && by.or.ref.indexOf("sommet 52 sem.") !== -1 &&
+      by.crypto.dd === null && by.crypto.note.indexOf("Or & BTC en direct") !== -1 &&
+      by.obligations.dd === null && by.obligations.note.indexOf("Bund") !== -1 &&
+      by.immo.dd === null && by.immo.note.indexOf("OAT 10 ans") !== -1 &&
+      by.monetaire.dd === null && by.monetaire.note.indexOf("capital stable") !== -1;
+  })());
+t("v7.6: cohérence — les dd sont EXACTEMENT ceux du scoring (der.ddMsci/ddOr/ddBtc, jamais recalculés ailleurs), ordre = celui du radar (score décroissant)",
+  (function () {
+    var o = L.ddAssetOf(L.DEFAULT_DATA, RAD0);
+    var der = RAD0.der;
+    var okOrder = o.length === RAD0.list.length && o.every(function (e, i) { return e.id === RAD0.list[i].id; });
+    var by = {};
+    o.forEach(function (e) { by[e.id] = e; });
+    return okOrder && by.actions.dd === der.ddMsci && by.or.dd === der.ddOr && by.crypto.dd === der.ddBtc;
+  })());
+t("v7.6: crypto chiffrable dès que la référence 52 sem. existe (bouton Or & BTC en direct) — et jamais de note trompeuse quand le dd est là",
+  (function () {
+    var d2 = JSON.parse(JSON.stringify(L.DEFAULT_DATA));
+    d2.btcEUR = 72598; d2.btcHigh52 = 95000;
+    var o = L.ddAssetOf(d2, L.radarAll(d2));
+    var by = {};
+    o.forEach(function (e) { by[e.id] = e; });
+    return L.r1(by.crypto.dd) === -23.6 && by.crypto.note === null && by.crypto.ref.indexOf("sommet 52 sem.") !== -1;
+  })());
+t("v7.6: gardes hostiles — radar absent/liste vide → tableau vide, jamais de crash ni de valeur inventée",
+  L.ddAssetOf(L.DEFAULT_DATA, null).length === 0 &&
+  L.ddAssetOf(null, { der: {}, list: [] }).length === 0);
+t("v7.6: index.html — bloc 📉 DANS la carte 🏆 (oppDD), même échelle que la carte MSCI World (barre pleine à −25 %), couleurs identiques (bad ≤ −15, mid ≤ −10), garde anti-skew typeof ddAssetOf",
+  html.indexOf('id="oppDD"') !== -1 && html.indexOf("Drawdown par actif") !== -1 &&
+  html.indexOf('typeof ddAssetOf === "function"') !== -1 &&
+  html.indexOf("Math.abs(e.dd) / 25 * 100") !== -1 &&
+  html.indexOf('e.dd <= -15 ? "bad" : e.dd <= -10 ? "mid" : "good"') !== -1);
+t("v7.6: chaque ligne du bloc est échappée (esc sur nom/ref/note — le « & » de « Or & BTC » devient &amp;) et les textes wrappables (white-space:normal — leçon v6.3 sur les colonnes insécables)",
+  (function () {
+    var i = html.indexOf("var dds = ddAssetOf(d, radar)");
+    var seg = html.slice(i, html.indexOf("opp.classe.map", i));
+    return i !== -1 && seg.indexOf("esc(e.ref") !== -1 && seg.indexOf("esc(e.note") !== -1 &&
+      seg.indexOf("white-space:normal") !== -1;
+  })());
 
 // ---------- Bilan ----------
 var fail = results.filter(function (r) { return !r.ok; });
