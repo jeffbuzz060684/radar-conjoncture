@@ -324,9 +324,19 @@ sandbox.renderRadar();
 ck("v7.5 : après guérison, la carte 🏆 revient (bandeau rendu)",
   txt("oppTop").indexOf("Meilleure opportunité du jour") !== -1);
 
+// 9 undecies. v7.6 : 📉 drawdown par actif — la lecture « vs sommet 52 sem. » étendue du MSCI World à tout l'univers
+ck("v7.6 : bloc « Drawdown par actif » rendu dans la carte 🏆 — 6 lignes, échelle identique à la carte World (pleine à −25 %)",
+  txt("oppDD").indexOf("Drawdown par actif") !== -1 && txt("oppDD").indexOf("−25 %") !== -1 &&
+  (txt("oppDD").match(/palrow/g) || []).length === 6);
+ck("v7.6 : valeurs du jour — or −18,8 % (barre rouge, ≤ −15), actions −1,3 % (barre verte) avec la mention « pilote les paliers »",
+  txt("oppDD").indexOf("-18.8 %") !== -1 && txt("oppDD").indexOf("-1.3 %") !== -1 && txt("oppDD").indexOf("pilote les paliers") !== -1);
+ck("v7.6 : lignes sans drawdown de cours — lectures honnêtes (Bund pour les obligations, OAT pour l'immo, « capital stable » pour le monétaire, référence BTC manquante tracée)",
+  txt("oppDD").indexOf("Bund") !== -1 && txt("oppDD").indexOf("OAT 10 ans") !== -1 &&
+  txt("oppDD").indexOf("capital stable") !== -1 && txt("oppDD").indexOf("Or &amp; BTC en direct") !== -1);
+
 // 10. Bilan
 var fail = checks.filter(function (c) { return !c.ok; });
 checks.forEach(function (c) { console.log((c.ok ? "✅ " : "❌ ") + c.name); });
 console.log("");
 if (fail.length) { console.log("SIM ÉCHECS : " + fail.length); process.exit(1); }
-console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul + synthèse à source partagée v5.10 + univers réel v5.11 + carte « Ton patrimoine réel » 7 actifs v5.12 + gardes anti-skew logic.js périmé v5.12.1 + lecture honnête ligne par ligne v5.13 + carte 🎯 Ma décision v6.0/v6.1 : flux/supplément-lecture/stock + plus de double saisie (renvoi 🧮) + éditeur ✏️ + skew + ligne patrimoine sans débordement v6.2 + lecture sous l'enceinte wrappable v6.3 + fusion app Patrimoine 💼 v7.0 : module v11 en IIFE, montants auto vers les 7 lignes 👤, ✏️ prioritaire, hook PatrimoineRender + v7.3 : actifs 💼 non classés affichés par leur nom, plus d'omission silencieuse + v7.5 : carte 🏆 Meilleure opportunité — dropdown des 6 actifs à avoir, bandeau vedette, détail par actif + destination réelle + contexte paliers actions + garde anti-skew).");
+console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul + synthèse à source partagée v5.10 + univers réel v5.11 + carte « Ton patrimoine réel » 7 actifs v5.12 + gardes anti-skew logic.js périmé v5.12.1 + lecture honnête ligne par ligne v5.13 + carte 🎯 Ma décision v6.0/v6.1 : flux/supplément-lecture/stock + plus de double saisie (renvoi 🧮) + éditeur ✏️ + skew + ligne patrimoine sans débordement v6.2 + lecture sous l'enceinte wrappable v6.3 + fusion app Patrimoine 💼 v7.0 : module v11 en IIFE, montants auto vers les 7 lignes 👤, ✏️ prioritaire, hook PatrimoineRender + v7.3 : actifs 💼 non classés affichés par leur nom, plus d'omission silencieuse + v7.5 : carte 🏆 Meilleure opportunité — dropdown des 6 actifs à avoir, bandeau vedette, détail par actif + destination réelle + contexte paliers actions + garde anti-skew + v7.6 : 📉 drawdown par actif — or/actions/BTC vs sommet 52 sem., lectures honnêtes pour obligations/immo/monétaire).");

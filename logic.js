@@ -1046,6 +1046,45 @@ function opportuniteOf(d, radar, override) {
            posture: adv.posture, override: adv.override || null };
 }
 
+// ---------- v7.6 : 📉 Drawdown par actif — la position vs sommet 52 sem. pour TOUT l'univers ----------
+// Demande de Jade : « le drawdown avec le World, avec les autres actifs » — la carte paliers
+// affiche le drawdown MSCI World depuis la v1 ; la même lecture est étendue aux autres
+// lignes du radar. Consolidation PURE de computeDerived (ddMsci/ddOr/ddBtc existent déjà
+// pour le scoring) : AUCUNE donnée nouvelle, AUCUN seuil nouveau. Trois lignes n'ont PAS de
+// drawdown de cours — jamais de valeur inventée : obligations et immo se lisent par le
+// rendement (Bund, locatif vs OAT — pas de référence de cours 52 sem. relevée), le monétaire
+// est stable par nature. Un dd chiffrable manquant (crypto sans référence) est TRACé
+// « données manquantes » — le bouton « Or & BTC en direct » de l'onglet Données la remplit.
+function ddAssetOf(d, radar) {
+  var der = (radar && radar.der) || computeDerived(d);
+  var list = (radar && Array.isArray(radar.list)) ? radar.list : [];
+  var out = [];
+  list.forEach(function (a) {
+    var e = { id: a.id, icon: a.icon, name: a.name, dd: null, ref: null, note: null };
+    if (a.id === "actions") {
+      e.dd = der.ddMsci;
+      e.ref = (num(d.msci) !== null && num(d.msciHigh52) !== null) ? "cours " + d.msci + " € vs sommet 52 sem. " + d.msciHigh52 + " € (IWDA.AS) — c'est lui qui pilote les paliers" : null;
+      if (e.dd === null) e.note = "données manquantes — mets à jour le relevé (onglet Données)";
+    } else if (a.id === "or") {
+      e.dd = der.ddOr;
+      e.ref = (num(d.orEUR) !== null && num(d.orHigh52) !== null) ? "cours " + d.orEUR + " €/once vs sommet 52 sem. " + d.orHigh52 + " €" : null;
+      if (e.dd === null) e.note = "données manquantes — bouton « Or & BTC en direct » (onglet Données)";
+    } else if (a.id === "crypto") {
+      e.dd = der.ddBtc;
+      e.ref = (num(d.btcEUR) !== null && num(d.btcHigh52) !== null) ? "cours " + d.btcEUR + " € vs sommet 52 sem. " + d.btcHigh52 + " €" : null;
+      if (e.dd === null) e.note = "données manquantes — bouton « Or & BTC en direct » (onglet Données)";
+    } else if (a.id === "obligations") {
+      e.note = "pas de drawdown de cours suivi — la ligne se lit par le rendement Bund (" + (num(d.bund10) !== null ? r1(d.bund10) + " %" : "?") + ")";
+    } else if (a.id === "immo") {
+      e.note = "pas de drawdown de cours suivi — la ligne se lit par le rendement locatif vs OAT 10 ans (" + (der.imoMarge !== null ? r1(der.imoMarge) + " pts" : "?") + ")";
+    } else if (a.id === "monetaire") {
+      e.note = "capital stable par nature — pas de drawdown";
+    }
+    out.push(e);
+  });
+  return out;
+}
+
 // Export Node pour le harnais de tests (logique pure, aucun accès DOM).
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
@@ -1060,6 +1099,7 @@ if (typeof module !== "undefined" && module.exports) {
     isRealDate: isRealDate, isPosture: isPosture,
     decisionOf: decisionOf, sanitizeReels: sanitizeReels,   // v6.0 : carte 🎯 Ma décision
     opportuniteOf: opportuniteOf,   // v7.5 : carte 🏆 Meilleure opportunité (dropdown des actifs à avoir)
+    ddAssetOf: ddAssetOf,   // v7.6 : 📉 drawdown par actif (vs sommet 52 sem.) — consolidation ddMsci/ddOr/ddBtc
     patReelsOf: patReelsOf, patLineOf: patLineOf, patNonClassesOf: patNonClassesOf,   // v7.0 : fusion app Patrimoine — classification auto vers les 7 lignes 👤 ; v7.3 : actifs ignorés rendus VISIBLES
     PATRIMOINE: PATRIMOINE, PATRIMOINE_HORS_RADAR: PATRIMOINE_HORS_RADAR, PATRIMOINE_ACTIFS: PATRIMOINE_ACTIFS   // v5.11/v5.12 : univers réel de Jade (mapping + liste des 7 actifs)
   };
