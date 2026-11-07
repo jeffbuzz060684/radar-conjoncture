@@ -177,7 +177,7 @@
 <header>
   <div class="hrow">
     <h1>📡 Radar <span>Conjoncture</span></h1>
-    <span class="badge">🔄 Maj auto quotidienne · <b>v7.5</b></span>
+    <span class="badge">🔄 Maj auto quotidienne · <b>v7.6</b></span>
   </div>
   <div class="hrow" style="margin-top:6px">
     <span class="chip" id="dataChip">—</span>
@@ -213,6 +213,7 @@
       <h2>🏆 Meilleure opportunité</h2>
       <div class="mut" style="margin-bottom:8px">Les 6 classes d'actifs à avoir, classées par opportunité du jour : celles que le conseil dit d'acheter (Investir/Sur-pondérer/Renforcer) d'abord, puis celles à conserver, puis le reste — même moteur que le conseil 💼 et le simulateur 🧮, aucune donnée ni seuil nouveau. Choisis un actif dans le menu déroulant pour voir sa lecture complète et où l'argent part concrètement chez toi. Lecture d'aide à la décision, pas un ordre : la stratégie PEA (paliers, jamais vendre sur baisse) reste maîtresse.</div>
       <div id="oppTop"></div>
+      <div id="oppDD"></div>
       <div class="frow" style="margin-top:8px"><label>Actif à examiner<select id="oppSel"></select></label></div>
       <div id="oppDetail"></div>
     </div>
@@ -1552,6 +1553,31 @@ function renderOpp(d, radar) {
     (opp.manquantes ? '<div class="warnbox" style="margin-top:6px">⚠️ Données insuffisantes pour un conseil chiffré — mets à jour le relevé (onglet Données) ; la base Neutre est utilisée en attendant.</div>' : "") +
     opp.desinvTop.map(function (x) { return '<div class="warnbox" style="margin-top:6px">⚖️ ' + esc(x) + "</div>"; }).join("") +
     '<div class="mut" style="margin-top:6px">' + esc(opp.note) + "</div>";
+  // v7.6 : 📉 drawdown par actif — la lecture « position vs sommet 52 sem. » étendue du
+  // MSCI World (carte paliers) à tout l'univers. Garde anti-skew : logic.js périmé
+  // (ddAssetOf absent) → bloc omis, page intacte. Même échelle que la carte World :
+  // barre = |dd|, pleine à −25 % ; couleurs identiques (rouge ≤ −15, orange ≤ −10).
+  var elDD = $("oppDD");
+  if (elDD && typeof ddAssetOf === "function") {
+    var dds = ddAssetOf(d, radar);
+    elDD.innerHTML =
+      '<div style="margin-top:10px"><b>📉 Drawdown par actif</b> <span class="mut" style="font-size:11px">— position vs sommet 52 sem., même échelle que la carte MSCI World (barre pleine à −25 %)</span></div>' +
+      dds.map(function (e) {
+        var nom = esc(String(e.name).split(" (")[0]);
+        if (e.dd !== null) {
+          var w = Math.min(100, Math.abs(e.dd) / 25 * 100);
+          var cls = e.dd <= -15 ? "bad" : e.dd <= -10 ? "mid" : "good";
+          var col = cls === "bad" ? "var(--bad)" : cls === "mid" ? "var(--mid)" : "var(--good)";
+          return '<div class="palrow"><span class="st" style="width:auto;min-width:86px">' + e.icon + " " + nom + "</span>" +
+            '<span class="th"><div class="bar" style="margin:4px 0"><i class="' + cls + '" style="width:' + w + '%"></i></div>' +
+            '<span class="mut" style="font-size:11px;display:block;white-space:normal">' + esc(e.ref || "") + "</span></span>" +
+            '<span class="fl" style="color:' + col + '">' + r1(e.dd) + " %</span></div>";
+        }
+        return '<div class="palrow" style="opacity:.75"><span class="st" style="width:auto;min-width:86px">' + e.icon + " " + nom + "</span>" +
+          '<span class="th"><span class="mut" style="font-size:11px;display:block;white-space:normal">' + esc(e.note || "") + "</span></span>" +
+          '<span class="fl mut">—</span></div>';
+      }).join("");
+  }
   // menu déroulant : les 6 actifs à avoir, DANS L'ORDRE d'opportunité du jour (le n°1 en tête)
   elS.innerHTML = opp.classe.map(function (a, i) {
     return '<option value="' + esc(a.id) + '">' + (i + 1) + ". " + a.icon + " " + esc(a.name) + " — " + a.score + "/100 · " + esc(a.stance) + "</option>";
