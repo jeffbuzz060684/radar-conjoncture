@@ -300,9 +300,33 @@ sandbox.renderRadar();
 ck("v6.0 : après guérison, la carte décision revient (Flux du mois rendu)",
   txt("decFlux").indexOf("Flux du mois") !== -1);
 
+// 9 decies. v7.5 : carte 🏆 Meilleure opportunité — dropdown des actifs à avoir
+ck("v7.5 : carte rendue — bandeau « Meilleure opportunité du jour » (Or, Sur-pondérer, INVESTIR) + verdict d'entrée partagé (entryPrefOf)",
+  txt("oppTop").indexOf("Meilleure opportunité du jour") !== -1 && txt("oppTop").indexOf("INVESTIR") !== -1 && txt("oppTop").indexOf("Entrée d'un éventuel supplément") !== -1);
+ck("v7.5 : dropdown = 6 options dans l'ordre d'opportunité du jour, sélection par défaut = l'actif vedette (or n°1)",
+  (els.oppSel.innerHTML.match(/<option/g) || []).length === 6 && els.oppSel.innerHTML.indexOf('value="or"') !== -1 && els.oppSel.value === "or");
+ck("v7.5 : détail de la vedette — stance + barre de score + destination réelle (« Chez toi »)",
+  txt("oppDetail").indexOf("Chez toi") !== -1 && txt("oppDetail").indexOf("Sur-pondérer") !== -1);
+els.oppSel.value = "actions";
+els.oppSel.fire("change");
+ck("v7.5 : changement de dropdown → re-rendu SEUL du détail : actions avec timing 44/100 pilote + contexte paliers + « Jamais vendre sur la baisse »",
+  txt("oppDetail").indexOf("timing <b>44/100</b>") !== -1 && txt("oppDetail").indexOf("Prochain palier") !== -1 && txt("oppDetail").indexOf("Jamais vendre sur la baisse") !== -1);
+ck("v7.5 : le bandeau n'a pas bougé au changement de dropdown (seul le détail est re-rendu)",
+  txt("oppTop").indexOf("Meilleure opportunité du jour") !== -1);
+// skew : logic.js périmé (pas d'opportuniteOf) → carte omise SANS erreur (classe v5.12.1)
+var OPP_SAVED = sandbox.opportuniteOf;
+sandbox.opportuniteOf = undefined;
+var skewOppOk = true;
+try { sandbox.renderRadar(); } catch (e) { skewOppOk = false; }
+ck("v7.5 skew : logic.js sans opportuniteOf → re-rendu SANS levée d'erreur (page intacte)", skewOppOk && txt("adviceSynthese").length > 0);
+sandbox.opportuniteOf = OPP_SAVED;
+sandbox.renderRadar();
+ck("v7.5 : après guérison, la carte 🏆 revient (bandeau rendu)",
+  txt("oppTop").indexOf("Meilleure opportunité du jour") !== -1);
+
 // 10. Bilan
 var fail = checks.filter(function (c) { return !c.ok; });
 checks.forEach(function (c) { console.log((c.ok ? "✅ " : "❌ ") + c.name); });
 console.log("");
 if (fail.length) { console.log("SIM ÉCHECS : " + fail.length); process.exit(1); }
-console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul + synthèse à source partagée v5.10 + univers réel v5.11 + carte « Ton patrimoine réel » 7 actifs v5.12 + gardes anti-skew logic.js périmé v5.12.1 + lecture honnête ligne par ligne v5.13 + carte 🎯 Ma décision v6.0/v6.1 : flux/supplément-lecture/stock + plus de double saisie (renvoi 🧮) + éditeur ✏️ + skew + ligne patrimoine sans débordement v6.2 + lecture sous l'enceinte wrappable v6.3 + fusion app Patrimoine 💼 v7.0 : module v11 en IIFE, montants auto vers les 7 lignes 👤, ✏️ prioritaire, hook PatrimoineRender + v7.3 : actifs 💼 non classés affichés par leur nom, plus d'omission silencieuse).");
+console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul + synthèse à source partagée v5.10 + univers réel v5.11 + carte « Ton patrimoine réel » 7 actifs v5.12 + gardes anti-skew logic.js périmé v5.12.1 + lecture honnête ligne par ligne v5.13 + carte 🎯 Ma décision v6.0/v6.1 : flux/supplément-lecture/stock + plus de double saisie (renvoi 🧮) + éditeur ✏️ + skew + ligne patrimoine sans débordement v6.2 + lecture sous l'enceinte wrappable v6.3 + fusion app Patrimoine 💼 v7.0 : module v11 en IIFE, montants auto vers les 7 lignes 👤, ✏️ prioritaire, hook PatrimoineRender + v7.3 : actifs 💼 non classés affichés par leur nom, plus d'omission silencieuse + v7.5 : carte 🏆 Meilleure opportunité — dropdown des 6 actifs à avoir, bandeau vedette, détail par actif + destination réelle + contexte paliers actions + garde anti-skew).");

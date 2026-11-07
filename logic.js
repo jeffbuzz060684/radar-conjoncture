@@ -992,6 +992,60 @@ function decisionOf(d, radar, opts) {
   return res;
 }
 
+// ---------- v7.5 : 🏆 Meilleure opportunité — dropdown des actifs à avoir ----------
+// Demande de Jade : « le dropdown des actifs qu'il faut avoir avec un système qui indique la
+// meilleure opportunité ». Consolidation PURE du conseil du jour (adviceOf) : AUCUNE donnée
+// nouvelle, AUCUN seuil nouveau. Le classement réutilise les stances déjà calculées (verbs
+// INVESTIR/CONSERVER/ATTENDRE/RALENTIR/SOUS-PONDÉRER — actions pilotées par le timing,
+// seuils uniques CUTS, forçage manuel, vocabulaire RALENTIR) et trie : d'abord ce que le
+// conseil dit d'ACHETER (Investir/Sur-pondérer/Renforcer, score pilote décroissant), puis
+// Conserver, puis le reste. La « meilleure opportunité » = la 1re ligne achetable ; s'il
+// n'y en a aucune, la meilleure LECTURE (Conserver) est désignée sans devenir un signal
+// d'achat. Le tri intra-rang suit le score qui a PILOTÉ la stance : le timing pour les
+// actions (le score global, verrouillé par le CAPE structurel, les reléguerait à la queue
+// même quand le timing dit ATTENDRE à 44). Le livret (préservation) et le private equity
+// (illiquide, hors radar) ne sont pas des lignes d'achat : jamais listés. Le verdict
+// d'entrée vient d'entryPrefOf — la MÊME source que le conseil 💼, le simulateur 🧮 et la
+// carte 🎯 : les quatre affichages ne peuvent pas se contredire le même jour.
+function opportuniteOf(d, radar, override) {
+  var adv = adviceOf(d, radar, override);   // adviceOf sanitarise l'override (liste POSTURES)
+  var VERB_RANK = { "INVESTIR": 3, "CONSERVER": 2, "ATTENDRE": 1, "RALENTIR": 1, "SOUS-PONDÉRER": 0 };
+  var byId = {};
+  radar.list.forEach(function (a) { byId[a.id] = a; });
+  var classe = adv.assets.map(function (a) {
+    var pat = (typeof PATRIMOINE !== "undefined" && PATRIMOINE[a.id]) ? PATRIMOINE[a.id] : null;
+    var tsAct = (a.id === "actions" && byId.actions) ? byId.actions.timingScore : null;
+    return {
+      id: a.id, icon: a.icon, name: a.name, score: a.score,
+      sortScore: (a.id === "actions" && num(tsAct) !== null) ? num(tsAct) : a.score,   // score PILOTE (timing pour les actions)
+      timingScore: tsAct,
+      stance: a.stance, verb: a.verb, cls: a.cls, why: a.why,
+      rank: (VERB_RANK[a.verb] !== undefined) ? VERB_RANK[a.verb] : 0,
+      ou: pat ? pat.ou : null, reel: pat ? pat.reel : null
+    };
+  });
+  classe.sort(function (x, y) { return (y.rank - x.rank) || (y.sortScore - x.sortScore); });
+  var achetables = classe.filter(function (a) { return a.verb === "INVESTIR"; });
+  var aucun = achetables.length === 0;
+  var top = aucun ? null : achetables[0];
+  var conserve = aucun ? (classe.filter(function (a) { return a.verb === "CONSERVER"; })[0] || null) : null;
+  // verdict d'entrée = la MÊME source que conseil/simulateur/🎯 (entryPrefOf, v5.10)
+  var ts = (byId.actions && num(byId.actions.timingScore) !== null) ? byId.actions.timingScore : (byId.actions ? num(byId.actions.score) : null);
+  var verdict = entryPrefOf(d, radar.der, ts);
+  // garde d'honnêteté : un signal d'arbitrage du conseil (desinv) qui concerne l'actif
+  // vedette est retourné avec lui — jamais un bandeau « INVESTIR l'or » qui tairait une
+  // prise de profit conseillée le même jour, ni « INVESTIR les actions » qui tairait la
+  // règle « on ne vend jamais sur la baisse » en plein drawdown.
+  var motTop = top ? String(top.name).split(" ")[0] : "";
+  var desinvTop = top ? adv.desinv.filter(function (x) { return String(x).indexOf(motTop) === 0; }) : [];
+  var note = aucun
+    ? "Aucun actif ne reçoit de signal d'achat net aujourd'hui (aucune stance Investir/Renforcer) — la ligne affichée est la meilleure LECTURE (Conserver), pas un conseil d'achat. La régularité du socle et les règles de sécurité (jamais vendre sur la baisse) restent maîtresses."
+    : "Classement du jour par le conseil : les actifs à ACHETER (Investir/Sur-pondérer/Renforcer) d'abord, triés par score pilote ; puis ceux à Conserver ; puis le reste. Le forçage de posture déplace les seuils des stances — ce classement suit le même jour. Lecture d'aide à la décision, pas un ordre : la stratégie PEA (paliers, jamais vendre sur baisse) reste maîtresse.";
+  return { top: top, conserve: conserve, aucun: aucun, classe: classe, verdict: verdict,
+           manquantes: adv.manquantes, desinvTop: desinvTop, note: note,
+           posture: adv.posture, override: adv.override || null };
+}
+
 // Export Node pour le harnais de tests (logique pure, aucun accès DOM).
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
@@ -1005,6 +1059,7 @@ if (typeof module !== "undefined" && module.exports) {
     regimePostureOf: regimePostureOf, POSTURES: POSTURES, ALLOC_EXCL: ALLOC_EXCL, ALLOC_MON_FLOOR: ALLOC_MON_FLOOR, CUTS: CUTS,
     isRealDate: isRealDate, isPosture: isPosture,
     decisionOf: decisionOf, sanitizeReels: sanitizeReels,   // v6.0 : carte 🎯 Ma décision
+    opportuniteOf: opportuniteOf,   // v7.5 : carte 🏆 Meilleure opportunité (dropdown des actifs à avoir)
     patReelsOf: patReelsOf, patLineOf: patLineOf, patNonClassesOf: patNonClassesOf,   // v7.0 : fusion app Patrimoine — classification auto vers les 7 lignes 👤 ; v7.3 : actifs ignorés rendus VISIBLES
     PATRIMOINE: PATRIMOINE, PATRIMOINE_HORS_RADAR: PATRIMOINE_HORS_RADAR, PATRIMOINE_ACTIFS: PATRIMOINE_ACTIFS   // v5.11/v5.12 : univers réel de Jade (mapping + liste des 7 actifs)
   };
