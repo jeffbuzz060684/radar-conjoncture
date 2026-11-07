@@ -177,7 +177,7 @@
 <header>
   <div class="hrow">
     <h1>📡 Radar <span>Conjoncture</span></h1>
-    <span class="badge">🔄 Maj auto quotidienne · <b>v7.4</b></span>
+    <span class="badge">🔄 Maj auto quotidienne · <b>v7.5</b></span>
   </div>
   <div class="hrow" style="margin-top:6px">
     <span class="chip" id="dataChip">—</span>
@@ -207,6 +207,14 @@
       <h2>Classement des actifs</h2>
       <div class="mut" style="margin-bottom:10px">Score d'opportunité 0–100 : plus le score est haut, plus l'actif est intéressant à acheter aujourd'hui. Touche « pourquoi ce score » pour le détail.</div>
       <div id="assetList"></div>
+    </div>
+
+    <div class="card" id="oppCard">
+      <h2>🏆 Meilleure opportunité</h2>
+      <div class="mut" style="margin-bottom:8px">Les 6 classes d'actifs à avoir, classées par opportunité du jour : celles que le conseil dit d'acheter (Investir/Sur-pondérer/Renforcer) d'abord, puis celles à conserver, puis le reste — même moteur que le conseil 💼 et le simulateur 🧮, aucune donnée ni seuil nouveau. Choisis un actif dans le menu déroulant pour voir sa lecture complète et où l'argent part concrètement chez toi. Lecture d'aide à la décision, pas un ordre : la stratégie PEA (paliers, jamais vendre sur baisse) reste maîtresse.</div>
+      <div id="oppTop"></div>
+      <div class="frow" style="margin-top:8px"><label>Actif à examiner<select id="oppSel"></select></label></div>
+      <div id="oppDetail"></div>
     </div>
 
     <div class="card">
@@ -1517,6 +1525,71 @@ function renderDecision(d, radar) {
     elK.innerHTML = "<b>3 · Ton stock</b><div class=\"mut\" style=\"margin-top:4px\">" + esc(st.note) + "</div>";
   }
 }
+// ---- v7.5 : carte 🏆 Meilleure opportunité — dropdown des actifs à avoir ----
+// Consolidation PURE d'opportuniteOf (logic.js) : le classement du jour par le conseil, la
+// meilleure opportunité en bandeau, et un menu déroulant des 6 actifs — chaque choix affiche
+// sa lecture (stance, pourquoi, score pilote) et sa destination réelle chez Jade. La
+// sélection persiste entre les rendus (oppSelId) ; un changement de dropdown re-rend SEUL le
+// détail (pas la page). Garde anti-skew : logic.js périmé (opportuniteOf absent) → carte
+// omise, page intacte (classe v5.12.1 — jamais de page blanche pendant une bascule de cache).
+var oppSelId = null;    // actif choisi dans le dropdown (persiste entre les rendus)
+var oppLast = null;     // dernier résultat (opp + radar) — le changement de dropdown re-rend le détail sans tout recalculer
+function renderOpp(d, radar) {
+  if (typeof opportuniteOf !== "function") return;   // garde anti-skew
+  var elT = $("oppTop"), elS = $("oppSel"), elD = $("oppDetail");
+  if (!elT || !elS || !elD) return;
+  var opp = opportuniteOf(d, radar, state.postureOverride);   // le forçage de posture déplace les seuils → le classement suit
+  oppLast = { opp: opp, radar: radar };
+  // bandeau : la meilleure opportunité du jour (ou l'absence honnête de signal d'achat)
+  var head = opp.aucun
+    ? (opp.conserve
+        ? "Aucune opportunité d'achat nette aujourd'hui — la meilleure lecture est <b>" + esc(opp.conserve.icon + " " + opp.conserve.name) + "</b> (" + esc(opp.conserve.stance) + ", " + opp.conserve.score + "/100) : à conserver, pas un signal d'achat."
+        : "Aucune opportunité d'achat nette aujourd'hui, et aucun actif chiffrable à conserver — lecture indisponible jusqu'au prochain relevé.")
+    : "🏅 Meilleure opportunité du jour : <b>" + esc(opp.top.icon + " " + opp.top.name) + "</b> — " + esc(opp.top.stance) + " (" + opp.top.score + "/100) · <b style=\"color:var(--good)\">" + opp.top.verb + "</b> <span style=\"font-size:11px\">· " + esc(opp.top.why) + "</span>";
+  elT.innerHTML =
+    '<div class="verdict">' + head + "</div>" +
+    "<div class=\"mut\" style=\"margin-top:4px\">Entrée d'un éventuel supplément : " + esc(opp.verdict.phrase) + " (" + opp.verdict.pref + "/100).</div>" +
+    (opp.manquantes ? '<div class="warnbox" style="margin-top:6px">⚠️ Données insuffisantes pour un conseil chiffré — mets à jour le relevé (onglet Données) ; la base Neutre est utilisée en attendant.</div>' : "") +
+    opp.desinvTop.map(function (x) { return '<div class="warnbox" style="margin-top:6px">⚖️ ' + esc(x) + "</div>"; }).join("") +
+    '<div class="mut" style="margin-top:6px">' + esc(opp.note) + "</div>";
+  // menu déroulant : les 6 actifs à avoir, DANS L'ORDRE d'opportunité du jour (le n°1 en tête)
+  elS.innerHTML = opp.classe.map(function (a, i) {
+    return '<option value="' + esc(a.id) + '">' + (i + 1) + ". " + a.icon + " " + esc(a.name) + " — " + a.score + "/100 · " + esc(a.stance) + "</option>";
+  }).join("");
+  var ids = opp.classe.map(function (a) { return a.id; });
+  if (oppSelId === null || ids.indexOf(oppSelId) === -1) oppSelId = (opp.top ? opp.top.id : (opp.conserve ? opp.conserve.id : (opp.classe[0] ? opp.classe[0].id : null)));
+  if (oppSelId !== null) elS.value = oppSelId;
+  renderOppDetail(d, radar, opp, oppSelId);
+}
+// Détail de l'actif choisi dans le dropdown : stance, pourquoi, score, destination réelle ;
+// pour les actions, le contexte paliers (la règle maîtresse) dans le focus de l'actif.
+function renderOppDetail(d, radar, opp, id) {
+  var elD = $("oppDetail");
+  if (!elD) return;
+  var a = null;
+  opp.classe.forEach(function (x) { if (x.id === id) a = x; });
+  if (!a) { elD.innerHTML = ""; return; }
+  var col = a.cls === "good" ? "var(--good)" : a.cls === "bad" ? "var(--bad)" : "var(--mid)";
+  var html =
+    '<div class="palrow" style="margin-top:4px"><span class="st" style="width:auto;min-width:104px">' + a.icon + " " + esc(a.stance) + "</span>" +
+    '<span class="th">' + esc(a.name) + ' <span style="font-size:11px">· ' + esc(a.why) + "</span>" +
+    (a.id === "actions" && a.timingScore !== null && a.timingScore !== undefined ? '<span style="display:block;white-space:normal;margin-top:2px;color:var(--txt)">timing <b>' + a.timingScore + "/100</b> — pilote du conseil · global " + a.score + "/100</span>" : "") +
+    "</span>" +
+    '<span class="fl" style="color:' + col + '">' + a.verb + "</span></div>" +
+    '<div class="bar" style="margin-top:6px"><i class="' + a.cls + '" style="width:' + a.score + '%"></i></div>' +
+    (a.ou ? '<div class="veh" style="margin-top:6px">👤 Chez toi : <b>' + esc(a.ou) + "</b>" + (a.reel ? '<br><span class="mut" style="font-size:11px">' + esc(a.reel) + "</span>" : "") + "</div>" : "");
+  if (a.id === "actions" && typeof paliersOf === "function") {
+    var pal = paliersOf(d, radar.der);
+    var ligne = null, i;
+    for (i = 0; i < pal.length; i++) if (pal[i].atteint && !d.paliersDone["p" + pal[i].p]) { ligne = "⚡ Palier −" + pal[i].p + " % franchi (seuil " + pal[i].seuil + " €) — déploye 25 % de la réserve sur DCAM, une seule fois cet épisode, puis marque le palier « déployé »."; break; }
+    if (!ligne) for (i = 0; i < pal.length; i++) if (!pal[i].atteint) { ligne = "Prochain palier −" + pal[i].p + " % à " + pal[i].seuil + " €" + (num(d.msci) !== null && pal[i].seuil > 0 ? ", soit encore " + r1((1 - pal[i].seuil / d.msci) * 100) + " % de baisse sous le cours actuel" : "") + "."; break; }
+    html += ligne
+      ? '<div class="verdict" style="opacity:.7;margin-top:6px">📈 ' + esc(ligne) + " Jamais vendre sur la baisse — les paliers achètent la faiblesse.</div>"
+      : '<div class="verdict" style="opacity:.7;margin-top:6px">📈 Paliers indisponibles (référence 52 sem. manquante ou incohérente) — le socle 800 €/mois DCAM continue.</div>';
+  }
+  elD.innerHTML = html;
+}
+
 // Éditeur ✏️ des montants réels (carte 👤 patrimoine)
 function renderReelsEditor(open) {
   var box = $("reelsEdit");
@@ -1632,6 +1705,7 @@ function renderRadar() {
 
   renderPatrimoine(radar);   // v5.12 : tes 7 actifs réels, toujours visibles (carte 👤)
   renderDecision(d, radar);   // v6.0 : carte 🎯 Ma décision — flux du mois, supplément, stock
+  renderOpp(d, radar);   // v7.5 : carte 🏆 — dropdown des actifs à avoir + meilleure opportunité du jour
 
   // Paliers & stratégie
   var der = radar.der;
@@ -2032,6 +2106,14 @@ var NOTIFY_OLD_KEY = "radar-telegram-v1"; // configs Telegram v5.1, lues et migr
     state.postureOverrideDate = valid ? todayLocal() : null;   // v5.9 : date LOCALE du forçage (expiration 30 j) — toISOString (UTC) décalait d'un jour avant 2 h du matin
     save();
     renderRadar();   // (renderRadar relance déjà _allocRerun en fin de fonction — v5.8)
+  });
+})();
+
+// ---- v7.5 : carte 🏆 — le dropdown re-rend SEUL le détail de l'actif choisi (pas la page) ----
+(function () {
+  $("oppSel").addEventListener("change", function () {
+    oppSelId = $("oppSel").value || null;
+    if (oppLast) renderOppDetail(state.data, oppLast.radar, oppLast.opp, oppSelId);
   });
 })();
 
