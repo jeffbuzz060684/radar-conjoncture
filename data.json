@@ -1,70 +1,70 @@
 {
   "version": 1,
-  "dateData": "2026-11-02",
-  "note": "Maj hebdo lundi — or en forte correction",
+  "dateData": "2026-11-09",
+  "note": "Krach tech post-midterms, or en rebond",
   "data": {
-    "msci": 129.7,
+    "msci": 126.92,
     "msciHigh52": 132.26,
     "msciHigh52Date": "2026-10-12",
     "msciLow52": 107.51,
-    "dateMacro": "2026-10-30",
-    "cape": 39.96,
-    "vix": 19.42,
-    "vix5": 17.89,
-    "inflZE": 3.8,
+    "dateMacro": "2026-11-04",
+    "cape": 39.86,
+    "vix": 23.72,
+    "vix5": 22.03,
+    "inflZE": 4,
     "inflUS": 3.7,
     "bceDepot": 2.5,
     "bceDir": "hausse",
-    "bund10": 3.34,
-    "oat10": 4.93,
-    "pmiZE": 51.7,
-    "orEUR": 3473,
+    "bund10": 3.25,
+    "oat10": 4.76,
+    "pmiZE": 51.4,
+    "orEUR": 3642,
     "orHigh52": 4592,
     "orLow52": 3387.45,
-    "btcEUR": 69728,
+    "btcEUR": 67612,
     "btcHigh52": null,
     "imoRendement": 5
   },
   "sources": [
     [
-      "MSCI World (IWDA) : 129,70 € (clôture 30/10/2026, IWDA.AS Euronext Amsterdam) ; plus haut 52 sem. 132,26 € (12/10) ; plus bas 107,51 €",
-      "Yahoo Finance (IWDA.AS) / Fortuneo"
+      "MSCI World (IWDA) : 126,92 € (clôture 06/11/2026, IWDA.STU Stuttgart ; Euronext Amsterdam au même niveau) ; plus haut 52 sem. 132,26 € (12/10) ; plus bas 107,51 € — jeudi −3,6 % sur le krach tech post-midterms, rebond partiel vendredi",
+      "Finanzen.net (IWDA, Stuttgart) / ad-hoc-news"
     ],
     [
-      "CAPE Shiller : 39,96 (octobre 2026, en baisse depuis 40,4)",
-      "GuruFocus"
+      "CAPE Shiller : 39,86 (octobre 2026, série Robert Shiller)",
+      "MacroMicro (données Shiller, Yale)"
     ],
     [
-      "VIX : 19,42 (+12,9 %, clôture 30/10/2026, spike intraday 22,31) ; moyenne 5 séances : 17,89",
-      "CBOE via Yahoo Finance / FRED"
+      "VIX : 23,72 (clôture 06/11/2026, −15,8 % après le spike de jeudi 28,18 — plus forte hausse quotidienne depuis déc. 2024) ; moyenne 5 séances : 22,03 (21,15 / 20,51 / 16,61 / 28,18 / 23,72)",
+      "Cboe via ad-hoc-news / StreetStats / TheStreet"
     ],
     [
-      "Inflation zone euro : 3,8 % (septembre 2026, inchangé — pas de publication plus récente disponible)",
-      "Eurostat"
+      "Inflation zone euro : 4,0 % (octobre 2026, flash Eurostat publié le 04/11, en hausse depuis 3,8 % — énergie +20,8 % ; core 2,5 %)",
+      "Eurostat (flash du 04/11/2026)"
     ],
     [
       "Inflation US : 3,7 % (septembre — CPI d'octobre attendu le 10/11, valeur inchangée)",
       "BLS"
     ],
     [
-      "BCE : dépôt 2,50 %, taux inchangés au 29/10/2026 (statu quo attendu) ; dernière variation : +25 pb le 16/09 ; prochaine réunion 17/12",
-      "BCE"
+      "BCE : dépôt 2,50 %, taux inchangés au 29/10/2026 (statu quo) ; dernière variation : +25 pb le 16/09 ; prochaine réunion 17/12/2026",
+      "BCE (décision du 29/10/2026)"
     ],
     [
-      "Bund 3,34 % ; OAT 4,93 % ; spread ~159 pb (30/10/2026, en repli depuis le pic ~172 pb)",
-      "Trading Economics"
+      "Bund 3,25 % (06/11, en hausse vendredi sur accalmie des actions) ; OAT 4,76 % ; spread ~151 pb",
+      "dpa-AFX via Ariva / oblig.fr / Cercle de l'Épargne"
     ],
     [
-      "PMI composite zone euro : 51,7 (octobre, final S&P Global, en baisse depuis 53,1)",
+      "PMI composite zone euro : 51,4 (octobre, final S&P Global publié le 04/11, en baisse depuis 51,7 flash / 53,1 en septembre)",
       "S&P Global"
     ],
     [
-      "Or : 3 473 €/once (31/10/2026, 3 875 $ — mois d'octobre −4 %, près du bas 52 sem. 3 387 €)",
-      "Gold.fr / Yahoo Finance"
+      "Or : 3 642 €/once (06/11/2026, repli de 0,2 % après le rallye défensif de la semaine ; bas 52 sem. 3 387 € touché fin octobre)",
+      "Cours de l'or (coursdelor.app) / bdor.fr"
     ],
     [
-      "Bitcoin : 69 728 € (01/11/2026)",
-      "Boursier.com / Investing"
+      "Bitcoin : 67 612 € (06/11/2026, 75 614 $ — −6,1 % sur 24 h pendant le krach, puis stabilisé vendredi)",
+      "CoinAcademy / TradingView (06/11/2026)"
     ]
   ]
 }
