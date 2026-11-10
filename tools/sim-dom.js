@@ -347,7 +347,7 @@ Promise.resolve().then(function () {}).then(function () {}).then(function () {
   // fixture complète : indice dédié + macro (relevé d'hier, fraîche) + 3 lignes cac40 (dont une sans
   // fondamentaux) + 1 ligne mid60 qui ne doit JAMAIS passer le filtre du périmètre
   var dIso = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-  var expAge = Math.floor((Date.now() - Date.parse(dIso + "T12:00:00Z")) / 86400000);
+  var expAge = (function () { var d = new Date(); return Math.round((Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - Date.parse(dIso + "T00:00:00Z")) / 86400000); })();   // v7.8 : âge en jours calendaires, comme macroState
   var fx = {
     updated: new Date().toISOString(), source: "TradingView (repli) — cotes différées", sbUpdated: "2026-11-09",
     cacIdx: { name: "CAC 40", px: 7612.34, chg: 0.42 },
