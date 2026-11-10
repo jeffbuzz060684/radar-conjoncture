@@ -72,8 +72,8 @@ function run(src, name) {
   catch (e) { return name + " ⛔ " + e.message; }
 }
 
-// 1. Scripts servis dans l'ordre du document
-["vehicles.js", "logic.js"].forEach(function (f) {
+// 1. Scripts servis dans l'ordre du document (cac.js v7.7 : moteur du classement CAC 40, avant le script UI)
+["vehicles.js", "logic.js", "cac.js"].forEach(function (f) {
   var err = run(fs.readFileSync(path.join(ROOT, f), "utf8"), f);
   if (err) { console.log(err); process.exit(1); }
 });
@@ -334,9 +334,115 @@ ck("v7.6 : lignes sans drawdown de cours — lectures honnêtes (Bund pour les o
   txt("oppDD").indexOf("Bund") !== -1 && txt("oppDD").indexOf("OAT 10 ans") !== -1 &&
   txt("oppDD").indexOf("capital stable") !== -1 && txt("oppDD").indexOf("Or &amp; BTC en direct") !== -1);
 
+// 9 nonies. v7.7 : onglet 🇫🇷 CAC 40 — fusion Sentinelle perso (classement d'achat + macro + détail au tap).
+// Le sim est hors ligne : le fetch de loadCac rejette en microtâche → les vérifications puis le
+// bilan sont chaînés sur la file de microtâches (ticks vides pour laisser le .catch de loadCac jouer).
+sandbox.cacState.q = null; sandbox.cacState.query = "";
+sandbox.cacState.loading = false; sandbox.cacState.lastTry = 0;
+sandbox.loadCac(true);
+Promise.resolve().then(function () {}).then(function () {}).then(function () {
+  ck("v7.7 : loadCac hors ligne SANS cache → pas de crash, message « Relevé indisponible » (le classement apparaîtra au prochain passage en ligne)",
+    String(els.cacList.innerHTML).indexOf("Relevé indisponible") !== -1);
+
+  // fixture complète : indice dédié + macro (relevé d'hier, fraîche) + 3 lignes cac40 (dont une sans
+  // fondamentaux) + 1 ligne mid60 qui ne doit JAMAIS passer le filtre du périmètre
+  var dIso = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  var expAge = Math.floor((Date.now() - Date.parse(dIso + "T12:00:00Z")) / 86400000);
+  var fx = {
+    updated: new Date().toISOString(), source: "TradingView (repli) — cotes différées", sbUpdated: "2026-11-09",
+    cacIdx: { name: "CAC 40", px: 7612.34, chg: 0.42 },
+    macro: { dateData: dIso, vix: 14.2, vix5: 14.8, bund10: 2.6, oat10: 3.25, bceDepot: 2, bceDir: "baisse", inflZE: 1.9, pmiZE: 48.5, cape: 22.1 },
+    list: [
+      { y: "TTE.PA", n: "TOTALENERGIES", mn: "TTE", g: "cac40", isin: "FR0000120271", px: 60, chg: 0.8, per: 8.2, fper: 7.9, dY: 5.2, pb: 1.1, cap: 1.3e11, sec: "Energy", w52lo: 52, w52hi: 70, roe: 0.18, mOp: 0.14, gRev: 0.03, de: 35, tp: 72, tpLo: 65, tpHi: 80, tpN: 18, rec: "buy", nextRes: "2027-02-05", surp: 4.2 },
+      { y: "AC.PA", n: "ACCOR", mn: "AC", g: "cac40", isin: "FR0000120404", px: 40, chg: -0.5, per: 12.5, fper: 14.1, dY: 1.6, pb: 1.8, cap: 1e10, sec: "Consumer Services", w52lo: 33, w52hi: 48, roe: 0.09, mOp: 0.11, gRev: 0.04, de: 80, tp: 46.3, tpN: 21, rec: "hold" },
+      { y: "XSP.PA", n: "SANSPER", mn: "XSP", g: "cac40", px: 22, chg: 0.1, cap: 2e9, sec: "Industrials", w52lo: 20, w52hi: 25, roe: null, mOp: null, gRev: null, de: null, per: null, dY: null, pb: null },
+      { y: "MID.PA", n: "MID60ECLUE", mn: "MID", g: "mid60", px: 30, chg: 0.2, per: 6, dY: 4, pb: 0.9, roe: 0.2, mOp: 0.2, gRev: 0.1, de: 20, sec: "Industrials", tp: 36 }
+    ]
+  };
+
+  // garde anti-skew : cac.js absent/périmé (cache SW/CDN pendant la bascule) → onglet silencieux, JAMAIS de page blanche
+  var CAC_SAVED = sandbox.CAC;
+  sandbox.CAC = undefined;
+  var skewCac = true;
+  try { sandbox.renderCacData(fx); } catch (e) { skewCac = false; }
+  ck("v7.7 : skew cac.js absent → renderCacData NE LEVE PAS (garde typeof CAC — onglet silencieux, jamais une page blanche)",
+    skewCac && String(els.cacList.innerHTML).indexOf("Relevé indisponible") !== -1);
+  sandbox.CAC = CAC_SAVED;
+
+  // rendu synchrone complet du classement
+  sandbox.cacState.q = fx;
+  sandbox.renderCacData(fx);
+  var cacHtml = String(els.cacList.innerHTML);
+  var by = {};
+  sandbox.CAC.cacSort(sandbox.CAC.cacFilter(sandbox.CAC.pipeline(fx.list))).forEach(function (r) { by[r.n] = r; });
+  ck("v7.7 : ligne indice — « CAC 40 » + cours 7 612,34 + variation +0,42 %",
+    String(els.cacIdxLine.innerHTML).indexOf("CAC 40") !== -1 && String(els.cacIdxLine.innerHTML).indexOf("7612,34") !== -1 && String(els.cacIdxLine.innerHTML).indexOf("+0,42 %") !== -1);
+  ck("v7.7 : périmètre — 3/40 cotées (la mid60 est exclue du filtre, le compte suit la composition)",
+    txt("cacN") === "3/40 cotées" && cacHtml.indexOf("MID60ECLUE") === -1 && cacHtml.indexOf("SANSPER") !== -1);
+  ck("v7.7 : classement — TOTALENERGIES (tout meilleur : PER 8,2, rend. 5,2 %, objectif +20 %) DEVANT ACCOR, scores non nuls",
+    cacHtml.indexOf("TOTALENERGIES") < cacHtml.indexOf("ACCOR") && by["TOTALENERGIES"].aScore > by["ACCOR"].aScore && by["TOTALENERGIES"].aScore != null && by["ACCOR"].aScore != null);
+  ck("v7.7 : SANSPER (aucune composante) → pas de score inventé (« — », aScore null, « Composantes insuffisantes »), rang en fin de liste jamais cachée",
+    by["SANSPER"].aScore === null && cacHtml.indexOf("Composantes insuffisantes") !== -1);
+  ck("v7.7 : tableau compact — lignes .crow + cellule score .csc + détail .cdet masqué",
+    cacHtml.indexOf('<div class="crow"') !== -1 && cacHtml.indexOf('class="csc') !== -1 && cacHtml.indexOf('<div class="cdet"') !== -1);
+  ck("v7.7 : verdicts 🥇🥈🥉⏸ rendus (au moins une médaille ou un ⏸ sur les lignes scorées)",
+    /(🥇|🥈|🥉|⏸)/.test(cacHtml) && by["TOTALENERGIES"].verdict != null && by["ACCOR"].verdict != null);
+
+  // bandeau macro 🌍 — relevés publics du Radar transportés par quotes.json, contexte JAMAIS noté
+  ck("v7.7 : carte macro visible — chips VIX (14,2 · lissé 5 j), OAT 10 ans 3,25 %, spread France-Allemagne 65 pb, BCE dépôt 2 % (baisse)",
+    els.cacMacroCard.style.display === "" && txt("cacChips").indexOf("VIX 14,2") !== -1 && txt("cacChips").indexOf("lissé 5 j 14,8") !== -1 &&
+    txt("cacChips").indexOf("OAT 10 ans 3,25 %") !== -1 && txt("cacChips").indexOf("spread France-Allemagne 65 pb") !== -1 && txt("cacChips").indexOf("BCE dépôt 2 % (baisse)") !== -1);
+  ck("v7.7 : note macro — source Radar Conjoncture, âge du relevé (" + expAge + " j), pas d'alerte péremption à 1 j",
+    txt("cacMNote").indexOf("relevés publics du Radar Conjoncture") !== -1 && txt("cacMNote").indexOf("(" + expAge + " j)") !== -1 && txt("cacMNote").indexOf("Relevé ancien") === -1);
+  ck("v7.7 : meta relevé — source TradingView (différé ~15 min) + composition du 09/11/2026",
+    txt("cacRel").indexOf("différé ~15 min") !== -1 && txt("cacRel").indexOf("composition du 09/11/2026") !== -1);
+  ck("v7.7 : bandeau d'avertissement — les 37 valeurs sans cote de la fixture sont tracées honnêtement",
+    els.cacBanner.style.display === "" && txt("cacBanner").indexOf("sans cote") !== -1);
+
+  // détail complet au tap (rendu masqué dans la ligne)
+  ck("v7.7 : détail TOTALENERGIES rendu — composantes + base 3/3, objectif 72 € (+20 %, 18 analystes), surprise EPS ✅ +4,2 %, publication 05/02/2027, 52 s., cote Boursorama",
+    cacHtml.indexOf("Composantes du score") !== -1 && cacHtml.indexOf("(base 3/3)") !== -1 &&
+    cacHtml.indexOf("72 €") !== -1 && cacHtml.indexOf("+20 %") !== -1 && cacHtml.indexOf("18 analystes") !== -1 &&
+    cacHtml.indexOf("surprise EPS") !== -1 && cacHtml.indexOf("✅") !== -1 &&
+    cacHtml.indexOf("05/02/2027") !== -1 && cacHtml.indexOf("52 s.") !== -1 && cacHtml.indexOf("boursorama.com") !== -1);
+
+  // tap sur une ligne → déplie/replie le détail (délégation click sur cacList)
+  var fakeRow = { classList: { contains: function (c) { return c === "crow"; } }, getAttribute: function (k) { return k === "data-i" ? "0" : null; }, parentNode: null };
+  document.getElementById("cdet0").style.display = "none";   // comme dans le DOM réel : inline style du détail masqué
+  els.cacList.fire("click", { target: fakeRow });
+  ck("v7.7 : tap sur la ligne → le détail se déplie (display \"\")", els.cdet0.style.display === "");
+  els.cacList.fire("click", { target: fakeRow });
+  ck("v7.7 : re-tap → le détail se replie (display \"none\")", els.cdet0.style.display === "none");
+
+  // recherche
+  els.cacQ.fire("input", { target: { value: "total" } });
+  var cacSearchHtml = String(els.cacList.innerHTML);
+  ck("v7.7 : recherche « total » → TOTALENERGIES seule (ACCOR et SANSPER filtrés)",
+    cacSearchHtml.indexOf("TOTALENERGIES") !== -1 && cacSearchHtml.indexOf("ACCOR") === -1 && cacSearchHtml.indexOf("SANSPER") === -1);
+  els.cacQ.fire("input", { target: { value: "zzz" } });
+  ck("v7.7 : recherche sans résultat → message « Aucune valeur du CAC 40 pour « zzz » », pas de liste vide muette",
+    String(els.cacList.innerHTML).indexOf("Aucune valeur du CAC 40 pour") !== -1);
+  els.cacQ.fire("input", { target: { value: "" } });
+  ck("v7.7 : recherche effacée → les 3 cotées reviennent",
+    String(els.cacList.innerHTML).indexOf("ACCOR") !== -1 && String(els.cacList.innerHTML).indexOf("SANSPER") !== -1);
+
+  // cache localStorage : dernier relevé conservé → affiché même quand le réseau échoue
+  sandbox.cacSave(fx);
+  ck("v7.7 : cacSave → le relevé est persisté dans radar-cac-quotes-v1",
+    (store["radar-cac-quotes-v1"] || "").indexOf("TOTALENERGIES") !== -1);
+  sandbox.loadCac(true);   // forcé : fetch rejeté, mais le cache est rendu AVANT, et le catch ne l'écrase pas
+}).then(function () {}).then(function () {
+  ck("v7.7 : réseau en échec AVEC cache → le classement du cache reste affiché (« Relevé indisponible » ne l'écrase JAMAIS)",
+    String(els.cacList.innerHTML).indexOf("TOTALENERGIES") !== -1 && String(els.cacList.innerHTML).indexOf("ACCOR") !== -1 &&
+    String(els.cacList.innerHTML).indexOf("Relevé indisponible") === -1);
+
 // 10. Bilan
 var fail = checks.filter(function (c) { return !c.ok; });
 checks.forEach(function (c) { console.log((c.ok ? "✅ " : "❌ ") + c.name); });
 console.log("");
 if (fail.length) { console.log("SIM ÉCHECS : " + fail.length); process.exit(1); }
-console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul + synthèse à source partagée v5.10 + univers réel v5.11 + carte « Ton patrimoine réel » 7 actifs v5.12 + gardes anti-skew logic.js périmé v5.12.1 + lecture honnête ligne par ligne v5.13 + carte 🎯 Ma décision v6.0/v6.1 : flux/supplément-lecture/stock + plus de double saisie (renvoi 🧮) + éditeur ✏️ + skew + ligne patrimoine sans débordement v6.2 + lecture sous l'enceinte wrappable v6.3 + fusion app Patrimoine 💼 v7.0 : module v11 en IIFE, montants auto vers les 7 lignes 👤, ✏️ prioritaire, hook PatrimoineRender + v7.3 : actifs 💼 non classés affichés par leur nom, plus d'omission silencieuse + v7.5 : carte 🏆 Meilleure opportunité — dropdown des 6 actifs à avoir, bandeau vedette, détail par actif + destination réelle + contexte paliers actions + garde anti-skew + v7.6 : 📉 drawdown par actif — or/actions/BTC vs sommet 52 sem., lectures honnêtes pour obligations/immo/monétaire).");
+console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul + synthèse à source partagée v5.10 + univers réel v5.11 + carte « Ton patrimoine réel » 7 actifs v5.12 + gardes anti-skew logic.js périmé v5.12.1 + lecture honnête ligne par ligne v5.13 + carte 🎯 Ma décision v6.0/v6.1 : flux/supplément-lecture/stock + plus de double saisie (renvoi 🧮) + éditeur ✏️ + skew + ligne patrimoine sans débordement v6.2 + lecture sous l'enceinte wrappable v6.3 + fusion app Patrimoine 💼 v7.0 : module v11 en IIFE, montants auto vers les 7 lignes 👤, ✏️ prioritaire, hook PatrimoineRender + v7.3 : actifs 💼 non classés affichés par leur nom, plus d'omission silencieuse + v7.5 : carte 🏆 Meilleure opportunité — dropdown des 6 actifs à avoir, bandeau vedette, détail par actif + destination réelle + contexte paliers actions + garde anti-skew + v7.6 : 📉 drawdown par actif — or/actions/BTC vs sommet 52 sem., lectures honnêtes pour obligations/immo/monétaire + onglet 🇫🇷 CAC 40 v7.7 : fusion Sentinelle perso — classement 🎯 qualité 40 %/valorisation 25 %/consensus 35 % (percentiles sur tout le SBF, filtre cac40 après), macro 🌍 du Radar en contexte jamais notée, tableau compact + détail complet au tap, garde anti-skew, hors ligne sans crash).");
+}).catch(function (e) {
+  console.log("SIM ÉCHEC INATTENDU : " + (e && e.stack || e));
+  process.exit(1);
+});
