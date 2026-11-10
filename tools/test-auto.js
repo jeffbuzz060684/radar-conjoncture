@@ -322,7 +322,8 @@ var ALLOWED_DAILY = A.AUTO_DAILY_FIELDS.concat(["bceDir", "msciHigh52", "msciLow
 t("data-daily.json: au moins un champ de marché", A.AUTO_DAILY_FIELDS.some(function (k) { return typeof daily.data[k] === "number"; }));
 t("data-daily.json: ni reserve ni paliersDone", !("reserve" in daily.data) && !("paliersDone" in daily.data));
 t("data-daily.json: aucun champ hors liste autorisée", Object.keys(daily.data).every(function (k) { return ALLOWED_DAILY.indexOf(k) !== -1; }));
-t("data-daily.json: bceDir parmi les 3 valeurs", ["hausse", "stable", "baisse"].indexOf(daily.data.bceDir) >= 0);
+t("data-daily.json: bceDir parmi les 3 valeurs (ou absent : le cron quotidien peut commettre sans macro — échec silencieux v5.1, l'onglet CAC gère l'absence)",
+  daily.data.bceDir == null || ["hausse", "stable", "baisse"].indexOf(daily.data.bceDir) >= 0);
 t("data-daily.json: références 52 sem. présentes (même source que le cours)", typeof daily.data.msciHigh52 === "number" && typeof daily.data.msciLow52 === "number");
 t("data-daily.json: sources présentes", Array.isArray(daily.sources) && daily.sources.length >= 3);
 t("data-daily.json: overlay applicable sur le data.json du jour",
@@ -369,8 +370,8 @@ t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === 
 // ---------- index.html, logic.js, sw.js, auto.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v7.6", html.indexOf("<b>v7.6</b>") !== -1);
-t("index.html: aucun ancien badge v7.5/v7.4/v7.3/v7.2/v7.1/v7.0/v6.3/v6.2/v6.1/v6.0/v5.13/v5.12.1/v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v7.5</b>", "<b>v7.4</b>", "<b>v7.3</b>", "<b>v7.2</b>", "<b>v7.1</b>", "<b>v7.0</b>", "<b>v6.3</b>", "<b>v6.2</b>", "<b>v6.1</b>", "<b>v6.0</b>", "<b>v5.13</b>", "<b>v5.12.1</b>", "<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
+t("index.html: badge v7.7", html.indexOf("<b>v7.7</b>") !== -1);
+t("index.html: aucun ancien badge v7.6/v7.5/v7.4/v7.3/v7.2/v7.1/v7.0/v6.3/v6.2/v6.1/v6.0/v5.13/v5.12.1/v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v7.6</b>", "<b>v7.5</b>", "<b>v7.4</b>", "<b>v7.3</b>", "<b>v7.2</b>", "<b>v7.1</b>", "<b>v7.0</b>", "<b>v6.3</b>", "<b>v6.2</b>", "<b>v6.1</b>", "<b>v6.0</b>", "<b>v5.13</b>", "<b>v5.12.1</b>", "<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: logic.js chargé entre vehicles.js et le script UI inline",
   html.indexOf('<script src="vehicles.js"></script>') !== -1 &&
@@ -396,8 +397,8 @@ t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: VIX lissé utilisé dans le scoring (vixEff, désormais dans logic.js)", srcLogic.indexOf("der.vixEff") !== -1 && srcLogic.indexOf("vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v31", sw.indexOf('CACHE = "radar-v31"') !== -1);
-t("sw.js: anciens caches v30/v29/v28/v27/v26/v25/v24/v23/v22/v21/v20/v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4 absents (v3 omis : préfixe des caches v30/v31, comme v1/v2 l'ont été aux époques v10/v20)", sw.indexOf("radar-v30") === -1 && sw.indexOf("radar-v29") === -1 && sw.indexOf("radar-v28") === -1 && sw.indexOf("radar-v27") === -1 && sw.indexOf("radar-v26") === -1 && sw.indexOf("radar-v25") === -1 && sw.indexOf("radar-v24") === -1 && sw.indexOf("radar-v23") === -1 && sw.indexOf("radar-v22") === -1 && sw.indexOf("radar-v21") === -1 && sw.indexOf("radar-v20") === -1 && sw.indexOf("radar-v16") === -1 && sw.indexOf("radar-v15") === -1 && sw.indexOf("radar-v14") === -1 && sw.indexOf("radar-v13") === -1 && sw.indexOf("radar-v12") === -1 && sw.indexOf("radar-v11") === -1 && sw.indexOf("radar-v10") === -1 && sw.indexOf("radar-v9") === -1 && sw.indexOf("radar-v8") === -1 && sw.indexOf("radar-v7") === -1 && sw.indexOf("radar-v6") === -1 && sw.indexOf("radar-v5") === -1 && sw.indexOf("radar-v4") === -1);
+t("sw.js: cache v32", sw.indexOf('CACHE = "radar-v32"') !== -1);
+t("sw.js: anciens caches v31/v30/v29/v28/v27/v26/v25/v24/v23/v22/v21/v20/v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4 absents (v3 omis : préfixe des caches v30+, comme v1/v2 l'ont été aux époques v10/v20)", ["radar-v31", "radar-v30", "radar-v29", "radar-v28", "radar-v27", "radar-v26", "radar-v25", "radar-v24", "radar-v23", "radar-v22", "radar-v21", "radar-v20", "radar-v16", "radar-v15", "radar-v14", "radar-v13", "radar-v12", "radar-v11", "radar-v10", "radar-v9", "radar-v8", "radar-v7", "radar-v6", "radar-v5", "radar-v4"].every(function (c) { return sw.indexOf(c) === -1; }));
 t("sw.js: logic.js dans le shell", sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
 t("sw.js: shell réseau d'abord + repli cache (plus aucun skew HTML frais / JS périmé)",
@@ -911,7 +912,7 @@ function compilesAsBrowserScript(name, src) {
   try { new vm.Script(src, { filename: name }); return true; }
   catch (e) { console.log("   ⛔ " + name + " : " + e.message); return false; }
 }
-["logic.js", "auto.js", "vehicles.js"].forEach(function (f) {
+["logic.js", "cac.js", "auto.js", "vehicles.js"].forEach(function (f) {
   t("browser-compile: " + f + " compile comme script classique (aucun return top-level)",
     compilesAsBrowserScript(f, fs.readFileSync(path.join(ROOT, f), "utf8")));
 });
@@ -1473,6 +1474,108 @@ t("v7.6: chaque ligne du bloc est échappée (esc sur nom/ref/note — le « & �
     return i !== -1 && seg.indexOf("esc(e.ref") !== -1 && seg.indexOf("esc(e.note") !== -1 &&
       seg.indexOf("white-space:normal") !== -1;
   })());
+
+// ---------- v7.7 : onglet 🇫🇷 CAC 40 (fusion Sentinelle perso — classement d'achat) ----------
+var CACM = require(path.join(ROOT, "cac.js"));
+t("v7.7: cac.js exporte le module de scoring complet (pipeline, cacScores, cacFilter/cacSort, macroState)",
+  !!(CACM && CACM.pipeline && CACM.cacScores && CACM.cacFilter && CACM.cacSort && CACM.macroState &&
+    CACM.consPct && CACM.valScores && CACM.oppScores && CACM.rankPctAny && CACM.upXOf &&
+    CACM.rankPct && CACM.qMetricOf && CACM.pos52Of));
+t("v7.7: cacScores — qualité 40 % + valorisation 25 % + consensus 35 %, renormalisé si composante absente, ≥ 2/3 exigées (attendus recalculés à la main)",
+  (function () {
+    var l = [
+      { g: "cac40", n: "A", qScore: 80, score: 60, upX: 20 },
+      { g: "cac40", n: "B", qScore: 40, score: 30, upX: -20 },
+      { g: "cac40", n: "C", qScore: 70, score: 80, upX: null },
+      { g: "cac40", n: "D", qScore: null, score: 50, upX: 0 },
+      { g: "mid60", n: "E", qScore: 60, score: 70, upX: 10 }
+    ];
+    var s = CACM.cacScores(l);
+    return s[0].pUp === 100 && s[1].pUp === 0 && s[2].pUp === null && s[3].pUp === 33 && s[4].pUp === 67 &&
+      s[0].aScore === 82 && s[0].aBase === 3 && s[0].verdict === "strong" &&
+      s[1].aScore === 24 && s[1].verdict === "wait" &&
+      s[2].aScore === 74 && s[2].aBase === 2 && s[2].verdict === "strong" &&
+      s[3].aScore === 40 && s[3].aBase === 2 && s[3].verdict === "mid" &&
+      s[4].aScore === 65 && s[4].verdict === "good";
+  })());
+t("v7.7: cacScores — UNE SEULE composante → pas de score (on n'invente rien) ; le consensus seul ne peut même pas exister (percentile impossible à n=1 → base 0)",
+  (function () {
+    var s = CACM.cacScores([
+      { g: "cac40", n: "A", qScore: 80 }, { g: "cac40", n: "B", score: 50 }, { g: "cac40", n: "C", upX: 20 }
+    ]);
+    return s[0].aScore === null && s[0].aBase === 1 &&
+      s[1].aScore === null && s[1].aBase === 1 &&
+      s[2].aScore === null && s[2].aBase === 0 && s[2].pUp === null;
+  })());
+t("v7.7: cacFilter/cacSort — périmètre = groupe cac40 (suit la composition automatiquement) ; tri aScore décroissant, null en fin jamais cachés",
+  (function () {
+    var l = [
+      { n: "A", g: "cac40", aScore: 40 }, { n: "B", g: "cac40", aScore: 82 },
+      { n: "C", g: "mid60", aScore: 95 }, { n: "D", g: "cac40", aScore: null }, { n: "E", g: "cac40", aScore: 65 }
+    ];
+    var f = CACM.cacFilter(l);
+    var s = CACM.cacSort(f);
+    return f.length === 4 && f.every(function (r) { return r.g === "cac40"; }) &&
+      s.map(function (r) { return r.n; }).join(",") === "B,E,A,D";   // 82, 65, 40 puis le null en fin
+  })());
+t("v7.7: macroState — champs validés, spread en pb, direction BCE liste blanche, âge + péremption (contexte, jamais notée)",
+  (function () {
+    var now = Date.parse("2026-11-12T15:00:00Z");
+    var m = CACM.macroState({ dateData: "2026-11-09", vix: 23.72, oat10: 4.76, bund10: 3.25, bceDepot: 2.75, bceDir: "hausse", inflZE: 4.0, source: "radar" }, now);
+    var old = CACM.macroState({ dateData: "2026-09-01", vix: 20 }, now);
+    return m != null && m.spread === 151 && m.ageDays === 3 && m.stale === false && m.bceDir === "hausse" &&
+      old.ageDays === 72 && old.stale === true &&
+      CACM.macroState({ dateData: "2026-11-09", bceDir: "cut" }, now).bceDir === null &&
+      CACM.macroState(null, now) === null;
+  })());
+t("v7.7: pipeline — quotes.list → upX (objectif consensus) → valorisation → qualité → score 🎯 ; percentiles sur TOUT le SBF puis filtre cac40",
+  (function () {
+    function mk(n, g, o) {
+      var b = { y: n + ".PA", n: n, mn: n.slice(0, 3), g: g, px: 50 + (o._d || 10), chg: 1.5, cap: 5e9 };
+      for (var k in o) if (k !== "_d") b[k] = o[k];
+      return b;
+    }
+    var list = [
+      mk("AAA", "cac40", { per: 10, dY: 3, pb: 1.5, roe: 0.15, mOp: 0.12, gRev: 0.05, de: 40, sec: "Industrials", tp: 72 }),
+      mk("BBB", "cac40", { per: 25, dY: 1, pb: 2.5, roe: 0.08, mOp: 0.06, gRev: -0.02, de: 90, sec: "Industrials", _d: 20 }),
+      mk("CCC", "cac40", { per: null, dY: 2, pb: -1, roe: -0.3, mOp: -0.05, gRev: null, de: -20, sec: "Consumer Services" }),
+      mk("DDD", "mid60", { per: 8, dY: 4.5, pb: 0.8, roe: 0.22, mOp: 0.3, gRev: 0.12, de: 15, sec: "Consumer Services", tp: 55 })
+    ];
+    var p = CACM.pipeline(list);
+    var by = {};
+    p.forEach(function (r) { by[r.n] = r; });
+    return by.AAA.upX === 20 && by.AAA.qScore != null && by.AAA.score != null && by.AAA.aScore != null && by.AAA.aBase === 3 &&
+      by.BBB.upX === null && // pas d'objectif → composante consensus écartée, pas inventée
+      by.CCC.score === null && by.CCC.qScore === null && by.CCC.aScore === null &&
+      CACM.cacFilter(p).length === 3; // la ligne mid60 ne passe JAMAIS le filtre du périmètre
+  })());
+t("v7.7: index.html — onglet CAC 40 complet : bouton nav data-v=\"cac\", section view-cac, script cac.js après logic.js, classement tableau compact (.crow/.cdet), recherche cacQ",
+  html.indexOf('data-v="cac"') !== -1 && html.indexOf('id="view-cac"') !== -1 &&
+  html.indexOf('<script src="cac.js"></script>') !== -1 &&
+  html.indexOf('<script src="logic.js"></script>') < html.indexOf('<script src="cac.js"></script>') &&
+  html.indexOf(".crow") !== -1 && html.indexOf(".cdet") !== -1 && html.indexOf('id="cacQ"') !== -1);
+t("v7.7: index.html — données same-origin du pipeline Sentinelle + garde anti-skew typeof CAC (cac.js périmé → onglet silencieux, jamais une page blanche)",
+  html.indexOf('CAC_URL = "/sentinelle--perso/quotes.json"') !== -1 &&
+  html.indexOf('typeof CAC === "undefined" || !CAC.pipeline') !== -1 &&
+  html.indexOf('if (b.dataset.v === "cac") loadCac();') !== -1);
+t("v7.7: index.html — pondérations affichées dans la méthode (qualité 40 % + valorisation 25 % + consensus 35 %), verdicts 🥇🥈🥉⏸, heuristique jamais validée, URW non éligible PEA",
+  html.indexOf("qualité 40 %") !== -1 && html.indexOf("valorisation 25 %") !== -1 && html.indexOf("consensus 35 %") !== -1 &&
+  html.indexOf("≥ 2/3 exigées") !== -1 && html.indexOf("jamais validée sur historique indépendant") !== -1 &&
+  html.indexOf("URW.PA") !== -1 && html.indexOf("non éligible en principe") !== -1);
+t("v7.7: index.html — le détail au tap porte TOUTES les informations : composantes+base, PER/projeté/rendement/P/B, ROE/marge/croissance/dette, objectif+analystes+reco, résultats (nextRes+surprise EPS ✅/❌), 52 s. signée, cap+secteur+cote",
+  (function () {
+    var i = html.indexOf("function cacDetailHtml");
+    var seg = html.slice(i, html.indexOf("// tap sur une ligne", i));
+    return i !== -1 && seg.indexOf("Composantes du score") !== -1 && seg.indexOf("/3") !== -1 &&
+      seg.indexOf("projeté") !== -1 && seg.indexOf("rendement") !== -1 && seg.indexOf("P/B") !== -1 &&
+      seg.indexOf("ROE") !== -1 && seg.indexOf("marge op.") !== -1 && seg.indexOf("croissance CA") !== -1 && seg.indexOf("dette/CP") !== -1 &&
+      seg.indexOf("analyste") !== -1 && seg.indexOf("prochaine publication") !== -1 && seg.indexOf("surprise EPS") !== -1 &&
+      seg.indexOf("✅") !== -1 && seg.indexOf("52 s.") !== -1 && seg.indexOf("boursorama.com") !== -1;
+  })());
+t("v7.7: sw.js — cac.js dans le SHELL (le service worker le pré-cache : l'onglet a son moteur même hors ligne)",
+  sw.indexOf('"./cac.js"') !== -1);
+t("v7.7: index.html — cache localStorage du dernier relevé (affichage instantané à l'ouverture, puis rafraîchissement en ligne)",
+  html.indexOf('CAC_CACHE = "radar-cac-quotes-v1"') !== -1 && html.indexOf("cacSave") !== -1);
 
 // ---------- Bilan ----------
 var fail = results.filter(function (r) { return !r.ok; });
