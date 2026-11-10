@@ -171,13 +171,43 @@
 #patrimoineRoot .color-dot, #pat-modal-root .color-dot { width:30px;height:30px;border-radius:50%;border:2px solid transparent;cursor:pointer }
 #patrimoineRoot .color-dot.sel, #pat-modal-root .color-dot.sel { border-color:#fff }
 #patrimoineRoot .err, #pat-modal-root .err { color:var(--bad);font-size:12px;font-weight:600;margin:6px 0 }
+  /* ---- v7.7 : onglet 🇫🇷 CAC 40 (classement d'achat — fusion Sentinelle perso) ---- */
+  .cacIdx { font-size: 18px; font-weight: 700; }
+  .cacIdx b { color: var(--acc); }
+  .cacMeta { font-size: 12px; color: var(--mut); margin-top: 8px; }
+  .cacMeta b { color: var(--txt); }
+  .cacChips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .cacMNote { font-size: 12px; color: var(--mut); margin-top: 8px; line-height: 1.45; }
+  .cacMNote b { color: var(--txt); }
+  .cacWarn { border: 1px solid var(--mid); color: var(--mid); background: rgba(251,191,36,.07); font-size: 12px; padding: 8px 10px; border-radius: 10px; margin-bottom: 10px; line-height: 1.45; }
+  .cacSearch { width: 100%; box-sizing: border-box; background: var(--card2); border: 1px solid var(--line); color: var(--txt); font-size: 14px; padding: 9px 12px; border-radius: 10px; margin-bottom: 10px; outline: none; }
+  .crow { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 6px; background: var(--card); cursor: pointer; }
+  .crow:active { background: var(--card2); }
+  .crk { width: 26px; font-size: 12px; color: var(--mut); text-align: center; flex: none; }
+  .cnm { flex: 1 1 auto; min-width: 0; }
+  .cn1 { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cn1 .mn { color: var(--mut); font-weight: 400; font-size: 11px; }
+  .cn2 { font-size: 11px; color: var(--mut); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .csc { width: 46px; text-align: center; flex: none; }
+  .csc b { font-size: 16px; font-weight: 700; display: inline-block; min-width: 24px; }
+  .csc small { font-size: 11px; margin-left: 1px; }
+  .csc.strong b { color: var(--good); } .csc.good b { color: var(--acc); }
+  .csc.mid b { color: var(--mid); } .csc.wait b { color: var(--bad); } .csc.na b { color: var(--mut); }
+  .cpx { text-align: right; flex: none; }
+  .cpx .p { font-size: 13px; font-weight: 600; }
+  .cpx .v { font-size: 11px; }
+  .up { color: var(--good); } .dn { color: var(--bad); }
+  .cdet { border-top: 1px dashed var(--line); margin: 8px 0 2px; padding: 10px 2px 6px; font-size: 12px; line-height: 1.5; cursor: default; }
+  .cdet .grp { margin-top: 7px; color: var(--mut); }
+  .cdet .grp b { color: var(--txt); }
+  .cdet .flg { color: var(--mid); }
 </style>
 </head>
 <body>
 <header>
   <div class="hrow">
     <h1>📡 Radar <span>Conjoncture</span></h1>
-    <span class="badge">🔄 Maj auto quotidienne · <b>v7.6</b></span>
+    <span class="badge">🔄 Maj auto quotidienne · <b>v7.7</b></span>
   </div>
   <div class="hrow" style="margin-top:6px">
     <span class="chip" id="dataChip">—</span>
@@ -355,10 +385,34 @@
   <section id="view-patrimoine">
     <div id="patrimoineRoot"></div>
   </section>
+
+  <!-- ============ 🇫🇷 CAC 40 (v7.7 : fusion Sentinelle perso — classement d'achat) ============ -->
+  <section id="view-cac">
+    <div class="card">
+      <h2>🇫🇷 CAC 40 — classement d'achat</h2>
+      <span id="cacIdxLine">CAC 40 <b id="cacPx">—</b> <span id="cacChg" class="mut">—</span></span>
+      <div class="cacMeta"><b id="cacN">—/40 cotées</b> · <span id="cacRel">relevé en attente — il arrive à l'ouverture en ligne.</span></div>
+    </div>
+    <div class="card" id="cacMacroCard" style="display:none">
+      <h2>🌍 Contexte macro — relevés du Radar</h2>
+      <div class="cacChips" id="cacChips"></div>
+      <div class="cacMNote" id="cacMNote"></div>
+    </div>
+    <div class="cacWarn" id="cacBanner" style="display:none"></div>
+    <input id="cacQ" class="cacSearch" type="search" placeholder="Rechercher une valeur du classement…" autocomplete="off">
+    <div id="cacList"><div class="empty">Cotes pas encore récupérées — le premier relevé arrive à l'ouverture en ligne.<br><button id="btnCacRetry" style="margin-top:10px;background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:8px 14px;font-size:13px;cursor:pointer">Réessayer</button></div></div>
+    <div class="card">
+      <h2>🧮 Méthode</h2>
+      <div class="mut" style="font-size:12px;line-height:1.5">
+        Score 🎯 par valeur = <b>qualité 40 %</b> (ROE, marge op., croissance, dette — par secteur) + <b>valorisation 25 %</b> (PER, rendement, P/B vs pairs) + <b>consensus 35 %</b> (potentiel vs objectif moyen des analystes). Composantes manquantes → poids renormalisés, <b>≥ 2/3 exigées</b> (base affichée au tap) ; percentiles calculés sur TOUT le SBF coté, périmètre = groupe « cac40 » reconstruit chaque mois — l'onglet suit l'indice même quand il change de composition. Verdicts : 🥇 ≥ 70 priorité d'achat · 🥈 55-69 opportunité · 🥉 40-54 neutre · ⏸ &lt; 40 attendre. La macro 🌍 frappe toutes les valeurs pareil : elle contextualise, elle n'entre jamais dans le score. ⚠️ URW.PA : non éligible en principe au PEA (foncière/REIT) — à vérifier avant tout ordre. Heuristique de tri jamais validée sur historique indépendant : pas un conseil.
+      </div>
+    </div>
+  </section>
 </main>
 
 <nav>
   <button data-v="radar" class="on"><span class="ni">📡</span>Radar</button>
+  <button data-v="cac"><span class="ni">🇫🇷</span>CAC 40</button>
   <button data-v="donnees"><span class="ni">✏️</span>Données</button>
   <button data-v="suivi"><span class="ni">📈</span>Suivi</button>
   <button data-v="patrimoine"><span class="ni">💼</span>Patrimoine</button>
@@ -368,6 +422,7 @@
 
 <script src="vehicles.js"></script>
 <script src="logic.js"></script>
+<script src="cac.js"></script>
 <script>
 (function () {
 "use strict";
@@ -1393,6 +1448,7 @@ Array.prototype.forEach.call(document.querySelectorAll("nav button"), function (
     b.classList.add("on");
     $("view-" + b.dataset.v).classList.add("on");
     if (b.dataset.v === "suivi") renderSuivi();
+    if (b.dataset.v === "cac") loadCac();   // v7.7 : onglet CAC 40 — affiche le cache puis rafraîchit en ligne
     if (b.dataset.v === "patrimoine" && window.PatrimoineRender) window.PatrimoineRender();   // v7.0 : données 💼 toujours fraîches à l'ouverture de l'onglet
     if (b.dataset.v === "radar") renderRadar();   // v7.0 : retour au Radar → re-render (les montants auto 💼 ou ✏️ ont pu bouger)
   });
@@ -1933,6 +1989,194 @@ function renderEpisodes() {
   }).join("");
   t.innerHTML = "<tr><th>Date</th><th>Ancien sommet</th><th>Nouveau sommet</th><th>Bilan de l'épisode</th></tr>" + rows;
 }
+
+// ---- v7.7 : onglet 🇫🇷 CAC 40 — fusion Sentinelle perso (classement d'achat + macro en contexte) ----
+// Les cotes vivent dans le pipeline public de Sentinelle (quotes.json, même origine GitHub Pages,
+// rafraîchi en séance par les pings horaires) : le Radar LES RELIT au lieu de dupliquer le pipeline.
+var CAC_URL = "/sentinelle--perso/quotes.json";
+var CAC_CACHE = "radar-cac-quotes-v1";
+var cacState = { q: null, loading: false, lastTry: 0, query: "" };
+(function cacInit() {
+  try { var raw = localStorage.getItem(CAC_CACHE); if (raw) cacState.q = JSON.parse(raw); } catch (e) {}
+})();
+function cacSave(q) { try { localStorage.setItem(CAC_CACHE, JSON.stringify(q)); } catch (e) {} }
+
+function loadCac(force) {
+  renderCacData(cacState.q);
+  var now = Date.now();
+  if (cacState.loading) return;
+  var fresh = !!(cacState.q && cacState.q.updated && isFinite(Date.parse(cacState.q.updated)) && (now - Date.parse(cacState.q.updated)) < 10 * 60000);
+  if (!force && fresh) return;
+  if (!force && now - cacState.lastTry < 60000) return;   // ne martèle pas quand le réseau échoue
+  cacState.loading = true; cacState.lastTry = now;
+  fetch(CAC_URL).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+    .then(function (q) {
+      cacState.loading = false;
+      if (!q || !q.list || !q.list.length) throw new Error("relevé vide");
+      cacState.q = q; cacSave(q); renderCacData(q);
+    })
+    .catch(function () {
+      cacState.loading = false;
+      if (!cacState.q) $("cacList").innerHTML = '<div class="empty">Relevé indisponible (hors ligne ou pipeline en pause) — le classement apparaîtra au prochain passage en ligne.</div>';
+    });
+}
+
+// formats locaux CAC (virgule décimale, signe) — RI du Radar n'a pas ces formats actions
+function cacFr(v, d) {
+  if (v == null || !isFinite(v)) return "—";
+  var m = Math.pow(10, d == null ? 2 : d);
+  return String(Math.round(v * m) / m).replace(".", ",");
+}
+function cacPct(v) { return (v == null || !isFinite(v)) ? "—" : ((v > 0 ? "+" : "") + cacFr(v, 1) + " %"); }
+function cacPct2(v) { return (v == null || !isFinite(v)) ? "—" : ((v > 0 ? "+" : "") + cacFr(v, 2) + " %"); }
+function cacIsoDm(iso) { if (!iso || iso.length < 10) return null; return iso.slice(8, 10) + "/" + iso.slice(5, 7) + "/" + iso.slice(0, 4); }
+var CAC_VERD = {
+  strong: { ic: "🥇", cls: "strong", lbl: "priorité d'achat" },
+  good: { ic: "🥈", cls: "good", lbl: "opportunité" },
+  mid: { ic: "🥉", cls: "mid", lbl: "neutre" },
+  wait: { ic: "⏸", cls: "wait", lbl: "attendre" }
+};
+var CAC_REC = { strong_buy: "fort achat", buy: "achat", hold: "conserver", underperform: "sous-perf.", sell: "vente" };
+
+function renderCacData(q) {
+  if (typeof CAC === "undefined" || !CAC.pipeline) return;   // garde anti-skew : cac.js absent/périmé → onglet silencieux, jamais une page blanche
+  if (!q || !q.list || !q.list.length) return;   // état d'attente déjà en place
+  // indice CAC 40 : champ dédié (Yahoo ^FCHI ou repli TradingView EURONEXT:PX1 — l'idx du repli EST le CAC 40)
+  var cIdx = q.cacIdx || (q.idx && q.idx.name && String(q.idx.name).indexOf("CAC 40") > -1 ? q.idx : null);
+  if (cIdx && cIdx.px != null) {
+    $("cacIdxLine").innerHTML = esc(String(cIdx.name || "CAC 40")) + " <b>" + cacFr(cIdx.px, 2) + "</b> " +
+      '<span class="' + (cIdx.chg > 0 ? "up" : (cIdx.chg < 0 ? "dn" : "mut")) + '">' + cacPct2(cIdx.chg) + "</span>";
+  } else { $("cacIdxLine").innerHTML = "CAC 40 <b>—</b>"; }
+  // classement : percentiles sur TOUT le SBF coté (base stable), filtre cac40 APRÈS (périmètre auto)
+  var rows = CAC.cacSort(CAC.cacFilter(CAC.pipeline(q.list)));
+  $("cacN").textContent = rows.length + "/40 cotées";
+  // meta : relevé + source + composition
+  var relParts = [];
+  if (q.updated) relParts.push("relevé du " + (cacIsoDm(String(q.updated).slice(0, 10)) || "—") + " " + String(q.updated).slice(11, 16) + " UTC");
+  relParts.push("source : " + (q.source ? (String(q.source).indexOf("TradingView") > -1 ? "TradingView" : "Yahoo") : "—") + " (différé ~15 min)");
+  if (q.sbUpdated) relParts.push("composition du " + (cacIsoDm(String(q.sbUpdated).slice(0, 10)) || "—"));
+  $("cacRel").textContent = relParts.join(" · ");
+  // bandeau macro 🌍 (relevés publics du Radar, transportés par quotes.json) — contexte, jamais notée
+  var warns = [];
+  var m = (typeof CAC !== "undefined" && CAC.macroState) ? CAC.macroState(q.macro, Date.now()) : null;
+  if (m) {
+    $("cacMacroCard").style.display = "";
+    var chips = [];
+    if (m.vix != null) chips.push("VIX " + cacFr(m.vix) + (m.vix5 != null ? " · lissé 5 j " + cacFr(m.vix5) : ""));
+    if (m.oat10 != null) chips.push("OAT 10 ans " + cacFr(m.oat10) + " %");
+    if (m.bund10 != null) chips.push("Bund 10 ans " + cacFr(m.bund10) + " %");
+    if (m.spread != null) chips.push("spread France-Allemagne " + m.spread + " pb");
+    if (m.bceDepot != null) chips.push("BCE dépôt " + cacFr(m.bceDepot) + " %" + (m.bceDir ? " (" + m.bceDir + ")" : ""));
+    if (m.inflZE != null) chips.push("inflation ZE " + cacFr(m.inflZE) + " %");
+    if (m.pmiZE != null) chips.push("PMI ZE " + cacFr(m.pmiZE, 1));
+    if (m.cape != null) chips.push("CAPE " + cacFr(m.cape, 1));
+    $("cacChips").innerHTML = chips.map(function (c) { return '<span class="chip">' + esc(c) + "</span>"; }).join("");
+    $("cacMNote").innerHTML = "Source : relevés publics du Radar Conjoncture — relevé du <b>" + esc(cacIsoDm(m.dateData) || "—") + "</b>" +
+      (m.ageDays != null ? " (" + m.ageDays + " j)" : "") +
+      ". La macro frappe toutes les valeurs pareil : elle contextualise le classement, elle n'entre <b>jamais</b> dans le score 🎯." +
+      (m.stale ? " ⚠️ <b>Relevé ancien</b> — rafraîchi au prochain relevé du Radar." : "");
+    if (m.stale) warns.push("⚠️ <b>macro ancienne</b> (" + m.ageDays + " j) — bandeau 🌍 à prendre avec prudence.");
+  } else {
+    $("cacMacroCard").style.display = "none";
+  }
+  // avertissements : cotes anciennes / valeurs sans cote / relevé incomplet
+  var ageH = (q.updated && isFinite(Date.parse(q.updated))) ? (Date.now() - Date.parse(q.updated)) / 3600000 : null;
+  if (ageH != null && ageH > 26) warns.push("⚠️ <b>cotes anciennes</b> — dernier relevé il y a " + Math.round(ageH) + " h.");
+  if (rows.length < 40) warns.push("⚠️ " + (40 - rows.length) + " valeur" + (40 - rows.length > 1 ? "s" : "") + " du CAC 40 sans cote — classement sur les " + rows.length + " cotées.");
+  if (q.ok === false) warns.push("⚠️ dernier relevé incomplet — les cotes affichées sont le dernier relevé valide.");
+  var bw = $("cacBanner");
+  if (warns.length) { bw.innerHTML = warns.join(" "); bw.style.display = ""; } else { bw.style.display = "none"; }
+  // recherche
+  var query = cacState.query;
+  if (query) rows = rows.filter(function (e) {
+    return String(e.n).toLowerCase().indexOf(query) >= 0 || String(e.mn).toLowerCase().indexOf(query) >= 0;
+  });
+  if (!rows.length) { $("cacList").innerHTML = '<div class="empty">Aucune valeur du CAC 40 pour « ' + esc(query) + ' ».</div>'; return; }
+  // tableau compact : rang · nom (PER/rend./P/B en 2e ligne) · score+verdict · cours+variation
+  var html = [];
+  for (var i = 0; i < rows.length; i++) {
+    var e = rows[i];
+    var v = e.verdict ? CAC_VERD[e.verdict] : null;
+    html.push(
+      '<div class="crow" data-i="' + i + '">' +
+      '<div class="crk">' + (i + 1) + "</div>" +
+      '<div class="cnm">' +
+      '<div class="cn1">' + esc(e.n) + ' <span class="mn">' + esc(e.mn || "") + "</span></div>" +
+      '<div class="cn2">PER ' + (e.per != null ? cacFr(e.per, 1) : "—") + " · rend. " + (e.dY != null ? cacFr(e.dY, 1) + " %" : "—") + " · P/B " + (e.pb != null ? cacFr(e.pb, 1) : "—") +
+      (e.upX != null ? " · 🎯 " + cacPct(e.upX) : "") + "</div>" +
+      "</div>" +
+      '<div class="csc ' + (v ? v.cls : "na") + '">' + (e.aScore != null ? "<b>" + e.aScore + "</b><small>" + (v ? v.ic : "") + "</small>" : "<b>—</b>") + "</div>" +
+      '<div class="cpx"><div class="p">' + cacFr(e.px, 2) + " €</div>" +
+      '<div class="v ' + (e.chg > 0 ? "up" : (e.chg < 0 ? "dn" : "mut")) + '">' + cacPct2(e.chg) + "</div></div>" +
+      "</div>" +
+      cacDetailHtml(e, i)
+    );
+  }
+  $("cacList").innerHTML = html.join("");
+}
+
+// détail complet d'une ligne — déplié au tap sur la ligne (v7.7 : toutes les informations)
+function cacDetailHtml(e, i) {
+  var parts = [];
+  if (e.qScore != null) parts.push("qualité " + e.qScore + "/100 (" + e.qBase + "/4 · " + (e.qMode === "sector" ? "vs secteur" : (e.qMode === "mix" ? "mixte" : "vs indice")) + ")");
+  if (e.score != null) parts.push("valorisation " + e.score + "/100 (" + e.vBase + "/3 · " + (e.vMode === "sector" ? "vs secteur" : (e.vMode === "mix" ? "mixte" : "vs indice")) + ")");
+  if (e.pUp != null) parts.push("consensus " + e.pUp + "/100");
+  var head = parts.length
+    ? "<b>Composantes du score 🎯</b> (base " + e.aBase + "/3) : " + parts.join(" · ")
+    : "<b>Composantes insuffisantes</b> (base " + (e.aBase || 0) + "/3) — pas de score, on n'invente rien.";
+  var g = [];
+  g.push("📐 Valorisation : PER " + (e.per != null ? cacFr(e.per, 1) : "—") + " · projeté " + (e.fper != null ? cacFr(e.fper, 1) : "—") +
+    " · rendement " + (e.dY != null ? cacFr(e.dY, 1) + " %" : "—") + " · P/B " + (e.pb != null ? cacFr(e.pb, 1) : "—"));
+  if (e.roe != null || e.mOp != null || e.gRev != null || e.de != null)
+    g.push("🧪 Qualité : " +
+      (e.roe != null ? "ROE " + cacFr(e.roe * 100, 1) + " % · " : "") +
+      (e.mOp != null ? "marge op. " + cacFr(e.mOp * 100, 1) + " % · " : "") +
+      (e.gRev != null ? "croissance CA " + cacPct(Math.round(e.gRev * 1000) / 10) + " · " : "") +
+      (e.de != null ? "dette/CP " + cacFr(e.de, 0) + " %" : ""));
+  if (e.tp != null)
+    g.push("🎯 Consensus : objectif <b>" + cacFr(e.tp, 2) + " €</b> (" + cacPct(e.upX) + ")" +
+      (e.tpN != null ? " · " + e.tpN + " analyste" + (e.tpN > 1 ? "s" : "") : "") +
+      (CAC_REC[e.rec] ? " · " + CAC_REC[e.rec] : ""));
+  if (e.nextRes != null || e.surp != null)
+    g.push("📅 Résultats : " + (e.nextRes != null ? "prochaine publication le <b>" + (cacIsoDm(e.nextRes) || "—") + "</b>" : "prochaine publication non communiquée") +
+      (e.surp != null ? " · surprise EPS <b>" + (e.surp > 0 ? '<span class="up">✅ +' : (e.surp < 0 ? '<span class="dn">❌ ' : "")) + cacFr(e.surp, 1) + " %" + (e.surp !== 0 ? "</span>" : "") + "</b> (moyenne des derniers trimestres)" : ""));
+  if (e.w52lo != null && e.w52hi != null)
+    g.push("📉 52 s. : " + cacFr(e.w52lo, 2) + " – " + cacFr(e.w52hi, 2) + " €" +
+      (e.gapLo != null ? " · cours à " + cacPct(e.gapLo) + " du plus bas" : "") +
+      (e.dd52 != null ? " · " + cacPct(e.dd52) + " du plus haut" : "") +
+      (e.pos52 != null ? " · position " + e.pos52 + "/100" : ""));
+  var flags = [];
+  if (e.y === "URW.PA") flags.push("⚠️ PEA : non éligible en principe (foncière/REIT) — à vérifier avant tout ordre");
+  if (e.earnWarn) flags.push("⚠️ bénéfices attendus en baisse (PER projeté au-dessus du PER passé)");
+  if (e.approx) flags.push("≈ ticker résolu approximativement — cours à vérifier");
+  if (e.pos52 != null && e.pos52 <= 20 && e.out52 === 0) flags.push("📉 bas de fourchette 52 s. (information, pas un signal — un point bas n'est pas un plancher)");
+  if (flags.length) g.push('<span class="flg">' + flags.join("<br>") + "</span>");
+  var link = "https://www.boursorama.com/recherche/?query=" + encodeURIComponent(String(e.isin || e.mn || e.n || "").trim());
+  g.push("Cap. " + (e.cap != null ? (e.cap >= 1e9 ? cacFr(e.cap / 1e9, 1) + " Md€" : cacFr(e.cap / 1e6, 0) + " M€") : "—") +
+    (e.sec ? " · secteur " + e.sec : "") +
+    ' · <a href="' + link + '" target="_blank" rel="noopener">cote ↗</a>');
+  return '<div class="cdet" id="cdet' + i + '" style="display:none">' + head + g.map(function (x) { return '<div class="grp">' + x + "</div>"; }).join("") + "</div>";
+}
+
+// tap sur une ligne → déplie/replie son détail
+function cacRowToggle(ev) {
+  var t = ev && ev.target;
+  while (t && !(t.classList && t.classList.contains && t.classList.contains("crow"))) {
+    if (t.getAttribute && t.getAttribute("id") === "cacList") { t = null; break; }
+    t = t.parentNode;
+    if (!t) break;
+  }
+  if (!t) return;
+  var det = $("cdet" + t.getAttribute("data-i"));
+  if (!det) return;
+  det.style.display = det.style.display === "none" ? "" : "none";
+}
+$("cacList").addEventListener("click", cacRowToggle);
+$("cacQ").addEventListener("input", function (e) {
+  cacState.query = String(e.target.value || "").trim().toLowerCase();
+  renderCacData(cacState.q);
+});
+$("btnCacRetry").addEventListener("click", function () { loadCac(true); });
 
 // ---- Boutons données ----
 $("btnReset").addEventListener("click", function () {
