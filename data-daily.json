@@ -1,17 +1,19 @@
 {
   "version": 1,
-  "dateData": "2026-11-06",
+  "dateData": "2026-11-09",
   "note": "relevé quotidien automatique (marchés EUR + macro officiel)",
   "data": {
-    "msci": 127.33,
+    "msci": 128.52,
     "msciHigh52": 132.26,
     "msciLow52": 107.51,
-    "vix": 19.92,
-    "vix5": 22.24
+    "vix": 19.46,
+    "vix5": 21.96,
+    "bceDepot": 2.5,
+    "bceDir": "hausse"
   },
   "sources": [
     [
-      "MSCI World (IWDA) : 127.33 € — clôture du 2026-11-06 (IWDA.AS, Euronext Amsterdam, EUR)",
+      "MSCI World (IWDA) : 128.52 € — clôture du 2026-11-09 (IWDA.AS, Euronext Amsterdam, EUR)",
       "Yahoo Finance"
     ],
     [
@@ -19,11 +21,15 @@
       "Yahoo Finance"
     ],
     [
-      "VIX : 19.92 ; moyenne 5 séances : 22.24",
+      "VIX : 19.46 ; moyenne 5 séances : 21.96",
       "Yahoo Finance (^VIX)"
     ],
     [
-      "Garde-fous : plausibilité + écart max une séance vs le dernier relevé quotidien accepté — champs écartés : aucun ; bceDepot indisponible (HTTP 504) ; inflZE écartée (période 2025-12 trop ancienne (11 mois))",
+      "Taux de dépôt BCE : 2,50 % — direction : hausse (dernière décision le 2026-09-16)",
+      "ECB Data Portal (FM/B.U2.EUR.4F.KR.DFR.LEV)"
+    ],
+    [
+      "Garde-fous : plausibilité + écart max une séance vs le dernier relevé quotidien accepté — champs écartés : aucun ; inflZE écartée (période 2025-12 trop ancienne (11 mois))",
       "tools/fetch-daily.js"
     ]
   ]
