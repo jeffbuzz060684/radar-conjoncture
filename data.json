@@ -1,70 +1,70 @@
 {
   "version": 1,
-  "dateData": "2026-11-09",
-  "note": "Krach tech post-midterms, or en rebond",
+  "dateData": "2026-11-16",
+  "note": "Rebond actions, or au plus bas annuel, BTC sous 60k",
   "data": {
-    "msci": 126.92,
+    "msci": 130.78,
     "msciHigh52": 132.26,
     "msciHigh52Date": "2026-10-12",
     "msciLow52": 107.51,
-    "dateMacro": "2026-11-04",
-    "cape": 39.86,
-    "vix": 23.72,
-    "vix5": 22.03,
+    "dateMacro": "2026-11-10",
+    "cape": 38.8,
+    "vix": 19.3,
+    "vix5": 18.97,
     "inflZE": 4,
-    "inflUS": 3.7,
+    "inflUS": 4,
     "bceDepot": 2.5,
     "bceDir": "hausse",
-    "bund10": 3.25,
-    "oat10": 4.76,
+    "bund10": 3.36,
+    "oat10": 4.81,
     "pmiZE": 51.4,
-    "orEUR": 3642,
+    "orEUR": 3520,
     "orHigh52": 4592,
     "orLow52": 3387.45,
-    "btcEUR": 67612,
+    "btcEUR": 59100,
     "btcHigh52": null,
     "imoRendement": 5
   },
   "sources": [
     [
-      "MSCI World (IWDA) : 126,92 € (clôture 06/11/2026, IWDA.STU Stuttgart ; Euronext Amsterdam au même niveau) ; plus haut 52 sem. 132,26 € (12/10) ; plus bas 107,51 € — jeudi −3,6 % sur le krach tech post-midterms, rebond partiel vendredi",
-      "Finanzen.net (IWDA, Stuttgart) / ad-hoc-news"
+      "MSCI World (IWDA) : 130,78 € (clôture 13/11/2026, Stuttgart ; Euronext Amsterdam au même niveau) ; plus haut 52 sem. 132,26 € (12/10) ; plus bas 107,51 € — semaine de rebond (+3 %) après le krach tech post-midterms",
+      "Finanzen.net (IWDA, Stuttgart)"
     ],
     [
-      "CAPE Shiller : 39,86 (octobre 2026, série Robert Shiller)",
-      "MacroMicro (données Shiller, Yale)"
+      "CAPE Shiller : 38,8 (au 12/11/2026, série Robert Shiller étendue — sous 40 % des mois depuis 1881)",
+      "ChartRow (données Shiller, Yale)"
     ],
     [
-      "VIX : 23,72 (clôture 06/11/2026, −15,8 % après le spike de jeudi 28,18 — plus forte hausse quotidienne depuis déc. 2024) ; moyenne 5 séances : 22,03 (21,15 / 20,51 / 16,61 / 28,18 / 23,72)",
-      "Cboe via ad-hoc-news / StreetStats / TheStreet"
+      "VIX : 19,30 (clôture vendredi 13/11, +3,2 % vs 18,70 jeudi ; séances de la semaine : 19,46 / 17,49 / 18,70 / 19,30) ; moyenne 5 séances : 18,97 (relevé quotidien du 12/11)",
+      "Cboe via Yahoo Finance / ad-hoc-news"
     ],
     [
-      "Inflation zone euro : 4,0 % (octobre 2026, flash Eurostat publié le 04/11, en hausse depuis 3,8 % — énergie +20,8 % ; core 2,5 %)",
-      "Eurostat (flash du 04/11/2026)"
+      "Inflation zone euro : 4,0 % (octobre 2026, flash Eurostat du 04/11 confirmé, final attendu le 18/11)",
+      "Eurostat"
     ],
     [
-      "Inflation US : 3,7 % (septembre — CPI d'octobre attendu le 10/11, valeur inchangée)",
-      "BLS"
+      "Inflation US : 4,0 % (CPI d'octobre publié le 10/11 — mensusuel +0,4 % ; core 2,8 %)",
+      "BLS (CPI octobre 2026) / USAFacts"
     ],
     [
-      "BCE : dépôt 2,50 %, taux inchangés au 29/10/2026 (statu quo) ; dernière variation : +25 pb le 16/09 ; prochaine réunion 17/12/2026",
-      "BCE (décision du 29/10/2026)"
+      "BCE : dépôt 2,50 % inchangé ; consensus Reuters (71 économistes, 10-12/11) : hausse de 25 pb attendue le 17/12 → 2,75 % — direction : hausse",
+      "Reuters (sondage du 12/11/2026) / ECB Data Portal"
     ],
     [
-      "Bund 3,25 % (06/11, en hausse vendredi sur accalmie des actions) ; OAT 4,76 % ; spread ~151 pb",
-      "dpa-AFX via Ariva / oblig.fr / Cercle de l'Épargne"
+      "Bund 3,36 % (13/11, plus haut de deux semaines 3,357 %) ; OAT 4,81 % ; spread ~145 pb",
+      "Yahoo Finance / Trading Economics / ideal-investisseur"
     ],
     [
-      "PMI composite zone euro : 51,4 (octobre, final S&P Global publié le 04/11, en baisse depuis 51,7 flash / 53,1 en septembre)",
+      "PMI composite zone euro : 51,4 (octobre, final S&P Global — le flash de novembre n'est pas encore paru, valeur inchangée)",
       "S&P Global"
     ],
     [
-      "Or : 3 642 €/once (06/11/2026, repli de 0,2 % après le rallye défensif de la semaine ; bas 52 sem. 3 387 € touché fin octobre)",
-      "Cours de l'or (coursdelor.app) / bdor.fr"
+      "Or : 3 520 €/once (13/11 — 113,19 €/g fin ; future Comex clôturée à 3 886,30 $, plus basse clôture depuis octobre 2025, −6,9 % sur un an)",
+      "Orzyla (cours du 13/11) / Yahoo Finance / cryptoticker"
     ],
     [
-      "Bitcoin : 67 612 € (06/11/2026, 75 614 $ — −6,1 % sur 24 h pendant le krach, puis stabilisé vendredi)",
-      "CoinAcademy / TradingView (06/11/2026)"
+      "Bitcoin : ~59 100 € (15-16/11, ≈ 65 400 $ — clôture vendredi 68 249 $ puis nouveau plongeon vers le plus bas depuis août, −27,7 % sur un an)",
+      "CoinGecko / Bitget / Yahoo Finance (BTC-USD)"
     ]
   ]
 }
