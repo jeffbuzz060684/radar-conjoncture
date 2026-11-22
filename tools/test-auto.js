@@ -272,8 +272,8 @@ var stratEU = L.strategyOf(dEU, radarEU.der, L.paliersOf(dEU, radarEU.der), rada
 t("stratégie: prochain palier en euros — « encore 3.8 % de baisse » (régression bug 1)",
   stratEU.indexOf("Prochain palier : −5 % à 125.65 €, soit encore 3.8 % de baisse") !== -1 && stratEU.indexOf("déjà franchi") === -1);
 t("stratégie: anti-accumulation CAPE ≥ 30 présente", stratEU.indexOf("Anti-accumulation") !== -1);
-t("stratégie: socle 1 000 €/mois tout compris = 800 € DCAM + 200 € réserve tactique (v5.5)",
-  stratEU.indexOf("1 000 €/mois tout compris") !== -1 && stratEU.indexOf("800 €/mois DCAM") !== -1 && stratEU.indexOf("200 €/mois réserve tactique") !== -1);
+t("stratégie: socle 1 475 €/mois tout compris en versements automatiques (1 000 DCAM + 200 TTE + 125 TR + 150 Louve) — aligné sur le plan réel confirmé le 22/11/2026 (v9.2)",
+  stratEU.indexOf("1 475 €/mois tout compris") !== -1 && stratEU.indexOf("1 000 €/mois DCAM") !== -1 && stratEU.indexOf("200 €/mois TotalEnergies") !== -1 && stratEU.indexOf("125 €/mois de Sparpläne") !== -1 && stratEU.indexOf("150 €/mois AV Louve Infinity") !== -1);
 // régression v4.1 (bug 1) : cas historique en USD — la distance restante doit rester juste
 var dFix = L.normalizeData({ dateData: "2026-10-17", msci: 146.81, msciHigh52: 149.81, reserve: 1000, paliersDone: { p5: false, p10: false, p15: false, p20: false } });
 var derFix = L.computeDerived(dFix);
@@ -370,8 +370,8 @@ t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === 
 // ---------- index.html, logic.js, sw.js, auto.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v9.1", html.indexOf("<b>v9.1</b>") !== -1 && html.indexOf("<b>v8.2</b>") === -1 && html.indexOf("<b>v8.1</b>") === -1 && html.indexOf("<b>v8.0</b>") === -1);
-t("index.html: aucun ancien badge v8.2/v8.0/v7.8/v7.7/v7.6/v7.5/v7.4/v7.3/v7.2/v7.1/v7.0/v6.3/v6.2/v6.1/v6.0/v5.13/v5.12.1/v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v8.2</b>", "<b>v8.0</b>", "<b>v7.8</b>", "<b>v7.7</b>", "<b>v7.6</b>", "<b>v7.5</b>", "<b>v7.4</b>", "<b>v7.3</b>", "<b>v7.2</b>", "<b>v7.1</b>", "<b>v7.0</b>", "<b>v6.3</b>", "<b>v6.2</b>", "<b>v6.1</b>", "<b>v6.0</b>", "<b>v5.13</b>", "<b>v5.12.1</b>", "<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
+t("index.html: badge v9.2", html.indexOf("<b>v9.2</b>") !== -1 && html.indexOf("<b>v9.1</b>") === -1 && html.indexOf("<b>v8.2</b>") === -1 && html.indexOf("<b>v8.1</b>") === -1 && html.indexOf("<b>v8.0</b>") === -1);
+t("index.html: aucun ancien badge v9.1/v8.2/v8.0/v7.8/v7.7/v7.6/v7.5/v7.4/v7.3/v7.2/v7.1/v7.0/v6.3/v6.2/v6.1/v6.0/v5.13/v5.12.1/v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v9.1</b>", "<b>v8.2</b>", "<b>v8.0</b>", "<b>v7.8</b>", "<b>v7.7</b>", "<b>v7.6</b>", "<b>v7.5</b>", "<b>v7.4</b>", "<b>v7.3</b>", "<b>v7.2</b>", "<b>v7.1</b>", "<b>v7.0</b>", "<b>v6.3</b>", "<b>v6.2</b>", "<b>v6.1</b>", "<b>v6.0</b>", "<b>v5.13</b>", "<b>v5.12.1</b>", "<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: logic.js chargé entre vehicles.js et le script UI inline",
   html.indexOf('<script src="vehicles.js"></script>') !== -1 &&
@@ -397,8 +397,8 @@ t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: VIX lissé utilisé dans le scoring (vixEff, désormais dans logic.js)", srcLogic.indexOf("der.vixEff") !== -1 && srcLogic.indexOf("vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v38", sw.indexOf('CACHE = "radar-v38"') !== -1 && sw.indexOf('CACHE = "radar-v37"') === -1 && sw.indexOf('CACHE = "radar-v35"') === -1);
-t("sw.js: anciens caches v37/v36/v34/v33/v32/v31/v30/v29/v28/v27/v26/v25/v24/v23/v22/v21/v20/v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4 absents (v3 omis : préfixe des caches v30+, comme v1/v2 l'ont été aux époques v10/v20)", ["radar-v37", "radar-v36", "radar-v34", "radar-v33", "radar-v32", "radar-v31", "radar-v30", "radar-v29", "radar-v28", "radar-v27", "radar-v26", "radar-v25", "radar-v24", "radar-v23", "radar-v22", "radar-v21", "radar-v20", "radar-v16", "radar-v15", "radar-v14", "radar-v13", "radar-v12", "radar-v11", "radar-v10", "radar-v9", "radar-v8", "radar-v7", "radar-v6", "radar-v5", "radar-v4"].every(function (c) { return sw.indexOf(c) === -1; }));
+t("sw.js: cache v39", sw.indexOf('CACHE = "radar-v39"') !== -1 && sw.indexOf('CACHE = "radar-v38"') === -1 && sw.indexOf('CACHE = "radar-v37"') === -1 && sw.indexOf('CACHE = "radar-v35"') === -1);
+t("sw.js: anciens caches v38/v37/v36/v34/v33/v32/v31/v30/v29/v28/v27/v26/v25/v24/v23/v22/v21/v20/v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4 absents (v3 omis : préfixe des caches v30+, comme v1/v2 l'ont été aux époques v10/v20)", ["radar-v38", "radar-v37", "radar-v36", "radar-v34", "radar-v33", "radar-v32", "radar-v31", "radar-v30", "radar-v29", "radar-v28", "radar-v27", "radar-v26", "radar-v25", "radar-v24", "radar-v23", "radar-v22", "radar-v21", "radar-v20", "radar-v16", "radar-v15", "radar-v14", "radar-v13", "radar-v12", "radar-v11", "radar-v10", "radar-v9", "radar-v8", "radar-v7", "radar-v6", "radar-v5", "radar-v4"].every(function (c) { return sw.indexOf(c) === -1; }));
 t("sw.js: logic.js dans le shell", sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
 t("sw.js: shell réseau d'abord + repli cache (plus aucun skew HTML frais / JS périmé)",
@@ -495,8 +495,8 @@ t("allocOf: actions bon marché + corrigées → « une fois » recommandé", (f
 t("index.html: carte conseil du jour (v5.4) rendue depuis adviceOf", html.indexOf('id="adviceCard"') !== -1 && html.indexOf('id="advicePosture"') !== -1 && html.indexOf("adviceOf(d, radar, state.postureOverride)") !== -1);
 t("index.html: simulateur d'apport complet (montant, mode, mois, bouton, allocOf)", html.indexOf('id="allocMontant"') !== -1 && html.indexOf('id="allocMode"') !== -1 && html.indexOf('id="allocMonths"') !== -1 && html.indexOf('id="btnAlloc"') !== -1 && html.indexOf("allocOf(") !== -1);
 t("index.html: méthode d'allocation documentée (transparence)", srcLogic.indexOf("pondération de référence") !== -1);
-t("index.html: footnote stratégie 1 000 € tout compris + supplément possible", html.indexOf("1 000 €/mois tout compris (800 € DCAM + 200 € réserve tactique)") !== -1 && html.indexOf("supplément quand tu veux reste possible") !== -1);
-t("index.html: simulateur = supplément en plus des 1 000 €/mois du socle", html.indexOf("en plus des 1 000 €/mois du socle") !== -1);
+t("index.html: footnote stratégie 1 475 €/mois tout compris en versements automatiques + supplément possible (v9.2)", html.indexOf("1 475 €/mois tout compris en versements automatiques") !== -1 && html.indexOf("supplément quand tu veux reste possible") !== -1);
+t("index.html: simulateur = supplément en plus des 1 475 €/mois de versements automatiques", html.indexOf("en plus de tes 1 475 €/mois de versements automatiques") !== -1);
 t("index.html: échappement des textes du conseil (esc sur stance, synthèse, arbitrages)", html.indexOf("esc(a.stance)") !== -1 && html.indexOf("esc(adv.synthese)") !== -1 && html.indexOf("esc(x)") !== -1);
 
 // ---------- vehicles.js (v5.11 : univers réel de Jade) ----------
@@ -1038,8 +1038,8 @@ t("v5.11 index.html: bloc « Concrètement chez toi » + private equity affiché
   html.indexOf("Concrètement chez toi") !== -1 && html.indexOf("PATRIMOINE_HORS_RADAR") !== -1 && html.indexOf("jamais alloué") !== -1);
 t("v5.11 index.html: intro du simulateur = univers réel (le supplément se lit sur ce que Jade détient)",
   html.indexOf("ton univers réel") !== -1 && html.indexOf("où l'argent part concrètement") !== -1);
-t("v5.11: stratégie maîtresse inchangée — le socle reste 1 000 €/mois PEA seul (800 DCAM + 200 réserve)",
-  html.indexOf("1 000 €/mois tout compris") !== -1 && html.indexOf("800 € DCAM + 200 € réserve tactique") !== -1);
+t("v5.11/v9.2: stratégie maîtresse — le socle des versements automatiques (1 475 €/mois) remplace l'ancien « 1 000 €/mois PEA seul »",
+  html.indexOf("1 475 €/mois") !== -1 && html.indexOf("1 000 €/mois tout compris") === -1 && html.indexOf("800 € DCAM + 200 € réserve tactique") === -1);
 
 // ---------- v5.12 : carte « Ton patrimoine réel » — les 7 actifs de Jade, toujours visibles ----------
 t("v5.12 PATRIMOINE_ACTIFS: exactement 7 actifs réels (actions, fonds euro, SCPI, livret, or, Bitcoin, private equity)",
@@ -1081,8 +1081,8 @@ t("v5.12/v5.13 index.html: renderPatrimoine appelé depuis renderRadar, lignes =
   html.indexOf("PATRIMOINE_ACTIFS.map") !== -1 && html.indexOf("renderPatrimoine(radar);") !== -1 &&
   html.indexOf("hors radar — jamais alloué") !== -1 && html.indexOf("lecture marché ' + esc(a.name)") !== -1 &&
   html.indexOf("lecture indisponible (donnée manquante)") !== -1);
-t("v5.12 index.html: la carte cite le socle inchangé (1 000 €/mois PEA seul) et le livret hors capacité paliers",
-  html.indexOf("Le socle des 1 000 €/mois reste PEA seul ; le livret (épargne de précaution) n'entre jamais dans la capacité paliers") !== -1);
+t("v5.12/v9.2 index.html: la carte cite le socle automatique réel (1 475 €/mois, plan par plan) et le livret hors capacité paliers",
+  html.indexOf("Le socle automatique (1 475 €/mois : PEA Bourse Direct 1 000 € DCAM + 200 € TTE le 07, Trade Republic 125 € de Sparpläne, Louve Infinity 150 €) reste plan par plan ; le livret (épargne de précaution) n'entre jamais dans la capacité paliers") !== -1);
 
 // ---------- v5.12.1 : gardes anti-skew — un logic.js périmé (cache SW/CDN) ne doit JAMAIS faire de page blanche ----------
 t("v5.12.1: renderPatrimoine garde sur PATRIMOINE_ACTIFS absent (skew logic.js v5.11) — la page ne plante pas au chargement",
@@ -1848,6 +1848,41 @@ t("v9.1: build-sbf120.js migrant SANS la logic.js de l'ancienne app — helpers 
     return b.indexOf('require("../logic.js")') === -1 && b.indexOf("function normName") !== -1 && b.indexOf("function decodeEntities") !== -1; })());
 t("v9.1: validate-quotes.js + ops.js livrés (les mêmes gardes que l'ancien pipeline : jamais de quotes.json sans indice, mémoire des pannes)",
   fs.existsSync(path.join(ROOT, "tools", "validate-quotes.js")) && fs.existsSync(path.join(ROOT, "tools", "ops.js")));
+
+// ---------- v9.2 : versements automatiques importés AVEC le patrimoine (même fichier) + alignement du socle réel ----------
+var V9_PLANS = [
+  { label: "PEA Bourse Direct — DCAM (Amundi PEA Monde MSCI World)", montant: 1000, jour: "le 07 de chaque mois (prochaine : 07/12/2026)", detail: "FR001400U5Q4 · plan programmé · paliers déployés sur ce support" },
+  { label: "PEA Bourse Direct — TotalEnergies (TTE)", montant: 200, jour: "le 07 de chaque mois (prochaine : 07/12/2026)", detail: "concentration assumée (~35 % du PEA) · plan maintenu le 22/11/2026" },
+  { label: "CTO Trade Republic — Sparpläne (5 plans × 25 €)", montant: 125, jour: "mensuel", detail: "ESG Multi-Asset Growth · World Equity High Income USD · Managed Futures EUR · Global Efficient Core USD · S&P 500 Top 20" },
+  { label: "AV Louve Infinity — versement programmé", montant: 150, jour: "mensuel", detail: "profil auto Sofidynamic 55 % / MSCI World 20 % / or physique 25 %" }
+];
+t("v9.2: sanitizeVersements — les 4 plans réels passent intacts (label, montant, jour, detail)",
+  (function () { var v = L.sanitizeVersements(V9_PLANS);
+    return v.length === 4 && v[0].label.indexOf("DCAM") !== -1 && v[0].montant === 1000 && v[1].montant === 200 && v[2].montant === 125 && v[3].montant === 150 && v[3].detail.indexOf("Sofidynamic") !== -1; })());
+t("v9.2: sanitizeVersements — rejets : montant nul/négatif/invalide/énorme, sans label, entrée non objet ; non-array → []",
+  L.sanitizeVersements([{ label: "A", montant: 0 }, { label: "B", montant: -5 }, { label: "C", montant: "x" }, { label: "D", montant: 1e7 }, { montant: 30 }, { label: "", montant: 10 }, 42, "str", null, { label: "OK", montant: 25 }]).length === 1 &&
+  L.sanitizeVersements(null).length === 0 && L.sanitizeVersements("pas un tableau").length === 0 && L.sanitizeVersements({ 0: { label: "x", montant: 5 } }).length === 0);
+t("v9.2: sanitizeVersements — bornes : plus de 20 entrées limité à 20 ; chaînes aplaties + coupées (120/80/200) ; montant numérique en chaîne accepté",
+  (function () {
+    var big = []; for (var i = 0; i < 30; i++) big.push({ label: "P " + i, montant: 10 });
+    var cut = L.sanitizeVersements([{ label: new Array(400).join("x"), montant: 12.5, jour: new Array(200).join("j"), detail: new Array(500).join("d") }, { label: "Str", montant: "300" }]);
+    return L.sanitizeVersements(big).length === 20 && cut.length === 2 && cut[0].label.length === 120 && cut[0].jour.length === 80 && cut[0].detail.length === 200 && cut[1].montant === 300; })());
+t("v9.2: versementsTotal — 1 475 €/mois pour les 4 plans réels, null si vide/null",
+  L.versementsTotal(L.sanitizeVersements(V9_PLANS)) === 1475 && L.versementsTotal([]) === null && L.versementsTotal(null) === null && L.versementsTotal(L.sanitizeVersements([{ label: "X", montant: 10 }])) === 10);
+t("v9.2: index.html — l'import 📥 persiste AUSSI les versements (clé radar-versements, remplacés seulement si le fichier les transporte) et les annonce dans le toast",
+  html.indexOf('localStorage.setItem("radar-versements"') !== -1 && html.indexOf("versement(s) auto") !== -1 && html.indexOf("sanitizeVersements(p.versements)") !== -1 && html.indexOf("Array.isArray(p.versements)") !== -1);
+t("v9.2: index.html — carte 📍 affiche les versements automatiques (🔄 Mes versements automatiques, total/mois tout compris, détail repliable)",
+  html.indexOf("Mes versements automatiques") !== -1 && html.indexOf("vsStored.length") !== -1 && html.indexOf("/mois</b> tout compris") !== -1 && html.indexOf("fmtEUR(Math.round(vsTot))") !== -1);
+t("v9.2: index.html — les versements restent sur le téléphone : jamais dans l'export (exportValue) ni dans aucune URL",
+  (function () { var i = html.indexOf("data: state.data, history: state.history"); return i !== -1 && html.slice(i, i + 400).indexOf("versements") === -1; })() && html.indexOf("radar-versements") >= 0);
+t("v9.2: socle réel aligné (décision Jade du 22/11/2026 : plan gardé tel quel) — plus AUCUN « 800 €/mois DCAM » ni « 200 €/mois réserve tactique » dans logic.js",
+  srcLogic.indexOf("800 €/mois DCAM") === -1 && srcLogic.indexOf("200 €/mois réserve tactique") === -1 && srcLogic.indexOf("800 € DCAM") === -1);
+t("v9.2: flux 🎯 — « Socle normal : 1 000 €/mois DCAM + 200 €/mois TotalEnergies » et paliers suspendus mentionnent le socle programmé",
+  srcLogic.indexOf("Socle normal : 1 000 €/mois DCAM + 200 €/mois TotalEnergies") !== -1 && srcLogic.indexOf("1 000 €/mois DCAM + 200 €/mois TTE") !== -1);
+t("v9.2: interdits TTE corrigés — plan 200 €/mois MAINTENU (plus de « basculés sur DCAM »), premier à réduire si un mois est difficile, plafond de vigilance 30–32 % conservé",
+  srcLogic.indexOf("plan 200 €/mois MAINTENU") !== -1 && srcLogic.indexOf("basculés sur DCAM") === -1 && srcLogic.indexOf("30–32 %") !== -1 && srcLogic.indexOf("jamais le socle DCAM") !== -1);
+t("v9.2: index.html — carte 📍 « Rien de spécial » cite les versements automatiques (1 475 €/mois, PEA le 07) ; plus aucun reste de l'ancien socle",
+  html.indexOf("tes versements automatiques coulent — 1 475 €/mois") !== -1 && html.indexOf("800 € DCAM") === -1 && html.indexOf("1 000 €/mois tout compris") === -1);
 
 // ---------- Bilan ----------
 var fail = results.filter(function (r) { return !r.ok; });
