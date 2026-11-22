@@ -233,7 +233,7 @@ function strategyOf(d, der, paliers, top) {
   if (der && der.msciIncoherent && num(d.msci) !== null && num(d.msciHigh52) !== null) {
     lines.push("⛔ RÉFÉRENCES INCOHÉRENTES : le cours (" + d.msci + " €) est à " + r1(der.ddMsci) + " % du sommet 52 sem. (" + d.msciHigh52 + " €) — unités probablement mélangées (USD/EUR). Les paliers sont désactivés. Utilise « Valeurs du 16/10/2026 » (onglet Données) pour réparer, ou réinstalle la carte.");
   } else {
-  lines.push("Socle inchangé : 1 000 €/mois tout compris — 800 €/mois DCAM (Amundi PEA Monde) + 200 €/mois réserve tactique (monétaire PEA). La conjoncture ne change pas le socle, et on ne vend jamais sur baisse.");
+  lines.push("Socle inchangé : 1 475 €/mois tout compris en versements automatiques — PEA Bourse Direct 1 000 €/mois DCAM (Amundi PEA Monde) + 200 €/mois TotalEnergies (exécution le 07) + 125 €/mois de Sparpläne Trade Republic (5 × 25 €) + 150 €/mois AV Louve Infinity. La conjoncture ne change pas le socle, et on ne vend jamais sur baisse.");
   var next = null, i;
   for (i = 0; i < paliers.length; i++) {
     if (paliers[i].atteint && !d.paliersDone["p" + paliers[i].p]) { next = paliers[i]; break; }
@@ -300,7 +300,7 @@ function isPosture(p) { return typeof p === "string" && POSTURES.indexOf(p) !== 
 
 // v5.11 : UNIVERS RÉEL de Jade (déclaré le 18/10/2026) — le simulateur d'apport place un
 // SUPPLÉMENT dans ce qu'il détient VRAIMENT, pas dans un univers théorique. Le socle mensuel
-// reste « 1 000 €/mois PEA seul » (stratégie maîtresse INCHANGÉE, cf. strategie-epargne) ;
+// reste le socle PEA programmé (stratégie maîtresse INCHANGÉE, cf. strategie-epargne — depuis le 22/11/2026 : 1 000 €/mois DCAM + 200 €/mois TTE) ;
 // seul le supplément (prime, don, virement) peut aller partout où il possède déjà quelque
 // chose. Chaque ligne du radar = un actif réellement détenu ; « ou » = la destination
 // concrète de l'argent, « reel » = le détail affiché dans le simulateur. Le private equity
@@ -327,7 +327,7 @@ var PATRIMOINE_HORS_RADAR = [
 // (private equity : illiquide, jamais alloué). Le livret est un actif à part entière
 // (épargne de précaution), pas seulement la destination du monétaire.
 var PATRIMOINE_ACTIFS = [
-  { nom: "Actions — MSCI World",  enceinte: "PEA · DCAM",           radar: "actions",     reel: "ton socle actions (Amundi PEA Monde) — 800 €/mois en plan programmé, paliers déployés sur ce support" },
+  { nom: "Actions — MSCI World",  enceinte: "PEA · DCAM",           radar: "actions",     reel: "ton socle actions (Amundi PEA Monde) — 1 000 €/mois en plan programmé, paliers déployés sur ce support" },
   { nom: "Fonds euro",            enceinte: "Assurance vie",        radar: "obligations", reel: "capital garanti, gains verrouillés chaque année — ton exposition obligataire réelle (l'ETF IEGA reste l'exemple marché, CTO en pause)" },
   { nom: "SCPI",                  enceinte: "Assurance vie",        radar: "immo",        reel: "frais de souscription élevés : pertinent en une fois, pas idéal en DCA mensuel" },
   { nom: "Livret",                enceinte: "Épargne de précaution", radar: "monetaire",  reel: "ta poche de sécurité — jamais compté dans la capacité paliers, jamais déployé en paliers" },
@@ -850,7 +850,7 @@ function Auto_sanitizeImport(raw) {
 // Répond à « investir au bon moment, sur le bon actif » en consolidant les fonctions déjà
 // testées (paliersOf, adviceOf, allocOf, entryPrefOf) : AUCUNE donnée nouvelle, AUCUN seuil
 // nouveau — la carte est une lecture décisionnelle, pas un second moteur. Trois blocs :
-//   flux       → le socle 1 000 €/mois : y a-t-il un palier à déployer ce mois-ci ?
+//   flux       → le socle PEA programmé (1 000 €/mois DCAM + 200 €/mois TTE) : y a-t-il un palier à déployer ce mois-ci ?
 //   supplement → un apport exceptionnel : verdict d'entrée (entryPrefOf) + répartition (allocOf)
 //   stock      → le patrimoine détenu : écarts de poids vs la référence, LECTURE jamais ordre.
 // Règles maîtresses inchangées : on ne vend JAMAIS sur la baisse ; le livret n'entre jamais
@@ -883,14 +883,14 @@ function decisionOf(d, radar, opts) {
   var der = radar.der;
   var res = { flux: null, supplement: null, stock: null };
 
-  // ---- 1 · FLUX DU MOIS (socle 1 000 €/mois — la seule question : un palier à déployer ?) ----
+  // ---- 1 · FLUX DU MOIS (socle PEA programmé, 1 200 €/mois — la seule question : un palier à déployer ?) ----
   var pal = paliersOf(d, der);
   var reserve = num(d.reserve);
   var flux = { etat: null, palier: null, seuil: null, montant: null, dist: null, lines: [], warns: [] };
   if (!pal.length) {
     // v5.6 : références 52 sem. manquantes ou incohérentes → paliers suspendus, socle intact
     flux.etat = "suspendu";
-    flux.lines.push("Paliers suspendus (référence 52 sem. manquante ou incohérente) : le socle 1 000 €/mois continue normalement, aucun déploiement tant que les références ne sont pas réparées.");
+    flux.lines.push("Paliers suspendus (référence 52 sem. manquante ou incohérente) : le socle PEA programmé (1 000 €/mois DCAM + 200 €/mois TTE) continue normalement, aucun déploiement tant que les références ne sont pas réparées.");
   } else {
     var next = null;
     for (var i = 0; i < pal.length; i++) if (pal[i].atteint && !d.paliersDone["p" + pal[i].p]) { next = pal[i]; break; }
@@ -909,7 +909,7 @@ function decisionOf(d, radar, opts) {
         flux.seuil = nxt.seuil;
         if (num(d.msci) !== null && nxt.seuil > 0) {
           flux.dist = r1((1 - nxt.seuil / d.msci) * 100);   // v4.1 : dist = 1 − seuil/cours, positif = baisse restante
-          flux.lines.push("Socle normal : 800 €/mois DCAM + 200 €/mois réserve, rien à déployer aujourd'hui. Prochain palier −" + nxt.p + " % à " + nxt.seuil + " €, soit encore " + flux.dist + " % de baisse sous le cours actuel (" + num(d.msci) + " €).");
+          flux.lines.push("Socle normal : 1 000 €/mois DCAM + 200 €/mois TotalEnergies (PEA, exécution le 07), rien à déployer aujourd'hui. Prochain palier −" + nxt.p + " % à " + nxt.seuil + " €, soit encore " + flux.dist + " % de baisse sous le cours actuel (" + num(d.msci) + " €).");
         } else {
           flux.lines.push("Socle normal : le cours n'est pas chiffrable — le prochain relevé recalcule la distance au prochain palier (−" + nxt.p + " % à " + nxt.seuil + " €).");
         }
@@ -917,7 +917,7 @@ function decisionOf(d, radar, opts) {
         var pending = pal.filter(function (p) { return p.atteint; });
         flux.lines.push(pending.length
           ? "Tous les paliers franchis sont marqués déployés — plus rien à faire jusqu'au prochain épisode (un nouveau plus haut 52 sem. réinitialise la mécanique)."
-          : "Socle normal : 800 €/mois DCAM + 200 €/mois réserve, aucun palier à portée aujourd'hui.");
+          : "Socle normal : 1 000 €/mois DCAM + 200 €/mois TotalEnergies, aucun palier à portée aujourd'hui.");
       }
     }
   }
@@ -1246,7 +1246,7 @@ function cascadeOf(d, radar, rawReels, override) {
     { q: "Livret P / comptes à terme", p: "NON renouvelés aux échéances (décision du 22/11/2026) : rendement non garanti, risque de contrepartie — chaque échéance repart sur la cascade, jamais dans un renouvellement." },
     { q: "Crowdfunding (toutes plateformes)", p: "aucun renfort, cantonné — tout remboursement reçu part sur la cascade (règle actée Irénée/Shery/Citesia/Anaxago)." },
     { q: "SCPI / immobilier coté", p: "Immo à " + out.poids.immo + " % vs plafond " + CIBLES.immo + " % : aucun renfort tant que le Radar immo ne dit pas INVESTIR — et même alors, d'abord via AV, en une fois, pas en DCA (frais de souscription)." },
-    { q: "TotalEnergies (flux)", p: "Ligne conviction GARDE mais bornée : TTE plafonné à 30–32 % du PEA (34,8 % atteint en nov. 2026) — on garde les 143 actions et le dividende (~4,6 %), on ne nourrit PLUS : les 200 €/mois d'actions sont basculés sur DCAM (décision 22/11/2026)." },
+    { q: "TotalEnergies (flux)", p: "Ligne conviction GARDEE : TTE ≈ 34–35 % du PEA (plafond de vigilance 30–32 %) — les 143 actions et le dividende (~4,6 %) restent, plan 200 €/mois MAINTENU (décision de Jade du 22/11/2026 : garder le plan tel quel) ; si un mois est difficile, réduire/stopper le plan TTE en priorité, jamais le socle DCAM." },
     { q: "Versement volontaire sur le CTO", p: "Tant que le plafond PEA (225 000 €) n'est pas atteint, le PEA boit en premier : 0 impôt après 5 ans contre PFU 30 %. Le CTO ne reçoit que ses Sparpläne programmés (125 €/mois TR)." },
     { q: "Vendre sur une baisse", p: "JAMAIS — les paliers achètent la faiblesse, le fonds euro et le livret absorbent les urgences (règle maison maîtresse, inchangée)." }
   ];
@@ -1391,6 +1391,40 @@ function perfVsWorld(versements, valeurFinale, serieIwda, dateFinale) {
   };
 }
 
+// ---------- v9.2 : versements automatiques programmés (importés AVEC le patrimoine, même fichier) ----------
+// Le fichier d'import 📥 transporte désormais la clé facultative « versements » : la liste des
+// plans programmés RÉELLEMENT actifs (PEA Bourse Direct le 07, Sparpläne Trade Republic, AV
+// Louve Infinity). Validations strictes de la même veine que sanitizeReels : liste ≤ 20
+// entrées, montant > 0 et ≤ 1e6 (rejeté sinon), chaînes nettoyées puis bornées — un fichier
+// tordu ne casse jamais la page. Stockage téléphone uniquement (clé « radar-versements »),
+// jamais dans un export ni dans le dépôt public.
+function sanitizeVersements(raw) {
+  var out = [];
+  if (!Array.isArray(raw)) return out;
+  function s(v, max) {   // chaîne : espaces normalisés, coupée proprement
+    if (typeof v !== "string") return "";
+    return v.replace(/\s+/g, " ").trim().slice(0, max);
+  }
+  var n = Math.min(raw.length, 20);
+  for (var i = 0; i < n; i++) {
+    var r = raw[i];
+    if (!r || typeof r !== "object") continue;
+    var m = num(r.montant);
+    if (m === null || m <= 0 || m > 1e6) continue;
+    var label = s(r.label, 120);
+    if (!label) continue;
+    out.push({ label: label, montant: m, jour: s(r.jour, 80), detail: s(r.detail, 200) });
+  }
+  return out;
+}
+// Total mensuel des plans programmés (null si la liste est vide) — affiché sur la carte 📍.
+function versementsTotal(vs) {
+  if (!Array.isArray(vs) || !vs.length) return null;
+  var t = 0;
+  for (var i = 0; i < vs.length; i++) if (vs[i] && num(vs[i].montant) > 0) t += num(vs[i].montant);
+  return t > 0 ? Math.round(t * 100) / 100 : null;
+}
+
 // Export Node pour le harnais de tests (logique pure, aucun accès DOM).
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
@@ -1409,6 +1443,7 @@ if (typeof module !== "undefined" && module.exports) {
     ddAssetOf: ddAssetOf,   // v7.6 : 📉 drawdown par actif (vs sommet 52 sem.) — consolidation ddMsci/ddOr/ddBtc
     patReelsOf: patReelsOf, patLineOf: patLineOf, patNonClassesOf: patNonClassesOf,   // v7.0 : fusion app Patrimoine — classification auto vers les 7 lignes 👤 ; v7.3 : actifs ignorés rendus VISIBLES
     PATRIMOINE: PATRIMOINE, PATRIMOINE_HORS_RADAR: PATRIMOINE_HORS_RADAR, PATRIMOINE_ACTIFS: PATRIMOINE_ACTIFS,
-    xirrOf: xirrOf, perfVsWorld: perfVsWorld, XIRR_BORNE_HAUTE: XIRR_BORNE_HAUTE, XIRR_BORNE_BASSE: XIRR_BORNE_BASSE   // v5.11/v5.12 : univers réel de Jade (mapping + liste des 7 actifs)
+    xirrOf: xirrOf, perfVsWorld: perfVsWorld, XIRR_BORNE_HAUTE: XIRR_BORNE_HAUTE, XIRR_BORNE_BASSE: XIRR_BORNE_BASSE,   // v5.11/v5.12 : univers réel de Jade (mapping + liste des 7 actifs)
+    sanitizeVersements: sanitizeVersements, versementsTotal: versementsTotal   // v9.2 : versements automatiques importés (même fichier que le patrimoine)
   };
 }

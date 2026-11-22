@@ -67,6 +67,13 @@ store["suivi-patrimoine-v4"] = JSON.stringify({ savedAt: 1, envelopes: [
       { id: "a3", name: "SCPI Epargne Pierre", category: "SCPI", quantity: 2, currentPrice: 1000, buyPrice: 1000 } ] }
 ] });
 
+// v9.2 : versements automatiques pré-importés (comme sur le téléphone de Jade après l'import 📥)
+store["radar-versements"] = JSON.stringify([
+  { label: "PEA Bourse Direct — DCAM (Amundi PEA Monde MSCI World)", montant: 1000, jour: "le 07 de chaque mois", detail: "FR001400U5Q4 · plan programmé" },
+  { label: "PEA Bourse Direct — TotalEnergies (TTE)", montant: 200, jour: "le 07 de chaque mois", detail: "plan maintenu le 22/11/2026" },
+  { label: "CTO Trade Republic — Sparpläne (5 plans × 25 €)", montant: 125, jour: "mensuel", detail: "ESG Multi-Asset · WEHI USD · Managed Futures · Global Efficient Core · S&P 500 Top 20" }
+]);
+
 function run(src, name) {
   try { vm.runInContext(src, sandbox, { filename: name }); return null; }
   catch (e) { return name + " ⛔ " + e.message; }
@@ -129,8 +136,8 @@ ck("v5.11 : chaque ligne allouée porte sa destination réelle (« → AV — fo
   allocHtml.indexOf("→ AV — fonds euro") !== -1 && allocHtml.indexOf("→ PEA — DCAM") !== -1 && allocHtml.indexOf("→ AV — SCPI") !== -1);
 ck("v5.11 : bloc « Concrètement chez toi » avec le private equity affiché mais jamais alloué",
   allocHtml.indexOf("Concrètement chez toi") !== -1 && allocHtml.indexOf("Private equity") !== -1 && allocHtml.indexOf("jamais alloué") !== -1);
-ck("v5.11 : le socle reste affiché 1 000 €/mois PEA seul (stratégie maîtresse inchangée)",
-  allocHtml.indexOf("le socle des 1 000 €/mois reste PEA seul") !== -1);
+ck("v5.11/v9.2 : le simulateur affiche le socle PEA programmé réel (1 000 € DCAM + 200 € TTE)",
+  allocHtml.indexOf("le socle PEA programmé (1 000 € DCAM + 200 € TTE) reste le moteur") !== -1);
 
 // 7 bis. v5.12 : carte « 👤 Ton patrimoine réel » — les 7 actifs de Jade, TOUJOURS visibles
 var patHtml = txt("patrimoineList");
@@ -284,14 +291,17 @@ ck("v8.0 : la carte 💧 RE-RENDUE après la saisie ✏️ — total 42 000 €,
 ck("v8.1 : carte 📍 rendue — prochain euro = DCAM — ETF monde · PEA (moteur : sécurisé 60,2 % sur reels auto, aucune invitation fantôme)",
   txt("aujEuro").indexOf("Ton prochain euro") !== -1 && txt("aujEuro").indexOf("DCAM — ETF monde") !== -1 &&
   txt("aujEuro").indexOf("PEA (Amundi PEA Monde MSCI World)") !== -1 && txt("aujEuro").indexOf("Entrée :") !== -1);
-ck("v8.1 : action du jour lisible en 1 ligne — socle normal, prochain déclencheur −5 % chiffré, AUCUN bouton déployé hors palier",
-  txt("aujAction").indexOf("Rien de spécial") !== -1 && txt("aujAction").indexOf("1 000 €/mois") !== -1 &&
+ck("v8.1/v9.2 : action du jour lisible en 1 ligne — versements automatiques 1 475 €/mois, prochain déclencheur −5 % chiffré, AUCUN bouton déployé hors palier",
+  txt("aujAction").indexOf("Rien de spécial") !== -1 && txt("aujAction").indexOf("1 475 €/mois") !== -1 &&
   txt("aujAction").indexOf("Prochain déclencheur : −5 %") !== -1 && txt("aujAction").indexOf("encore") !== -1 &&
   txt("aujAction").indexOf("aujDeploy") === -1);
 ck("v8.1 : marché en 1 phrase (posture + score du jour) + import 1 geste proposé, mode simple par défaut (bouton 🧭)",
   txt("aujMarche").indexOf("posture") !== -1 && txt("aujMarche").indexOf("/100") !== -1 &&
   txt("aujData").indexOf("Mettre à jour mes montants") !== -1 &&
   txt("btnMode").indexOf("Voir le détail") !== -1);
+ck("v9.2 : carte 📍 affiche les versements automatiques importés — total 1 325 €/mois (1 000 DCAM + 200 TTE + 125 TR), détail repliable des 3 plans",
+  txt("aujData").indexOf("Mes versements automatiques") !== -1 && txt("aujData").indexOf("1 325 €/mois") !== -1 &&
+  txt("aujData").indexOf("3 plans") !== -1 && txt("aujData").indexOf("le 07 de chaque mois") !== -1);
 ck("v8.1 : la carte 📍 suit la saisie ✏️ — 42 000 € sans rechargement (mêmes moteurs que 💧, une seule source de vérité)",
   txt("aujData").indexOf("42 000 €") !== -1 && txt("aujEuro").indexOf("DCAM — ETF monde") !== -1);
 ck("v6.0 : la carte 👤 patrimoine affiche le montant saisi dans la ligne",
