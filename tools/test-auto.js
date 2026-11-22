@@ -370,8 +370,8 @@ t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === 
 // ---------- index.html, logic.js, sw.js, auto.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v8.0", html.indexOf("<b>v8.0</b>") !== -1 && html.indexOf("<b>v7.8</b>") === -1);
-t("index.html: aucun ancien badge v7.8/v7.7/v7.6/v7.5/v7.4/v7.3/v7.2/v7.1/v7.0/v6.3/v6.2/v6.1/v6.0/v5.13/v5.12.1/v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v7.8</b>", "<b>v7.7</b>", "<b>v7.6</b>", "<b>v7.5</b>", "<b>v7.4</b>", "<b>v7.3</b>", "<b>v7.2</b>", "<b>v7.1</b>", "<b>v7.0</b>", "<b>v6.3</b>", "<b>v6.2</b>", "<b>v6.1</b>", "<b>v6.0</b>", "<b>v5.13</b>", "<b>v5.12.1</b>", "<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
+t("index.html: badge v8.1", html.indexOf("<b>v8.1</b>") !== -1 && html.indexOf("<b>v8.0</b>") === -1);
+t("index.html: aucun ancien badge v8.0/v7.8/v7.7/v7.6/v7.5/v7.4/v7.3/v7.2/v7.1/v7.0/v6.3/v6.2/v6.1/v6.0/v5.13/v5.12.1/v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v8.0</b>", "<b>v7.8</b>", "<b>v7.7</b>", "<b>v7.6</b>", "<b>v7.5</b>", "<b>v7.4</b>", "<b>v7.3</b>", "<b>v7.2</b>", "<b>v7.1</b>", "<b>v7.0</b>", "<b>v6.3</b>", "<b>v6.2</b>", "<b>v6.1</b>", "<b>v6.0</b>", "<b>v5.13</b>", "<b>v5.12.1</b>", "<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: logic.js chargé entre vehicles.js et le script UI inline",
   html.indexOf('<script src="vehicles.js"></script>') !== -1 &&
@@ -397,8 +397,8 @@ t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: VIX lissé utilisé dans le scoring (vixEff, désormais dans logic.js)", srcLogic.indexOf("der.vixEff") !== -1 && srcLogic.indexOf("vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v34", sw.indexOf('CACHE = "radar-v34"') !== -1 && sw.indexOf('CACHE = "radar-v33"') === -1);
-t("sw.js: anciens caches v33/v32/v31/v30/v29/v28/v27/v26/v25/v24/v23/v22/v21/v20/v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4 absents (v3 omis : préfixe des caches v30+, comme v1/v2 l'ont été aux époques v10/v20)", ["radar-v33", "radar-v32", "radar-v31", "radar-v30", "radar-v29", "radar-v28", "radar-v27", "radar-v26", "radar-v25", "radar-v24", "radar-v23", "radar-v22", "radar-v21", "radar-v20", "radar-v16", "radar-v15", "radar-v14", "radar-v13", "radar-v12", "radar-v11", "radar-v10", "radar-v9", "radar-v8", "radar-v7", "radar-v6", "radar-v5", "radar-v4"].every(function (c) { return sw.indexOf(c) === -1; }));
+t("sw.js: cache v35", sw.indexOf('CACHE = "radar-v35"') !== -1 && sw.indexOf('CACHE = "radar-v34"') === -1);
+t("sw.js: anciens caches v34/v33/v32/v31/v30/v29/v28/v27/v26/v25/v24/v23/v22/v21/v20/v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4 absents (v3 omis : préfixe des caches v30+, comme v1/v2 l'ont été aux époques v10/v20)", ["radar-v34", "radar-v33", "radar-v32", "radar-v31", "radar-v30", "radar-v29", "radar-v28", "radar-v27", "radar-v26", "radar-v25", "radar-v24", "radar-v23", "radar-v22", "radar-v21", "radar-v20", "radar-v16", "radar-v15", "radar-v14", "radar-v13", "radar-v12", "radar-v11", "radar-v10", "radar-v9", "radar-v8", "radar-v7", "radar-v6", "radar-v5", "radar-v4"].every(function (c) { return sw.indexOf(c) === -1; }));
 t("sw.js: logic.js dans le shell", sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
 t("sw.js: shell réseau d'abord + repli cache (plus aucun skew HTML frais / JS périmé)",
@@ -1675,6 +1675,49 @@ t("v8.0: index.html — renderCascade défini (garde typeof anti-skew, esc() sur
   html.indexOf("renderCascade(d, radar);") > html.indexOf("renderDecision(d, radar);"));
 t("v8.0: index.html — module 💼 passé en v12 (les données restent sur le téléphone, hors dépôt ; APP_VERSION v12)",
   html.indexOf('var APP_VERSION = "v12";') !== -1 && html.indexOf('var APP_VERSION = "v11"') === -1);
+
+// ---------- v8.1 : 📍 Aujourd'hui — écran simple + mode simple + import 1 geste (retour de Jade « app trop compliquée ») ----------
+t("v8.1: carte 📍 Aujourd'hui en 1re position de l'onglet Radar (avant regimeCard), 4 zones + import fichier caché",
+  html.indexOf('id="aujourdhuiCard"') > html.indexOf('id="view-radar"') &&
+  html.indexOf('id="aujourdhuiCard"') < html.indexOf('id="regimeCard"') &&
+  ["aujEuro", "aujAction", "aujMarche", "aujData"].every(function (z) { return html.indexOf('id="' + z + '"') !== -1; }) &&
+  html.indexOf('id="aujImportFile"') !== -1 && html.indexOf('type="file"') !== -1);
+t("v8.1: mode simple PAR DÉFAUT — bouton 🧭 dans le header + préférence « radar-simple » + repli CSS body.simple des cartes expert seulement",
+  html.indexOf('id="btnMode"') > html.indexOf('id="macroChip"') &&
+  html.indexOf('body.simple .card.expert { display: none; }') !== -1 &&
+  html.indexOf('localStorage.getItem("radar-simple") !== "tout"') !== -1 &&
+  html.indexOf('localStorage.setItem("radar-simple"') !== -1);
+t("v8.1: exactement 8 cartes expert repliées, patrimoine 👤 et Aujourd'hui JAMAIS expertes",
+  (html.match(/class="card expert"/g) || []).length === 8 &&
+  html.indexOf('class="card" id="patrimoineCard"') !== -1 &&
+  html.indexOf('class="card" id="aujourdhuiCard"') !== -1);
+t("v8.1: applyMode défensif (document.body absent → pas de crash, sim DOM/null-safe)",
+  html.indexOf("if (document.body && document.body.classList)") !== -1);
+t("v8.1: renderAujourdhui défini (garde anti-skew cascadeOf+decisionOf) et appelé dans renderRadar juste avant renderPatrimoine",
+  html.indexOf("function renderAujourdhui") !== -1 &&
+  html.indexOf("typeof cascadeOf !== \"function\" || typeof decisionOf !== \"function\"") !== -1 &&
+  html.indexOf("renderAujourdhui(d, radar);") < html.indexOf("renderPatrimoine(radar);") &&
+  html.indexOf("renderAujourdhui(d, radar);") > html.indexOf("function renderRadar"));
+t("v8.1: action du jour = MÊME décision que la carte 🎯 (decisionOf flux) — déploye avec montant + bouton « marquer déployé » qui PERSISTE",
+  html.indexOf("decisionOf(d, radar, { reels: decMergedReels(), override: state.postureOverride })") !== -1 &&
+  html.indexOf('id="aujDeploy"') !== -1 &&
+  html.indexOf('state.data.paliersDone["p" + pal[i].p] = true') !== -1 &&
+  html.indexOf("save(); renderRadar(); toast(\"✅ Palier marqué déployé") !== -1);
+t("v8.1: import en 1 geste — mêmes règles que l'onglet 💼 (enveloppes obligatoires, snapshots conservés, savedAt transmis), rafraîchit tout, rien ne sort du téléphone",
+  html.indexOf("if (!p || !Array.isArray(p.envelopes) || !p.envelopes.length) throw new Error") !== -1 &&
+  html.indexOf('localStorage.setItem("suivi-patrimoine-v4"') !== -1 &&
+  html.indexOf("Array.isArray(p.snapshots) ? p.snapshots : []") !== -1 &&
+  html.indexOf("typeof p.savedAt === \"number\"") !== -1 &&
+  html.indexOf("window.PatrimoineRender()") !== -1);
+t("v8.1: la carte répond à l'ouverture — 1 ligne pourquoi par état de cascade (aujWhyOf : livret/palier/securise/moteur)",
+  ["livret:", "palier:", "securise:", "moteur:"].every(function (k) { return html.indexOf(k) !== -1; }));
+t("v8.1: la vue complète reste INTACTE derrière 🧭 — aucune carte supprimée (regime/🎯/💧/classement/🏆/paliers/conseil/🧮 tous présents)",
+  ["regimeCard", "decisionCard", "cascadeCard", "oppCard", "adviceCard", "patrimoineCard"].every(function (c) { return html.indexOf('id="' + c + '"') !== -1; }) &&
+  html.indexOf("<h2>Classement des actifs</h2>") !== -1 &&
+  html.indexOf("Ta stratégie PEA — paliers tactiques") !== -1 &&
+  html.indexOf("🧮 Simulateur d'apport") !== -1);
+t("v8.1: module 💼 toujours v12 (aucun changement côté données), renvois ✏️ vers la carte 👤 toujours visibles",
+  html.indexOf('var APP_VERSION = "v12";') !== -1);
 
 // ---------- Bilan ----------
 var fail = results.filter(function (r) { return !r.ok; });
