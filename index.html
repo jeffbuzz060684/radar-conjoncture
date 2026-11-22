@@ -214,7 +214,7 @@
 <header>
   <div class="hrow">
     <h1>📡 Radar <span>Conjoncture</span></h1>
-    <span class="badge">🔄 Maj auto quotidienne · <b>v8.1</b></span>
+    <span class="badge">🔄 Maj auto quotidienne · <b>v8.2</b></span>
   </div>
   <div class="hrow" style="margin-top:6px">
     <span class="chip" id="dataChip">—</span>
@@ -1687,8 +1687,33 @@ function renderAujourdhui(d, radar) {
   // 4 · Tes montants : à jour en 1 geste (import du fichier patrimoine) ou à la main
   var reels = decMergedReels(), tot = 0, k;
   for (k in reels) if (Object.prototype.hasOwnProperty.call(reels, k)) tot += Number(reels[k]) || 0;
+  // v8.2 : patrimoine COMPLET 💼 affiché (retour de Jade « il me manque patrimoine ») —
+  // le total pilotable reste la base des poids/pourcentages (aucune règle ne change),
+  // le total 💼 est une information en plus, jamais une destination de versement.
+  var totFull = null;
+  try {
+    var patData = JSON.parse(localStorage.getItem("suivi-patrimoine-v4") || "null");
+    if (patData && Array.isArray(patData.envelopes) && patData.envelopes.length) {
+      totFull = 0;
+      patData.envelopes.forEach(function (env) {
+        if (!env || !Array.isArray(env.assets)) return;
+        env.assets.forEach(function (a) {
+          if (!a) return;
+          var v = (Number(a.quantity) || 0) * (Number(a.currentPrice) || 0);
+          if (v > 0) totFull += v;
+        });
+      });
+    }
+  } catch (e) { totFull = null; }
+  // v8.2 : le total 💼 ne s'affiche en tête QUE s'il couvre les montants suivis (totFull ≥ tot) —
+  // une saisie ✏️ plus fraîche qu'un import 💼 périmé garde l'affichage « suivi » (la source la plus à jour gagne).
+  var tete = (totFull !== null && totFull >= tot) ? 'Patrimoine total : <b>' + fmtEUR(totFull) + '</b>' : '';
+  if (!tete && tot > 0) tete = 'Patrimoine suivi : <b>' + fmtEUR(tot) + '</b>';
+  if (tete && totFull !== null && tot > 0 && totFull > tot + 0.5) {
+    tete += ' <span class="mut">· dont ' + fmtEUR(tot) + ' pilotables + ' + fmtEUR(Math.round(totFull) - Math.round(tot)) + ' hors Radar (figés : crowdfunding, collection — jamais déployés ; liste dans la carte 👤, inventaire complet dans l\'onglet 💼)</span>';
+  }
   eD.innerHTML = '<div class="mut">📊 Mes montants</div><div>' +
-    (tot > 0 ? 'Patrimoine suivi : <b>' + fmtEUR(tot) + '</b>' + ' <button class="toggle" id="aujEditBtn" type="button">✏️ Modifier à la main</button>' : 'Aucun montant enregistré — importe ton fichier patrimoine (1 geste) ou saisis-les à la main.') +
+    (tete ? tete + ' <button class="toggle" id="aujEditBtn" type="button">✏️ Modifier à la main</button>' : 'Aucun montant enregistré — importe ton fichier patrimoine (1 geste) ou saisis-les à la main.') +
     '</div><div style="margin-top:6px"><button class="toggle" id="aujImportBtn" type="button">📥 Mettre à jour mes montants (fichier patrimoine .json)</button></div>';
   var bi = $("aujImportBtn");
   if (bi) bi.addEventListener("click", aujImportGo);
