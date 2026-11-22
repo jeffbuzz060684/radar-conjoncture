@@ -4,7 +4,10 @@ on:
     branches: [main]
   workflow_dispatch:
 permissions:
-  contents: read
+  # v9.1 : contents: write — le job deploy exécute le secours cotations (fetch-quotes +
+  # commit de quotes.json si un relevé frais réussit ; un push au GITHUB_TOKEN ne déclenche
+  # AUCUN workflow : pas de boucle, le cron quotes fait un pull --rebase).
+  contents: write
   pages: write
   id-token: write
 concurrency:
@@ -25,6 +28,30 @@ jobs:
         run: node tools/validate-data.js
       - name: Générer les icônes PNG
         run: node tools/gen-icons.js
+      - name: Secours cotations SBF 120 (anti-doublon 20 min)
+        # v9.1 : pipeline migré de sentinelle--perso — si le cron quotes.yml est retardé ou
+        # sauté, chaque déploiement tente un relevé frais depuis le runner. Non bloquant :
+        # en cas d'échec, le quotes.json du dernier commit est servi tel quel.
+        # --max-age-min=20 : anti-doublon — si le cron cotations a déjà livré un relevé de
+        # moins de 20 min, on ne re-collecte pas.
+        run: |
+          if node tools/fetch-quotes.js --max-age-min=20 --max-age-targets-min=720 && node tools/validate-quotes.js; then
+            echo "cotes fraîches générées pour ce déploiement"
+            git config user.name "radar-bot"
+            git config user.email "actions@github.com"
+            git add quotes.json ops.json
+            if ! git diff --cached --quiet; then
+              git commit -m "quotes: secours déploiement $(date -u '+%Y-%m-%d %Hh%M UTC')"
+              git pull --rebase origin main
+              git push || echo "::warning::push quotes.json en échec (rebase ?) — déploiement servi quand même"
+            fi
+          else
+            git checkout -- quotes.json ops.json 2>/dev/null || true
+            echo "::warning::Relevé des cotes en échec (ou invalide) — quotes.json du dernier commit servi s'il existe"
+          fi
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          HEALTHCHECKS_URL: ${{ secrets.HEALTHCHECKS_URL }}
       - uses: actions/configure-pages@v5
         with:
           enablement: true

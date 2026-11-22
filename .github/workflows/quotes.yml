@@ -1,0 +1,73 @@
+name: Cotations SBF 120 (toutes les 15 min en séance)
+# v9.1 : pipeline MIGRÉ de sentinelle--perso — il alimente l'onglet 🇫🇷 CAC 40 du Radar
+# (CAC_URL est désormais locale : /radar-conjoncture/quotes.json).
+on:
+  schedule:
+    # 07:00-16:45 UTC du lundi au vendredi, toutes les 15 min
+    # (Paris : 8h00-17h45 l'hiver — couvre la séance Euronext 9h-17h30).
+    # Cotes Yahoo/TradingView en différé ~15 min : un run à 15 min d'intervalle rafraîchit
+    # au mieux sans marteler l'API (4 requêtes par run : 3 batchs de 40 + l'indice).
+    - cron: "*/15 7-16 * * 1-5"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: "quotes"
+  cancel-in-progress: true
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # commit de quotes.json
+      actions: write # gh workflow run pages.yml (redéploiement des cotes)
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+      - name: Cotations SBF 120 (Yahoo, repli TradingView)
+        run: node tools/fetch-quotes.js --max-age-targets-min=720
+        # Échec (moins de 90 % de réponses, session Yahoo impossible) -> exit 1,
+        # quotes.json précédent conservé, pas de commit : l'UI garde ses cotes anciennes.
+        # ops.json (mémoire des pannes) est mis à jour et l'alerte ntfy envoyée avant l'exit.
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          HEALTHCHECKS_URL: ${{ secrets.HEALTHCHECKS_URL }}
+      - name: Validation
+        run: node tools/validate-quotes.js
+      - name: Commit si changé
+        id: changed
+        run: |
+          # git status --porcelain (et pas git diff --quiet) — ops.json est non tracké au
+          # premier run, un simple diff l'ignorerait silencieusement.
+          if [ -n "$(git status --porcelain quotes.json ops.json)" ]; then
+            git config user.name "radar-bot"
+            git config user.email "actions@github.com"
+            git add quotes.json ops.json
+            git commit -m "quotes: SBF 120 $(date -u '+%Y-%m-%d %Hh%M UTC')"
+            git pull --rebase origin main
+            git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Conserver ops.json même en échec (mémoire des pannes)
+        if: failure()
+        run: |
+          if [ -n "$(git status --porcelain -- ops.json)" ]; then
+            git config user.name "radar-bot"
+            git config user.email "actions@github.com"
+            git add ops.json
+            git commit -m "ops: panne cotations $(date -u '+%Y-%m-%d %Hh%M UTC')"
+            git pull --rebase origin main
+            git push
+          fi
+      - name: Redéployer Pages si les cotations ont changé
+        if: steps.changed.outputs.changed == 'true'
+        run: gh workflow run pages.yml --ref main
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Avertissement si échec
+        if: failure()
+        run: echo "::warning::Relevé des cotations en échec — quotes.json précédent conservé, l'UI sert les dernières cotes connues."
