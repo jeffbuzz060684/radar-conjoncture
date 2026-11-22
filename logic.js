@@ -1268,6 +1268,129 @@ function cascadeOf(d, radar, rawReels, override) {
   return out;
 }
 
+// ==================== v9.0 : backbone monde — XIRR + portefeuille fantôme 100 % ETF monde ====================
+
+// XIRR par bissection (versements négatifs = sorties de poche, valeur finale positive).
+// flows : [{date: "YYYY-MM-DD"|"YYYY-MM", amount: nombre signé}] ; retour en %/an, ou null
+// si indéterminable (entrées invalides, pas de changement de signe, ou racine hors bornes).
+var XIRR_BORNE_HAUTE = 100000;   // %/an : au-delà, on ne promet plus rien
+var XIRR_BORNE_BASSE = -99.99;   // %/an : f(r) diverge quand r → −100 %
+function flowsTOf(flows) {
+  // dates → fractions d'année depuis le premier flux ; retour null si entrée invalide
+  if (!Array.isArray(flows) || flows.length < 2) return null;
+  var ms = [], am = [], i;
+  for (i = 0; i < flows.length; i++) {
+    var f = flows[i];
+    if (!f || typeof f !== "object") return null;
+    var a = num(f.amount);
+    if (a === null || a === 0) return null;
+    var t = (typeof f.date === "string") ? Date.parse(f.date.length === 7 ? f.date + "-01" : f.date) : (typeof f.date === "number" ? f.date : NaN);
+    if (!isFinite(t)) return null;
+    ms.push(t); am.push(a);
+  }
+  var t0 = Math.min.apply(null, ms);
+  var neg = false, pos = false;
+  for (i = 0; i < am.length; i++) {
+    if (am[i] < 0) neg = true; else pos = true;
+    ms[i] = (ms[i] - t0) / (365.25 * 24 * 3600 * 1000);
+  }
+  if (!neg || !pos) return null;   // XIRR exige un changement de signe
+  return { t: ms, a: am };
+}
+function xirrOf(flows) {
+  var P = flowsTOf(flows);
+  if (!P) return null;
+  function f(r) {  // VAN au taux r (fraction)
+    var s = 0;
+    for (var i = 0; i < P.t.length; i++) s += P.a[i] / Math.pow(1 + r, P.t[i]);
+    return s;
+  }
+  var lo = XIRR_BORNE_BASSE / 100, hi = XIRR_BORNE_HAUTE / 100;
+  if (f(lo) * f(hi) > 0) return null;   // aucune racine encadrée
+  for (var it = 0; it < 60 && hi - lo > 1e-10; it++) {   // 60 pas : 2^-60 ≈ 1e-18, la précision double est atteinte
+    var mid = (lo + hi) / 2;
+    if (f(mid) > 0) lo = mid; else hi = mid;   // VAN décroissante en r (flux croissants)
+  }
+  var r = (lo + hi) / 2;
+  if (!isFinite(r) || r <= lo || r >= hi) return null;   // racine collée à une borne → indéterminé
+  return r * 100;   // %/an
+}
+
+// Portefeuille FANTÔME 100 % ETF monde : mêmes versements (socle €/mois) aux mêmes mois,
+// achetés à la clôture mensuelle IWDA connue AVANT le mois du versement (causalité stricte :
+// jamais de prix postérieur ni inventé). versements = { socleMensuel: €, premierMois: "YYYY-MM" } ;
+// valeurFinale = valorisation réelle actuelle (≥ 0) ; serieIwda = [{ym, close}, ...] triée ;
+// dateFinale = "YYYY-MM" de valorisation (prix = clôture de ce mois si connu, sinon la
+// dernière clôture ANTÉRIEURE). Verses hors série (avant la 1re clôture) sont comptés
+// à part, jamais valorisés : le fantôme reste honnête.
+function perfVsWorld(versements, valeurFinale, serieIwda, dateFinale) {
+  if (!versements || typeof versements !== "object") return null;
+  var socle = num(versements.socleMensuel);
+  var premier = versements.premierMois;
+  var vf = num(valeurFinale);
+  var dateF = dateFinale;
+  if (socle === null || socle <= 0 || vf === null || vf < 0) return null;
+  if (typeof premier !== "string" || !/^\d{4}-\d{2}$/.test(premier) || typeof dateF !== "string" || !/^\d{4}-\d{2}$/.test(dateF)) return null;
+  if (dateF < premier) return null;   // valoraison avant le premier versement : incohérent
+  if (!Array.isArray(serieIwda) || serieIwda.length < 2) return null;
+  var serie = [], i;
+  for (i = 0; i < serieIwda.length; i++) {
+    var s = serieIwda[i];
+    if (!s || !/^\d{4}-\d{2}$/.test(s.ym) || num(s.close) === null || s.close <= 0) return null;
+    serie.push({ ym: s.ym, close: num(s.close) });
+  }
+  serie.sort(function (x, y) { return x.ym < y.ym ? -1 : x.ym > y.ym ? 1 : 0; });
+
+  // dernier prix mensuel connu AVANT (strictement) le mois du versement
+  function prixAvant(ym) {
+    var p = null;
+    for (var k = 0; k < serie.length; k++) { if (serie[k].ym < ym) p = serie[k]; else break; }
+    return p;
+  }
+  var prixFinal = null;
+  for (i = 0; i < serie.length; i++) { if (serie[i].ym <= dateF) prixFinal = serie[i]; else break; }
+  if (!prixFinal) return null;   // aucune clôture ≤ dateFinale : rien à valoriser
+
+  var parts = 0, verse = 0, horsSerie = 0, flux = [], avis = null, mois = 0, ym = premier;
+  while (ym <= dateF) {
+    mois++;
+    var pxAch = prixAvant(ym);
+    if (pxAch) {
+      parts += socle / pxAch.close;
+      verse += socle;
+      flux.push({ date: ym + "-01", amount: -socle });
+    } else {
+      horsSerie++;   // versement AVANT la série : signalé, jamais inventé
+    }
+    // mois suivant (les mois de 28 à 31 jours se suivent ; on itère sur la chaîne YYYY-MM)
+    var y = +ym.slice(0, 4), m = +ym.slice(5, 7);
+    m++; if (m > 12) { m = 1; y++; }
+    ym = y + "-" + (m < 10 ? "0" : "") + m;
+  }
+  if (verse === 0) return null;   // aucun versement valorisable
+  var valeurGhost = parts * prixFinal.close;
+  flux.push({ date: prixFinal.ym + "-28", amount: valeurGhost });
+  avis = xirrOf(flux);
+
+  // XIRR réel : mêmes sorties de poche, valeur finale saisie
+  var fluxReel = flux.slice(0, flux.length - 1);
+  fluxReel.push({ date: prixFinal.ym + "-28", amount: vf });
+  var reel = (vf + verse > 0 || vf > 0) ? xirrOf(fluxReel) : null;   // vf = 0 avec versements : −100 % borné par la bissection
+  if (vf === 0 && verse > 0) reel = XIRR_BORNE_BASSE;
+
+  return {
+    xirrReel: reel,
+    xirrMonde: avis,
+    ecart: (reel !== null && avis !== null) ? reel - avis : null,   // pts de %/an
+    valeurGhost: valeurGhost,
+    partsGhost: parts,
+    investis: verse,
+    mois: mois,
+    horsSerie: horsSerie,
+    prixFinalYm: prixFinal.ym
+  };
+}
+
 // Export Node pour le harnais de tests (logique pure, aucun accès DOM).
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
@@ -1285,6 +1408,7 @@ if (typeof module !== "undefined" && module.exports) {
     opportuniteOf: opportuniteOf,   // v7.5 : carte 🏆 Meilleure opportunité (dropdown des actifs à avoir)
     ddAssetOf: ddAssetOf,   // v7.6 : 📉 drawdown par actif (vs sommet 52 sem.) — consolidation ddMsci/ddOr/ddBtc
     patReelsOf: patReelsOf, patLineOf: patLineOf, patNonClassesOf: patNonClassesOf,   // v7.0 : fusion app Patrimoine — classification auto vers les 7 lignes 👤 ; v7.3 : actifs ignorés rendus VISIBLES
-    PATRIMOINE: PATRIMOINE, PATRIMOINE_HORS_RADAR: PATRIMOINE_HORS_RADAR, PATRIMOINE_ACTIFS: PATRIMOINE_ACTIFS   // v5.11/v5.12 : univers réel de Jade (mapping + liste des 7 actifs)
+    PATRIMOINE: PATRIMOINE, PATRIMOINE_HORS_RADAR: PATRIMOINE_HORS_RADAR, PATRIMOINE_ACTIFS: PATRIMOINE_ACTIFS,
+    xirrOf: xirrOf, perfVsWorld: perfVsWorld, XIRR_BORNE_HAUTE: XIRR_BORNE_HAUTE, XIRR_BORNE_BASSE: XIRR_BORNE_BASSE   // v5.11/v5.12 : univers réel de Jade (mapping + liste des 7 actifs)
   };
 }

@@ -18,12 +18,14 @@ jobs:
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}   # v5.6 : notification palier app fermée — sujet long et aléatoire, jamais en dur (dépôt public)
         run: node tools/fetch-daily.js
+      - name: Régénérer la série mensuelle IWDA (data-serie.json, --if-stale)
+        run: node tools/gen-serie-mensuelle.js --if-stale
       - name: Commiter si changé
         id: commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data-daily.json
+          git add data-daily.json data-serie.json
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "data-daily.json inchangé — pas de commit."
