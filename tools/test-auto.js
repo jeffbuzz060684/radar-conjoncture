@@ -370,8 +370,8 @@ t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === 
 // ---------- index.html, logic.js, sw.js, auto.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v7.8", html.indexOf("<b>v7.8</b>") !== -1 && html.indexOf("<b>v7.7</b>") === -1);
-t("index.html: aucun ancien badge v7.6/v7.5/v7.4/v7.3/v7.2/v7.1/v7.0/v6.3/v6.2/v6.1/v6.0/v5.13/v5.12.1/v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v7.7</b>", "<b>v7.6</b>", "<b>v7.5</b>", "<b>v7.4</b>", "<b>v7.3</b>", "<b>v7.2</b>", "<b>v7.1</b>", "<b>v7.0</b>", "<b>v6.3</b>", "<b>v6.2</b>", "<b>v6.1</b>", "<b>v6.0</b>", "<b>v5.13</b>", "<b>v5.12.1</b>", "<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
+t("index.html: badge v8.0", html.indexOf("<b>v8.0</b>") !== -1 && html.indexOf("<b>v7.8</b>") === -1);
+t("index.html: aucun ancien badge v7.8/v7.7/v7.6/v7.5/v7.4/v7.3/v7.2/v7.1/v7.0/v6.3/v6.2/v6.1/v6.0/v5.13/v5.12.1/v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v7.8</b>", "<b>v7.7</b>", "<b>v7.6</b>", "<b>v7.5</b>", "<b>v7.4</b>", "<b>v7.3</b>", "<b>v7.2</b>", "<b>v7.1</b>", "<b>v7.0</b>", "<b>v6.3</b>", "<b>v6.2</b>", "<b>v6.1</b>", "<b>v6.0</b>", "<b>v5.13</b>", "<b>v5.12.1</b>", "<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: logic.js chargé entre vehicles.js et le script UI inline",
   html.indexOf('<script src="vehicles.js"></script>') !== -1 &&
@@ -397,8 +397,8 @@ t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: VIX lissé utilisé dans le scoring (vixEff, désormais dans logic.js)", srcLogic.indexOf("der.vixEff") !== -1 && srcLogic.indexOf("vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v33", sw.indexOf('CACHE = "radar-v33"') !== -1 && sw.indexOf('CACHE = "radar-v32"') === -1);
-t("sw.js: anciens caches v31/v30/v29/v28/v27/v26/v25/v24/v23/v22/v21/v20/v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4 absents (v3 omis : préfixe des caches v30+, comme v1/v2 l'ont été aux époques v10/v20)", ["radar-v32", "radar-v31", "radar-v30", "radar-v29", "radar-v28", "radar-v27", "radar-v26", "radar-v25", "radar-v24", "radar-v23", "radar-v22", "radar-v21", "radar-v20", "radar-v16", "radar-v15", "radar-v14", "radar-v13", "radar-v12", "radar-v11", "radar-v10", "radar-v9", "radar-v8", "radar-v7", "radar-v6", "radar-v5", "radar-v4"].every(function (c) { return sw.indexOf(c) === -1; }));
+t("sw.js: cache v34", sw.indexOf('CACHE = "radar-v34"') !== -1 && sw.indexOf('CACHE = "radar-v33"') === -1);
+t("sw.js: anciens caches v33/v32/v31/v30/v29/v28/v27/v26/v25/v24/v23/v22/v21/v20/v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4 absents (v3 omis : préfixe des caches v30+, comme v1/v2 l'ont été aux époques v10/v20)", ["radar-v33", "radar-v32", "radar-v31", "radar-v30", "radar-v29", "radar-v28", "radar-v27", "radar-v26", "radar-v25", "radar-v24", "radar-v23", "radar-v22", "radar-v21", "radar-v20", "radar-v16", "radar-v15", "radar-v14", "radar-v13", "radar-v12", "radar-v11", "radar-v10", "radar-v9", "radar-v8", "radar-v7", "radar-v6", "radar-v5", "radar-v4"].every(function (c) { return sw.indexOf(c) === -1; }));
 t("sw.js: logic.js dans le shell", sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
 t("sw.js: shell réseau d'abord + repli cache (plus aucun skew HTML frais / JS périmé)",
@@ -1606,6 +1606,75 @@ t("v7.7: sw.js — cac.js dans le SHELL (le service worker le pré-cache : l'ong
   sw.indexOf('"./cac.js"') !== -1);
 t("v7.7: index.html — cache localStorage du dernier relevé (affichage instantané à l'ouverture, puis rafraîchissement en ligne)",
   html.indexOf('CAC_CACHE = "radar-cac-quotes-v1"') !== -1 && html.indexOf("cacSave") !== -1);
+
+// ---------- v8.0 : 💧 Ton prochain euro — cascade officielle des versements (demande de Jade du 22/11/2026) ----------
+t("v8.0: cascadeOf + CIBLES exportés — structure cible gravée (sécurisé 24 · actions 30 · immo 35 · PE 10 · or 5 · BTC 2)",
+  typeof L.cascadeOf === "function" && L.CIBLES.securise === 24 && L.CIBLES.actions === 30 && L.CIBLES.immo === 35 && L.CIBLES.pe === 10 && L.CIBLES.or === 5 && L.CIBLES.btc === 2);
+t("v8.0: noms littéraux de la cascade = liste blanche PATRIMOINE_ACTIFS (7 lignes, cohérence garantie)",
+  L.PATRIMOINE_ACTIFS.map(function (a) { return a.nom; }).filter(function (n) {
+    return ["Actions — MSCI World", "Fonds euro", "SCPI", "Livret", "Or", "Bitcoin", "Private equity"].indexOf(n) !== -1;
+  }).length === 7);
+var CAS_D = L.normalizeData(L.DEFAULT_DATA);   // données figées du 16/10 : dd −1,3 %, aucun palier atteint
+var CAS_R = L.radarAll(CAS_D);
+var cas1 = L.cascadeOf(CAS_D, CAS_R, {}, null);
+t("v8.0: sans montants réels → dispo false + invitation (✏️ et import JSON 💼), jamais de destination inventée",
+  cas1.dispo === false && cas1.destination === null && cas1.etat === null &&
+  cas1.note.indexOf("✏️") !== -1 && cas1.note.indexOf("💼") !== -1 && cas1.note.indexOf("GitHub") !== -1);
+// reels de test : total 102 500 € → actions 48,8 · sécurisé 20,5 (< 22) · immo 24,4 · PE 4,9 · or 1,0 · BTC 0,5
+var CAS_REELS = { "Actions — MSCI World": 50000, "Fonds euro": 5000, SCPI: 25000, Livret: 16000, Or: 1000, Bitcoin: 500, "Private equity": 5000 };
+var cas2 = L.cascadeOf(CAS_D, CAS_R, CAS_REELS, null);
+t("v8.0: poids réels au centième près (actions 48,8 · sécurisé 20,5 · immo 24,4 · PE 4,9 · or 1,0 · BTC 0,5 ; total 102 500 €)",
+  cas2.dispo === true && cas2.total === 102500 && cas2.poids.actions === 48.8 && cas2.poids.securise === 20.5 &&
+  cas2.poids.immo === 24.4 && cas2.poids.pe === 4.9 && cas2.poids.or === 1 && cas2.poids.btc === 0.5);
+t("v8.0: poche sécurisée sous 22 % → destination fonds euro AV (état securise), AVANT le moteur actions",
+  cas2.etat === "securise" && cas2.destination.titre.indexOf("Fonds euro AV") !== -1 && cas2.destination.enceinte === "Assurance vie");
+var CAS_D3 = L.normalizeData(L.DEFAULT_DATA); CAS_D3.msci = 110;   // palier −5 % franchi
+var cas3 = L.cascadeOf(CAS_D3, L.radarAll(CAS_D3), CAS_REELS, null);
+t("v8.0: palier franchi non déployé → court-circuite tout : destination DCAM déploie le palier (même règle que 🎯)",
+  cas3.etat === "palier" && cas3.destination.titre.indexOf("déploie le palier") !== -1 &&
+  cas3.destination.msg.indexOf("25 % de la réserve") !== -1 &&
+  cas3.warns.length === 1 && cas3.warns[0].indexOf("ne vend jamais") !== -1);
+var CAS_D3B = L.normalizeData(L.DEFAULT_DATA); CAS_D3B.msci = 121; CAS_D3B.paliersDone.p5 = true;   // dd −7,3 % : seul −5 % est franchi, et il est déployé
+var cas3b = L.cascadeOf(CAS_D3B, L.radarAll(CAS_D3B), CAS_REELS, null);
+t("v8.0: palier franchi MAIS déployé → la cascade reprend son cours normal (fond euro si poche creuse)",
+  cas3b.etat !== "palier" && cas3b.etat === "securise");
+// livret saisi sous 16 000 € → règle ABSOLUE en priorité 0, même si la poche sécurisée est large
+var cas4 = L.cascadeOf(CAS_D, CAS_R, { "Actions — MSCI World": 30000, "Fonds euro": 30000, SCPI: 2000, Livret: 5000 }, null);
+t("v8.0: Livret A sacré — sous 16 000 € → recharge d'abord (priorité 0, absolue, même poche sécurisée large)",
+  cas4.etat === "livret" && cas4.destination.titre.indexOf("recharge la précaution") !== -1);
+var cas5 = L.cascadeOf(CAS_D, CAS_R, { "Actions — MSCI World": 30000, "Fonds euro": 10000, Livret: 16000 }, null);
+t("v8.0: défaut sain — livret plein + sécurisé OK → moteur DCAM (état moteur, PEA, sans palier)",
+  cas5.etat === "moteur" && cas5.destination.titre.indexOf("DCAM — ETF monde") !== -1 && cas5.destination.enceinte === "PEA (Amundi PEA Monde MSCI World)");
+var casTs = null; CAS_R.list.forEach(function (a) { if (a.id === "actions") casTs = (L.num(a.timingScore) !== null) ? a.timingScore : a.score; });
+t("v8.0: verdict d'entrée PARTAGÉ avec 💼/🧮/🎯 — même entryPrefOf, même préférence",
+  cas5.verdictEntree !== null && cas5.verdictEntree.pref === L.entryPrefOf(CAS_D, CAS_R.der, casTs).pref &&
+  cas5.verdictEntree.recommande === L.entryPrefOf(CAS_D, CAS_R.der, casTs).recommande);
+var casOr = L.cascadeOf(CAS_D, CAS_R, { "Actions — MSCI World": 40000, "Fonds euro": 40000, Livret: 16000, Or: 4000 }, null);
+t("v8.0: satellites à doses — or < 3 % sous-dosé + renfort seulement si le conseil dit INVESTIR ; BTC ≥ 2 % PLAFOND ATTEINT ; SCV ~5 % non lancé (AVWS non éligible PEA)",
+  cas2.satellites[0].statut === "sous-dosé" && cas2.satellites[0].msg.indexOf("Louve") !== -1 && cas2.satellites[0].msg.indexOf("INVESTIR") !== -1 &&
+  L.cascadeOf(CAS_D, CAS_R, { "Actions — MSCI World": 40000, "Fonds euro": 40000, Livret: 16000, Bitcoin: 2000 }, null).satellites[1].statut === "PLAFOND ATTEINT" &&
+  cas2.satellites[2].msg.indexOf("AVWS") !== -1 && cas2.satellites[2].msg.indexOf("non éligible PEA") !== -1);
+t("v8.0: interdits de la cascade — 6 lignes dont Livret P/CAT non renouvelés, crowdfunding, SCPI avec poids immo dynamique, TTE borné 30–32 %, CTO après plafond PEA, jamais vendre sur baisse",
+  cas2.interdits.length === 6 && cas2.interdits[0].q.indexOf("Livret P") !== -1 && cas2.interdits[0].p.indexOf("NON renouvelés") !== -1 &&
+  cas2.interdits[1].q.indexOf("Crowdfunding") !== -1 && cas2.interdits[2].p.indexOf(cas2.poids.immo + " %") !== -1 &&
+  cas2.interdits[3].p.indexOf("30–32 %") !== -1 && cas2.interdits[4].q.indexOf("CTO") !== -1 && cas2.interdits[5].p.indexOf("JAMAIS") !== -1);
+t("v8.0: hiérarchie des 5 règles + note gravée 22/11/2026 + disclaimer (destination, jamais un montant)",
+  cas2.etapes.length === 5 && cas2.etapes[0].indexOf("Livret A sacré") !== -1 && cas2.etapes[1].indexOf("Palier") !== -1 &&
+  cas2.etapes[2].indexOf("fonds euro") !== -1 && cas2.etapes[3].indexOf("DCAM") !== -1 && cas2.etapes[4].indexOf("Satellites") !== -1 &&
+  cas2.note.indexOf("22/11/2026") !== -1 && cas2.note.indexOf("DESTINATION") !== -1 && cas2.note.indexOf("jamais un montant") !== -1);
+t("v8.0: robustesse — radar dégénéré {der:{}} ne crashe pas (piège 35 : adviceOf sous try/catch, .list absent toléré)",
+  (function () { var c = L.cascadeOf(CAS_D, { der: {} }, CAS_REELS, null); return c.dispo === true && c.destination !== null; })());
+t("v8.0: index.html — carte 💧 rendue entre 🎯 Ma décision et Classement des actifs (cascadeCard + cascDest + cascDet)",
+  html.indexOf('id="cascadeCard"') > html.indexOf('id="decisionCard"') &&
+  html.indexOf('id="cascadeCard"') < html.indexOf("<h2>Classement des actifs</h2>") &&
+  html.indexOf("💧 Ton prochain euro") !== -1 && html.indexOf('id="cascDest"') !== -1 && html.indexOf('id="cascDet"') !== -1);
+t("v8.0: index.html — renderCascade défini (garde typeof anti-skew, esc() sur tout textuel) et appelé UNE fois dans renderRadar juste après renderDecision",
+  html.indexOf("function renderCascade") !== -1 && html.indexOf("typeof cascadeOf") !== -1 &&
+  html.split("renderCascade(d, radar);").length - 1 === 1 &&
+  html.indexOf("renderCascade(d, radar);") > html.indexOf("function renderRadar") &&
+  html.indexOf("renderCascade(d, radar);") > html.indexOf("renderDecision(d, radar);"));
+t("v8.0: index.html — module 💼 passé en v12 (les données restent sur le téléphone, hors dépôt ; APP_VERSION v12)",
+  html.indexOf('var APP_VERSION = "v12";') !== -1 && html.indexOf('var APP_VERSION = "v11"') === -1);
 
 // ---------- Bilan ----------
 var fail = results.filter(function (r) { return !r.ok; });
