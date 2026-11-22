@@ -214,7 +214,7 @@
 <header>
   <div class="hrow">
     <h1>📡 Radar <span>Conjoncture</span></h1>
-    <span class="badge">🔄 Maj auto quotidienne · <b>v8.2</b></span>
+    <span class="badge">🔄 Maj auto quotidienne · <b>v9.1</b></span>
   </div>
   <div class="hrow" style="margin-top:6px">
     <span class="chip" id="dataChip">—</span>
@@ -2281,10 +2281,11 @@ function renderEpisodes() {
   t.innerHTML = "<tr><th>Date</th><th>Ancien sommet</th><th>Nouveau sommet</th><th>Bilan de l'épisode</th></tr>" + rows;
 }
 
-// ---- v7.7 : onglet 🇫🇷 CAC 40 — fusion Sentinelle perso (classement d'achat + macro en contexte) ----
-// Les cotes vivent dans le pipeline public de Sentinelle (quotes.json, même origine GitHub Pages,
-// rafraîchi en séance par les pings horaires) : le Radar LES RELIT au lieu de dupliquer le pipeline.
-var CAC_URL = "/sentinelle--perso/quotes.json";
+// ---- v7.7 : onglet 🇫🇷 CAC 40 — classement d'achat + macro en contexte ----
+// v9.1 : pipeline MIGRÉ dans CE dépôt (sentinelle--perso supprimé) — les cotes vivent ici
+// même : /radar-conjoncture/quotes.json, rafraîchi en séance par le cron quotes.yml (15 min)
+// + le secours de chaque déploiement Pages. Composition : sbf120.json (rebuild mensuel).
+var CAC_URL = "/radar-conjoncture/quotes.json";
 var CAC_CACHE = "radar-cac-quotes-v1";
 var cacState = { q: null, loading: false, lastTry: 0, query: "" };
 (function cacInit() {
