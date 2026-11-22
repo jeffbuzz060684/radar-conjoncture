@@ -370,7 +370,7 @@ t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === 
 // ---------- index.html, logic.js, sw.js, auto.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v8.1", html.indexOf("<b>v8.1</b>") !== -1 && html.indexOf("<b>v8.0</b>") === -1);
+t("index.html: badge v8.2", html.indexOf("<b>v8.2</b>") !== -1 && html.indexOf("<b>v8.1</b>") === -1 && html.indexOf("<b>v8.0</b>") === -1);
 t("index.html: aucun ancien badge v8.0/v7.8/v7.7/v7.6/v7.5/v7.4/v7.3/v7.2/v7.1/v7.0/v6.3/v6.2/v6.1/v6.0/v5.13/v5.12.1/v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v8.0</b>", "<b>v7.8</b>", "<b>v7.7</b>", "<b>v7.6</b>", "<b>v7.5</b>", "<b>v7.4</b>", "<b>v7.3</b>", "<b>v7.2</b>", "<b>v7.1</b>", "<b>v7.0</b>", "<b>v6.3</b>", "<b>v6.2</b>", "<b>v6.1</b>", "<b>v6.0</b>", "<b>v5.13</b>", "<b>v5.12.1</b>", "<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: logic.js chargé entre vehicles.js et le script UI inline",
@@ -397,7 +397,7 @@ t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: VIX lissé utilisé dans le scoring (vixEff, désormais dans logic.js)", srcLogic.indexOf("der.vixEff") !== -1 && srcLogic.indexOf("vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v35", sw.indexOf('CACHE = "radar-v35"') !== -1 && sw.indexOf('CACHE = "radar-v34"') === -1);
+t("sw.js: cache v36", sw.indexOf('CACHE = "radar-v36"') !== -1 && sw.indexOf('CACHE = "radar-v35"') === -1 && sw.indexOf('CACHE = "radar-v34"') === -1);
 t("sw.js: anciens caches v34/v33/v32/v31/v30/v29/v28/v27/v26/v25/v24/v23/v22/v21/v20/v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4 absents (v3 omis : préfixe des caches v30+, comme v1/v2 l'ont été aux époques v10/v20)", ["radar-v34", "radar-v33", "radar-v32", "radar-v31", "radar-v30", "radar-v29", "radar-v28", "radar-v27", "radar-v26", "radar-v25", "radar-v24", "radar-v23", "radar-v22", "radar-v21", "radar-v20", "radar-v16", "radar-v15", "radar-v14", "radar-v13", "radar-v12", "radar-v11", "radar-v10", "radar-v9", "radar-v8", "radar-v7", "radar-v6", "radar-v5", "radar-v4"].every(function (c) { return sw.indexOf(c) === -1; }));
 t("sw.js: logic.js dans le shell", sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
@@ -1718,6 +1718,31 @@ t("v8.1: la vue complète reste INTACTE derrière 🧭 — aucune carte supprim�
   html.indexOf("🧮 Simulateur d'apport") !== -1);
 t("v8.1: module 💼 toujours v12 (aucun changement côté données), renvois ✏️ vers la carte 👤 toujours visibles",
   html.indexOf('var APP_VERSION = "v12";') !== -1);
+
+// ---------- v8.2 : 📍 affiche le patrimoine COMPLET (retour de Jade « il me manque patrimoine ») ----------
+t("v8.2: la carte 📍 affiche « Patrimoine total » (l'inventaire 💼 complet, plus seulement les pilotables)",
+  html.indexOf("Patrimoine total : <b>") !== -1);
+t("v8.2: le total complet se calcule sur les mêmes données que l'onglet 💼 (suivi-patrimoine-v4, quantité × prix > 0, gardes enveloppes/assets)",
+  html.indexOf('JSON.parse(localStorage.getItem("suivi-patrimoine-v4") || "null")') !== -1 &&
+  html.indexOf("var v = (Number(a.quantity) || 0) * (Number(a.currentPrice) || 0);") !== -1 &&
+  html.indexOf("if (v > 0) totFull += v;") !== -1 &&
+  html.indexOf("Array.isArray(patData.envelopes) && patData.envelopes.length") !== -1);
+t("v8.2: décomposition lisible « dont X pilotables + Y hors Radar » — le total pilotable reste la base des poids, le hors Radar est une info, jamais une destination",
+  html.indexOf("dont ' + fmtEUR(tot) + ' pilotables + ") !== -1 &&
+  html.indexOf("hors Radar (figés : crowdfunding, collection") !== -1 &&
+  html.indexOf("Math.round(totFull) - Math.round(tot)") !== -1);
+t("v8.2: repli honnête — 💼 périmé/✏️ plus fraîche (tot < totFull impossible) → on garde « Patrimoine suivi » ; sans ✏️ ni 💼 on garde l'invitation ; tout sous try/catch (jamais de page blanche)",
+  html.indexOf("if (!tete && tot > 0) tete = 'Patrimoine suivi : <b>' + fmtEUR(tot) + '</b>';") !== -1 &&
+  html.indexOf("(totFull !== null && totFull >= tot)") !== -1 &&
+  html.indexOf("'Aucun montant enregistré — importe ton fichier patrimoine (1 geste) ou saisis-les à la main.'") !== -1 &&
+  html.indexOf("} catch (e) { totFull = null; }") !== -1);
+t("v8.2: aucune règle ne change — totFull reste CONFINÉ à la zone 📊 de renderAujourdhui (jamais passé à decisionOf/cascadeOf), les moteurs restent alimentés par decMergedReels",
+  html.indexOf("totFull") > html.indexOf("4 · Tes montants") &&
+  html.lastIndexOf("totFull") < html.indexOf("aujImportBtn") &&
+  html.indexOf("decisionOf(d, radar") !== -1,
+  "structurel");
+t("v8.2: le commentaire de conception est gravé dans le code (poids/pourcentages inchangés, total 💼 = info)",
+  html.indexOf("le total pilotable reste la base des poids/pourcentages (aucune règle ne change)") !== -1);
 
 // ---------- Bilan ----------
 var fail = results.filter(function (r) { return !r.ok; });
