@@ -276,6 +276,20 @@ ck("v6.0/v7.0 : montants réels persistés (radar-reels) + stock affiché — 30
 ck("v8.0 : la carte 💧 RE-RENDUE après la saisie ✏️ — total 42 000 €, Actions 71.4 %, Sécurisé 23.8 % (≥ 22 % → toujours le moteur DCAM, destination jamais périmée)",
   txt("cascDet").indexOf("42 000 €") !== -1 && txt("cascDet").indexOf("Actions 71.4 %") !== -1 && txt("cascDet").indexOf("Sécurisé 23.8 %") !== -1 &&
   txt("cascDest").indexOf("DCAM — ETF monde") !== -1);
+// v8.1 : carte 📍 Aujourd'hui — l'écran simple par défaut (prochain euro + action + marché + montants)
+ck("v8.1 : carte 📍 rendue — prochain euro = DCAM — ETF monde · PEA (moteur : sécurisé 60,2 % sur reels auto, aucune invitation fantôme)",
+  txt("aujEuro").indexOf("Ton prochain euro") !== -1 && txt("aujEuro").indexOf("DCAM — ETF monde") !== -1 &&
+  txt("aujEuro").indexOf("PEA (Amundi PEA Monde MSCI World)") !== -1 && txt("aujEuro").indexOf("Entrée :") !== -1);
+ck("v8.1 : action du jour lisible en 1 ligne — socle normal, prochain déclencheur −5 % chiffré, AUCUN bouton déployé hors palier",
+  txt("aujAction").indexOf("Rien de spécial") !== -1 && txt("aujAction").indexOf("1 000 €/mois") !== -1 &&
+  txt("aujAction").indexOf("Prochain déclencheur : −5 %") !== -1 && txt("aujAction").indexOf("encore") !== -1 &&
+  txt("aujAction").indexOf("aujDeploy") === -1);
+ck("v8.1 : marché en 1 phrase (posture + score du jour) + import 1 geste proposé, mode simple par défaut (bouton 🧭)",
+  txt("aujMarche").indexOf("posture") !== -1 && txt("aujMarche").indexOf("/100") !== -1 &&
+  txt("aujData").indexOf("Mettre à jour mes montants") !== -1 &&
+  txt("btnMode").indexOf("Voir le détail") !== -1);
+ck("v8.1 : la carte 📍 suit la saisie ✏️ — 42 000 € sans rechargement (mêmes moteurs que 💧, une seule source de vérité)",
+  txt("aujData").indexOf("42 000 €") !== -1 && txt("aujEuro").indexOf("DCAM — ETF monde") !== -1);
 ck("v6.0 : la carte 👤 patrimoine affiche le montant saisi dans la ligne",
   txt("patrimoineList").indexOf("30 000 €") !== -1);
 ck("v6.2 : le montant est SOUS le nom (plus de 4e colonne nowrap qui débordait de la carte)",
@@ -456,7 +470,7 @@ var fail = checks.filter(function (c) { return !c.ok; });
 checks.forEach(function (c) { console.log((c.ok ? "✅ " : "❌ ") + c.name); });
 console.log("");
 if (fail.length) { console.log("SIM ÉCHECS : " + fail.length); process.exit(1); }
-console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul + synthèse à source partagée v5.10 + univers réel v5.11 + carte « Ton patrimoine réel » 7 actifs v5.12 + gardes anti-skew logic.js périmé v5.12.1 + lecture honnête ligne par ligne v5.13 + carte 🎯 Ma décision v6.0/v6.1 : flux/supplément-lecture/stock + plus de double saisie (renvoi 🧮) + éditeur ✏️ + skew + ligne patrimoine sans débordement v6.2 + lecture sous l'enceinte wrappable v6.3 + fusion app Patrimoine 💼 v7.0 : module v11 en IIFE, montants auto vers les 7 lignes 👤, ✏️ prioritaire, hook PatrimoineRender + v7.3 : actifs 💼 non classés affichés par leur nom, plus d'omission silencieuse + v7.5 : carte 🏆 Meilleure opportunité — dropdown des 6 actifs à avoir, bandeau vedette, détail par actif + destination réelle + contexte paliers actions + garde anti-skew + v7.6 : 📉 drawdown par actif — or/actions/BTC vs sommet 52 sem., lectures honnêtes pour obligations/immo/monétaire + onglet 🇫🇷 CAC 40 v7.7 : fusion Sentinelle perso — classement 🎯 qualité 40 %/valorisation 25 %/consensus 35 % (percentiles sur tout le SBF, filtre cac40 après), macro 🌍 du Radar en contexte jamais notée, tableau compact + détail complet au tap, garde anti-skew, hors ligne sans crash) + v8.0 : carte 💧 Ton prochain euro — cascade des versements livrée (destination prioritaire : Livret A sacré → palier → fonds euro → DCAM ; satellites à doses fixes ; 6 interdits) sur les montants réels ✏️/auto 💼, re-rendue à chaque saisie.");
+console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul + synthèse à source partagée v5.10 + univers réel v5.11 + carte « Ton patrimoine réel » 7 actifs v5.12 + gardes anti-skew logic.js périmé v5.12.1 + lecture honnête ligne par ligne v5.13 + carte 🎯 Ma décision v6.0/v6.1 : flux/supplément-lecture/stock + plus de double saisie (renvoi 🧮) + éditeur ✏️ + skew + ligne patrimoine sans débordement v6.2 + lecture sous l'enceinte wrappable v6.3 + fusion app Patrimoine 💼 v7.0 : module v11 en IIFE, montants auto vers les 7 lignes 👤, ✏️ prioritaire, hook PatrimoineRender + v7.3 : actifs 💼 non classés affichés par leur nom, plus d'omission silencieuse + v7.5 : carte 🏆 Meilleure opportunité — dropdown des 6 actifs à avoir, bandeau vedette, détail par actif + destination réelle + contexte paliers actions + garde anti-skew + v7.6 : 📉 drawdown par actif — or/actions/BTC vs sommet 52 sem., lectures honnêtes pour obligations/immo/monétaire + onglet 🇫🇷 CAC 40 v7.7 : fusion Sentinelle perso — classement 🎯 qualité 40 %/valorisation 25 %/consensus 35 % (percentiles sur tout le SBF, filtre cac40 après), macro 🌍 du Radar en contexte jamais notée, tableau compact + détail complet au tap, garde anti-skew, hors ligne sans crash) + v8.0 : carte 💧 Ton prochain euro — cascade des versements livrée (destination prioritaire : Livret A sacré → palier → fonds euro → DCAM ; satellites à doses fixes ; 6 interdits) sur les montants réels ✏️/auto 💼, re-rendue à chaque saisie + v8.1 : carte 📍 Aujourd'hui — écran simple par défaut (prochain euro + action du jour + marché + mes montants), mode détaillé derrière 🧭, import patrimoine en 1 geste).");
 }).catch(function (e) {
   console.log("SIM ÉCHEC INATTENDU : " + (e && e.stack || e));
   process.exit(1);

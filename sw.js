@@ -1,4 +1,4 @@
-var CACHE = "radar-v34";
+var CACHE = "radar-v35";
 var SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png", "./logic.js", "./cac.js", "./auto.js", "./vehicles.js"];
 
 self.addEventListener("install", function (e) {
