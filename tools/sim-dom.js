@@ -253,6 +253,18 @@ ck("v6.1 : plus de champ de saisie dans la carte 🎯 (v6.0 decSuppMontant suppr
   els.decSuppMontant === undefined && store["radar-dec-supp"] === undefined);
 ck("v6.0/v7.0 : bloc stock à l'ouverture — l'auto 💼 alimente déjà le stock (1 300 + 5 000 + 2 000 = 8 300 €, écarts rendus) ; l'invitation ✏️ reste le comportement sans aucun montant (testé au harnais)",
   txt("decStock").indexOf("Ton stock") !== -1 && txt("decStock").indexOf("8 300 €") !== -1);
+// v8.0 : carte 💧 Ton prochain euro — reels auto 💼 seuls (actions 1 300 · fonds euro 5 000 · SCPI 2 000)
+ck("v8.0 : carte 💧 rendue sur les reels auto 💼 — destination du prochain euro = moteur DCAM (sécurisé 60,2 % ≥ 22 %, livret non saisi, pas de palier sur les données du jour)",
+  txt("cascDest").indexOf("DCAM — ETF monde") !== -1 && txt("cascDest").indexOf("PEA (Amundi PEA Monde MSCI World)") !== -1);
+ck("v8.0 : verdict d'entrée PARTAGÉ + structure 7 lignes (Sécurisé 60.2 %, Actions 15.7 %) + satellites or/BTC/SCV à doses",
+  txt("cascDest").indexOf("Entrée :") !== -1 &&
+  txt("cascDet").indexOf("8 300 €") !== -1 && txt("cascDet").indexOf("Sécurisé 60.2 %") !== -1 && txt("cascDet").indexOf("Actions 15.7 %") !== -1 &&
+  txt("cascDet").indexOf("Satellites à doses fixes") !== -1 && txt("cascDet").indexOf("plafond ABSOLU") !== -1 && txt("cascDet").indexOf("Small Cap Value") !== -1);
+ck("v8.0 : interdits complets (Livret P/CAT, crowdfunding, SCPI, TTE, CTO, vendre sur baisse) + hiérarchie 5 règles + note gravée 22/11/2026",
+  txt("cascDet").indexOf("Interdits de la cascade") !== -1 && txt("cascDet").indexOf("Livret P") !== -1 &&
+  txt("cascDet").indexOf("Crowdfunding") !== -1 && txt("cascDet").indexOf("30–32 %") !== -1 &&
+  txt("cascDet").indexOf("Vendre sur une baisse") !== -1 &&
+  txt("cascDet").indexOf("hiérarchie complète (5 règles)") !== -1 && txt("cascDet").indexOf("22/11/2026") !== -1);
 // éditeur ✏️ : saisie de montants réels → persistance + stock rendu
 els.btnReelsEdit.click();
 document.getElementById("reelIn0").value = "30000";   // Actions — MSCI World
@@ -261,6 +273,9 @@ els.btnReelsSave.click();
 ck("v6.0/v7.0 : montants réels persistés (radar-reels) + stock affiché — 30 000 + 10 000 ✏️ et 2 000 € auto 💼 SCPI = 42 000 € hors PE",
   (store["radar-reels"] || "").indexOf("30000") !== -1 &&
   txt("decStock").indexOf("42 000 €") !== -1 && txt("decStock").indexOf("pts") !== -1);
+ck("v8.0 : la carte 💧 RE-RENDUE après la saisie ✏️ — total 42 000 €, Actions 71.4 %, Sécurisé 23.8 % (≥ 22 % → toujours le moteur DCAM, destination jamais périmée)",
+  txt("cascDet").indexOf("42 000 €") !== -1 && txt("cascDet").indexOf("Actions 71.4 %") !== -1 && txt("cascDet").indexOf("Sécurisé 23.8 %") !== -1 &&
+  txt("cascDest").indexOf("DCAM — ETF monde") !== -1);
 ck("v6.0 : la carte 👤 patrimoine affiche le montant saisi dans la ligne",
   txt("patrimoineList").indexOf("30 000 €") !== -1);
 ck("v6.2 : le montant est SOUS le nom (plus de 4e colonne nowrap qui débordait de la carte)",
@@ -441,7 +456,7 @@ var fail = checks.filter(function (c) { return !c.ok; });
 checks.forEach(function (c) { console.log((c.ok ? "✅ " : "❌ ") + c.name); });
 console.log("");
 if (fail.length) { console.log("SIM ÉCHECS : " + fail.length); process.exit(1); }
-console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul + synthèse à source partagée v5.10 + univers réel v5.11 + carte « Ton patrimoine réel » 7 actifs v5.12 + gardes anti-skew logic.js périmé v5.12.1 + lecture honnête ligne par ligne v5.13 + carte 🎯 Ma décision v6.0/v6.1 : flux/supplément-lecture/stock + plus de double saisie (renvoi 🧮) + éditeur ✏️ + skew + ligne patrimoine sans débordement v6.2 + lecture sous l'enceinte wrappable v6.3 + fusion app Patrimoine 💼 v7.0 : module v11 en IIFE, montants auto vers les 7 lignes 👤, ✏️ prioritaire, hook PatrimoineRender + v7.3 : actifs 💼 non classés affichés par leur nom, plus d'omission silencieuse + v7.5 : carte 🏆 Meilleure opportunité — dropdown des 6 actifs à avoir, bandeau vedette, détail par actif + destination réelle + contexte paliers actions + garde anti-skew + v7.6 : 📉 drawdown par actif — or/actions/BTC vs sommet 52 sem., lectures honnêtes pour obligations/immo/monétaire + onglet 🇫🇷 CAC 40 v7.7 : fusion Sentinelle perso — classement 🎯 qualité 40 %/valorisation 25 %/consensus 35 % (percentiles sur tout le SBF, filtre cac40 après), macro 🌍 du Radar en contexte jamais notée, tableau compact + détail complet au tap, garde anti-skew, hors ligne sans crash).");
+console.log("SIM OK — " + checks.length + "/" + checks.length + " vérifications, aucune erreur d'exécution (charge complète + override daté + expiration + dates hostiles v5.9 + retour sur l'app + simulateur piloté par le forçage seul + synthèse à source partagée v5.10 + univers réel v5.11 + carte « Ton patrimoine réel » 7 actifs v5.12 + gardes anti-skew logic.js périmé v5.12.1 + lecture honnête ligne par ligne v5.13 + carte 🎯 Ma décision v6.0/v6.1 : flux/supplément-lecture/stock + plus de double saisie (renvoi 🧮) + éditeur ✏️ + skew + ligne patrimoine sans débordement v6.2 + lecture sous l'enceinte wrappable v6.3 + fusion app Patrimoine 💼 v7.0 : module v11 en IIFE, montants auto vers les 7 lignes 👤, ✏️ prioritaire, hook PatrimoineRender + v7.3 : actifs 💼 non classés affichés par leur nom, plus d'omission silencieuse + v7.5 : carte 🏆 Meilleure opportunité — dropdown des 6 actifs à avoir, bandeau vedette, détail par actif + destination réelle + contexte paliers actions + garde anti-skew + v7.6 : 📉 drawdown par actif — or/actions/BTC vs sommet 52 sem., lectures honnêtes pour obligations/immo/monétaire + onglet 🇫🇷 CAC 40 v7.7 : fusion Sentinelle perso — classement 🎯 qualité 40 %/valorisation 25 %/consensus 35 % (percentiles sur tout le SBF, filtre cac40 après), macro 🌍 du Radar en contexte jamais notée, tableau compact + détail complet au tap, garde anti-skew, hors ligne sans crash) + v8.0 : carte 💧 Ton prochain euro — cascade des versements livrée (destination prioritaire : Livret A sacré → palier → fonds euro → DCAM ; satellites à doses fixes ; 6 interdits) sur les montants réels ✏️/auto 💼, re-rendue à chaque saisie.");
 }).catch(function (e) {
   console.log("SIM ÉCHEC INATTENDU : " + (e && e.stack || e));
   process.exit(1);

@@ -1085,6 +1085,189 @@ function ddAssetOf(d, radar) {
   return out;
 }
 
+// ---------- v8.0 : 💧 Ton prochain euro — la cascade officielle des versements (demande de Jade du 22/11/2026) ----------
+// « À chaque ouverture, l'app doit me dire où mettre le prochain euro selon MON patrimoine
+// et le contexte économique. » Consolidation PURE : paliersOf (la même règle que la carte 🎯
+// — un palier franchi non déployé se déploie AVANT toute autre affectation), sanitizeReels
+// (les montants réels du téléphone, ✏️ + auto 💼 fusionnés ; jamais exportés), adviceOf
+// (stance du jour pour l'or), entryPrefOf (verdict d'entrée PARTAGÉ avec le conseil 💼, le
+// simulateur 🧮 et la carte 🎯 — les quatre affichages ne peuvent pas se contredire le même
+// jour). SEULE nouveauté : CIBLES — la structure cible gravée le 22/11/2026 au bilan
+// patrimoine (sécurisé ~24 %, actions ~30 %, immo plafond 35 %, PE 10 %, or bande 1–5 %,
+// BTC plafond ABSOLU 2 %) : une PRÉFÉRENCE patrimoniale, pas un signal de marché. La
+// cascade désigne une DESTINATION par priorité ; elle n'alloue jamais un montant (le
+// simulateur 🧮 reste l'outil de répartition fine) et la règle maison « jamais vendre sur
+// une baisse » reste maîtresse.
+var CIBLES = { securise: 24, actions: 30, immo: 35, pe: 10, or: 5, btc: 2 };   // en % du patrimoine total (7 lignes, PE inclus)
+var CIBLES_OR_MIN = 3;         // sous 3 % d'or : le profil Louve referme la bande tout seul — renfort direct seulement si le conseil dit INVESTIR
+var CIBLES_SEC_MARGE = 2;      // hystérésis : la poche sécurisée est « à ravitailler » sous (24 − 2) = 22 %
+var CIBLES_LIVRET_MIN = 16000; // Livret A sacré : jamais une destination au-dessus de 16 000 € — et à recharger EN PREMIER s'il est en dessous (quand le montant est saisi)
+
+// Noms littéraux des 7 lignes (liste blanche PATRIMOINE_ACTIFS — cohérence vérifiée par le harnais v8.0)
+var CASC_R_ACT = "Actions — MSCI World", CASC_R_FEU = "Fonds euro", CASC_R_SCP = "SCPI";
+var CASC_R_LIV = "Livret", CASC_R_OR = "Or", CASC_R_BTC = "Bitcoin", CASC_R_PE = "Private equity";
+
+// Helper local : stance d'un actif du jour (or…) via adviceOf, sans jamais tuer la cascade
+// (piège 35 : adviceOf exige un radar sain — sur données incohérentes on rend null, la carte reste)
+function cascadeStanceOf(d, radar, override, id) {
+  try {
+    var adv = adviceOf(d, radar, isPosture(override) ? override : null);
+    var f = null;
+    (adv.assets || []).forEach(function (a) { if (a.id === id) f = a; });
+    return f ? { verb: f.verb, stance: f.stance, cls: f.cls } : null;
+  } catch (e) { return null; }
+}
+
+// La cascade : (0) Livret A sacré → (1) palier de baisse franchi non déployé → (2) poche
+// sécurisée sous sa cible → (3) sinon le moteur DCAM. Satellites et interdits en lecture.
+function cascadeOf(d, radar, rawReels, override) {
+  var der = (radar && radar.der) ? radar.der : {};
+  var out = {
+    dispo: false, total: null, poids: null,
+    etat: null,          // "livret" | "palier" | "securise" | "moteur"
+    destination: null,   // { titre, enceinte, msg, couleur }
+    verdictEntree: null, // entryPrefOf — même source que 💼/🧮/🎯
+    satellites: [], interdits: [], warns: [], etapes: [], note: ""
+  };
+  if (typeof PATRIMOINE_ACTIFS === "undefined" || typeof sanitizeReels !== "function" ||
+      typeof paliersOf !== "function" || typeof entryPrefOf !== "function") {   // garde anti-skew (classe v5.12.1)
+    out.note = "Lecture de la cascade indisponible (logique incomplète) — mets à jour l'app.";
+    return out;
+  }
+  var reels = sanitizeReels(rawReels);
+  var has = false, k0;
+  for (k0 in reels) if (Object.prototype.hasOwnProperty.call(reels, k0)) { has = true; break; }
+  if (!has) {
+    out.note = "Saisis tes montants réels (bouton ✏️ de la carte 👤, ou importe le JSON du 22/11 dans l'onglet 💼) pour que la cascade te dise où va le prochain euro — ils restent sur ton téléphone, jamais exportés, jamais sur GitHub.";
+    return out;
+  }
+
+  // ---- poids réels par poche (7 lignes → 6 classes ; total = patrimoine complet, PE inclus) ----
+  var vAct = reels[CASC_R_ACT] || 0, vFeu = reels[CASC_R_FEU] || 0, vScp = reels[CASC_R_SCP] || 0;
+  var vLiv = reels[CASC_R_LIV] || 0, vOr = reels[CASC_R_OR] || 0, vBtc = reels[CASC_R_BTC] || 0, vPe = reels[CASC_R_PE] || 0;
+  var total = vAct + vFeu + vScp + vLiv + vOr + vBtc + vPe;
+  out.total = Math.round(total);
+  if (!(total > 0)) {
+    out.note = "Aucun montant exploitable (0 € sur les 7 lignes) — la cascade apparaîtra dès qu'un montant réel est enregistré.";
+    return out;
+  }
+  out.dispo = true;
+  out.poids = {
+    actions: r1(vAct / total * 100),
+    securise: r1((vFeu + vLiv) / total * 100),
+    immo: r1(vScp / total * 100),
+    pe: r1(vPe / total * 100),
+    or: r1(vOr / total * 100),
+    btc: r1(vBtc / total * 100)
+  };
+
+  // ---- verdict d'entrée PARTAGÉ (entryPrefOf) : timing actions du radar du jour ----
+  var actA = null, ts = null;
+  (radar.list || []).forEach(function (a) { if (a.id === "actions") actA = a; });
+  if (actA && num(actA.timingScore) !== null) ts = actA.timingScore;
+  else if (actA && num(actA.score) !== null) ts = actA.score;
+  out.verdictEntree = entryPrefOf(d, der, ts);
+
+  // ---- règle 0 : Livret A sacré — à recharger d'abord s'il est SAISI et sous 16 000 € (règle ABSOLUE, indépendante du reste de la poche sécurisée) ----
+  if (num(reels[CASC_R_LIV]) !== null && reels[CASC_R_LIV] < CIBLES_LIVRET_MIN) {
+    out.etat = "livret";
+    out.destination = {
+      titre: "Livret A — recharge la précaution d'abord",
+      enceinte: "Épargne de précaution (capitaux garantis)",
+      couleur: "var(--good)",
+      msg: "Livret à " + reels[CASC_R_LIV] + " € < 16 000 € de sécurité : le prochain euro va D'ABORD à la poche garantie — tout le reste attend (règle « Livret A sacré », jamais une destination au-dessus de 16 000 €)."
+    };
+  }
+
+  // ---- règle 1 : palier de baisse franchi non déployé → DCAM (priorité absolue, même règle que 🎯) ----
+  if (!out.etat) {
+    var pal = paliersOf(d, der), next = null, i;
+    for (i = 0; i < pal.length; i++) {
+      if (pal[i].atteint && !d.paliersDone["p" + pal[i].p]) { next = pal[i]; break; }
+    }
+    if (next) {
+      out.etat = "palier";
+      out.destination = {
+        titre: "DCAM — déploie le palier",
+        enceinte: "PEA (Amundi PEA Monde MSCI World)",
+        couleur: "var(--mid)",
+        msg: "Palier −" + next.p + " % FRANCHI (seuil " + next.seuil + " €) : déploye 25 % de la réserve sur DCAM puis marque le palier « déployé » — l'exception qui court-circuite toute la cascade (même règle que la carte 🎯, une seule fois par épisode)."
+      };
+    }
+  }
+
+  // ---- règle 2 : poche sécurisée sous sa cible (hystérésis 22 %) → fonds euro AV ----
+  if (!out.etat && out.poids.securise < CIBLES.securise - CIBLES_SEC_MARGE) {
+    out.etat = "securise";
+    out.destination = {
+      titre: "Fonds euro AV (boosté)",
+      enceinte: "Assurance vie",
+      couleur: "var(--good)",
+      msg: "Poche sécurisée à " + out.poids.securise + " % < cible " + CIBLES.securise + " % (fonds euro + livret) : le prochain euro va au fonds euro AV — capital garanti, gains verrouillés chaque année, offre bonifiée possible (Meilleurtaux). C'est l'anti-krach du patrimoine : hors palier, cette poche se ravitaille AVANT le moteur actions."
+    };
+  }
+
+  // ---- règle 3 (défaut) : le moteur DCAM ----
+  if (!out.etat) {
+    out.etat = "moteur";
+    out.destination = {
+      titre: "DCAM — ETF monde",
+      enceinte: "PEA (Amundi PEA Monde MSCI World)",
+      couleur: "var(--mid)",
+      msg: "Poche sécurisée OK (" + out.poids.securise + " % ≥ " + (CIBLES.securise - CIBLES_SEC_MARGE) + " %) et actions à " + out.poids.actions + " % vs cible " + CIBLES.actions + " % à terme : le prochain euro va au moteur — DCAM en PEA (0 impôt sur les retraits après 5 ans, 0 frais de structure), en une fois ou étalé selon le verdict d'entrée du jour."
+    };
+  }
+
+  // ---- satellites (lecture à doses, jamais la destination principale) ----
+  var sOr = cascadeStanceOf(d, radar, override, "or");
+  out.satellites.push({
+    id: "or", nom: "Or", poids: out.poids.or, bande: "1–" + CIBLES.or + " %",
+    statut: out.poids.or < CIBLES_OR_MIN ? "sous-dosé" : (out.poids.or > CIBLES.or ? "au-dessus de la bande" : "dans la bande"),
+    msg: out.poids.or < CIBLES_OR_MIN
+      ? "Or à " + out.poids.or + " % < " + CIBLES_OR_MIN + " % : le profil Louve Infinity (25 % or) referme la bande tout seul — renfort direct UNIQUEMENT si le conseil du jour dit or " + (sOr ? sOr.verb : "?") + " (stance du jour : " + (sOr ? sOr.stance : "lecture indisponible") + "), et en satellite, jamais en destination principale."
+      : (out.poids.or > CIBLES.or
+        ? "Or à " + out.poids.or + " % > bande 1–" + CIBLES.or + " % : plus de renfort — la poche fait son travail d'assurance, on ne la gave pas."
+        : "Or à " + out.poids.or + " % dans la bande 1–" + CIBLES.or + " % : laisser le profil Louve travailler, aucun geste.")
+  });
+  out.satellites.push({
+    id: "crypto", nom: "Bitcoin", poids: out.poids.btc, plafond: CIBLES.btc + " % (ABSOLU)",
+    statut: out.poids.btc >= CIBLES.btc ? "PLAFOND ATTEINT" : "sous le plafond",
+    msg: out.poids.btc >= CIBLES.btc
+      ? "BTC à " + out.poids.btc + " % ≥ plafond ABSOLU " + CIBLES.btc + " % : n'ajoute PLUS un euro — position d'asymétrie, argent admissible à −80 %, le plafond ne se négocie pas."
+      : "BTC à " + out.poids.btc + " % (plafond ABSOLU " + CIBLES.btc + " %) : un renfort reste possible à dose fixe (DCA), jamais au-dessus du plafond."
+  });
+  out.satellites.push({
+    id: "scv", nom: "Small Cap Value (satellite ~5 %)", poids: null, statut: "non lancé",
+    msg: "Satellite Small Cap Value (~5 % du patrimoine, prime documentée +2–3 pt/an sur le long terme) : non lancé — à ouvrir via UC en AV ou CTO (AVWS IE0003R87OG3, non éligible PEA) au moment d'un bilan, en DCA, jamais d'un coup."
+  });
+
+  // ---- interdits de la cascade (dynamiques pour l'immo) ----
+  out.interdits = [
+    { q: "Livret P / comptes à terme", p: "NON renouvelés aux échéances (décision du 22/11/2026) : rendement non garanti, risque de contrepartie — chaque échéance repart sur la cascade, jamais dans un renouvellement." },
+    { q: "Crowdfunding (toutes plateformes)", p: "aucun renfort, cantonné — tout remboursement reçu part sur la cascade (règle actée Irénée/Shery/Citesia/Anaxago)." },
+    { q: "SCPI / immobilier coté", p: "Immo à " + out.poids.immo + " % vs plafond " + CIBLES.immo + " % : aucun renfort tant que le Radar immo ne dit pas INVESTIR — et même alors, d'abord via AV, en une fois, pas en DCA (frais de souscription)." },
+    { q: "TotalEnergies (flux)", p: "Ligne conviction GARDE mais bornée : TTE plafonné à 30–32 % du PEA (34,8 % atteint en nov. 2026) — on garde les 143 actions et le dividende (~4,6 %), on ne nourrit PLUS : les 200 €/mois d'actions sont basculés sur DCAM (décision 22/11/2026)." },
+    { q: "Versement volontaire sur le CTO", p: "Tant que le plafond PEA (225 000 €) n'est pas atteint, le PEA boit en premier : 0 impôt après 5 ans contre PFU 30 %. Le CTO ne reçoit que ses Sparpläne programmés (125 €/mois TR)." },
+    { q: "Vendre sur une baisse", p: "JAMAIS — les paliers achètent la faiblesse, le fonds euro et le livret absorbent les urgences (règle maison maîtresse, inchangée)." }
+  ];
+
+  // ---- les 5 règles, affichées ----
+  out.etapes = [
+    "1 · Livret A sacré : ≥ 16 000 € garantis, jamais une destination au-dessus — rechargé en premier s'il est en dessous",
+    "2 · Palier de baisse franchi → déployer 25 % de la réserve sur DCAM (l'exception qui court-circuite tout, une fois par épisode)",
+    "3 · Poche sécurisée < " + CIBLES.securise + " % → fonds euro AV (anti-krach garanti, offre bonifiée possible)",
+    "4 · Sinon → DCAM en PEA (le moteur, " + CIBLES.actions + " % à terme)",
+    "5 · Satellites en dernier, à doses fixes : or (bande 1–" + CIBLES.or + " %), BTC (plafond ABSOLU " + CIBLES.btc + " %), Small Cap Value (~5 %)"
+  ];
+
+  if (num(der.ddMsci) !== null && der.ddMsci <= -5) {
+    out.warns.push("Marché en drawdown (" + r1(der.ddMsci) + " % du sommet 52 sem.) : la cascade ne vend jamais — le palier correspondant achète la faiblesse.");
+  }
+
+  out.note = "Cascade gravée le 22/11/2026 (structure cible : sécurisé " + CIBLES.securise + " % · actions " + CIBLES.actions + " % · immo plafond " + CIBLES.immo + " % · PE " + CIBLES.pe + " % · or 1–" + CIBLES.or + " % · BTC ≤ " + CIBLES.btc + " %). Lecture d'aide à la décision, pas un ordre ni un conseil en investissement : la cascade désigne la DESTINATION du prochain euro, jamais un montant — la répartition exacte d'un apport se calcule dans le simulateur 🧮. Cibles actualisables au bilan mensuel.";
+  return out;
+}
+
 // Export Node pour le harnais de tests (logique pure, aucun accès DOM).
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
@@ -1098,6 +1281,7 @@ if (typeof module !== "undefined" && module.exports) {
     regimePostureOf: regimePostureOf, POSTURES: POSTURES, ALLOC_EXCL: ALLOC_EXCL, ALLOC_MON_FLOOR: ALLOC_MON_FLOOR, CUTS: CUTS,
     isRealDate: isRealDate, isPosture: isPosture,
     decisionOf: decisionOf, sanitizeReels: sanitizeReels,   // v6.0 : carte 🎯 Ma décision
+    cascadeOf: cascadeOf, CIBLES: CIBLES, CIBLES_OR_MIN: CIBLES_OR_MIN, CIBLES_SEC_MARGE: CIBLES_SEC_MARGE, CIBLES_LIVRET_MIN: CIBLES_LIVRET_MIN,   // v8.0 : 💧 cascade des versements (destination du prochain euro)
     opportuniteOf: opportuniteOf,   // v7.5 : carte 🏆 Meilleure opportunité (dropdown des actifs à avoir)
     ddAssetOf: ddAssetOf,   // v7.6 : 📉 drawdown par actif (vs sommet 52 sem.) — consolidation ddMsci/ddOr/ddBtc
     patReelsOf: patReelsOf, patLineOf: patLineOf, patNonClassesOf: patNonClassesOf,   // v7.0 : fusion app Patrimoine — classification auto vers les 7 lignes 👤 ; v7.3 : actifs ignorés rendus VISIBLES
