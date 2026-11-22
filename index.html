@@ -214,7 +214,7 @@
 <header>
   <div class="hrow">
     <h1>📡 Radar <span>Conjoncture</span></h1>
-    <span class="badge">🔄 Maj auto quotidienne · <b>v9.1</b></span>
+    <span class="badge">🔄 Maj auto quotidienne · <b>v9.2</b></span>
   </div>
   <div class="hrow" style="margin-top:6px">
     <span class="chip" id="dataChip">—</span>
@@ -304,7 +304,7 @@
 
     <div class="card" id="patrimoineCard">
       <h2>👤 Ton patrimoine réel — tes 7 actifs</h2>
-      <div class="mut" style="margin-bottom:10px">Tout ce que tu détiens, visible en permanence — pas seulement via le simulateur : chaque actif est relié à la ligne du radar qui le note — une LECTURE DU MARCHÉ du segment, pas une note du produit (le fonds euro reste à capital garanti, le livret à taux réglementé) ; la ligne Actions montre le timing, le pilote du conseil. Le private equity reste hors radar (illiquide, jamais alloué). Le socle des 1 000 €/mois reste PEA seul ; le livret (épargne de précaution) n'entre jamais dans la capacité paliers. v7.0 : les montants se remplissent automatiquement depuis l'onglet 💼 Patrimoine (même stockage que ton ancienne app — zéro ressaisie) ; le bouton ✏️ force une valeur ligne par ligne (elle prime sur l'auto).</div>
+      <div class="mut" style="margin-bottom:10px">Tout ce que tu détiens, visible en permanence — pas seulement via le simulateur : chaque actif est relié à la ligne du radar qui le note — une LECTURE DU MARCHÉ du segment, pas une note du produit (le fonds euro reste à capital garanti, le livret à taux réglementé) ; la ligne Actions montre le timing, le pilote du conseil. Le private equity reste hors radar (illiquide, jamais alloué). Le socle automatique (1 475 €/mois : PEA Bourse Direct 1 000 € DCAM + 200 € TTE le 07, Trade Republic 125 € de Sparpläne, Louve Infinity 150 €) reste plan par plan ; le livret (épargne de précaution) n'entre jamais dans la capacité paliers. v7.0 : les montants se remplissent automatiquement depuis l'onglet 💼 Patrimoine (même stockage que ton ancienne app — zéro ressaisie) ; le bouton ✏️ force une valeur ligne par ligne (elle prime sur l'auto).</div>
       <div id="patrimoineList"></div>
       <div class="frow" style="margin-top:8px"><button class="toggle" id="btnReelsEdit">✏️ Saisir mes montants réels</button></div>
       <div id="reelsEdit" style="display:none;margin-top:8px">
@@ -316,7 +316,7 @@
 
     <div class="card expert">
       <h2>🧮 Simulateur d'apport — en une fois ou DCA</h2>
-      <div class="mut" style="margin-bottom:8px">Pour un supplément quand tu veux (prime, don, virement), en plus des 1 000 €/mois du socle : indique le montant, choisis « une fois » ou « DCA » (étalé sur plusieurs mois) — la répartition suit le scoring du jour et la posture appliquée, n'achète JAMAIS ce que le conseil dit de ne pas renforcer (seuil d'exclusion selon la posture ; le monétaire reste toujours éligible) et se lit sur <b>ton univers réel</b> (v5.11) : chaque ligne indique où l'argent part concrètement chez toi.</div>
+      <div class="mut" style="margin-bottom:8px">Pour un supplément quand tu veux (prime, don, virement), en plus de tes 1 475 €/mois de versements automatiques : indique le montant, choisis « une fois » ou « DCA » (étalé sur plusieurs mois) — la répartition suit le scoring du jour et la posture appliquée, n'achète JAMAIS ce que le conseil dit de ne pas renforcer (seuil d'exclusion selon la posture ; le monétaire reste toujours éligible) et se lit sur <b>ton univers réel</b> (v5.11) : chaque ligne indique où l'argent part concrètement chez toi.</div>
       <div class="frow"><label>Montant à répartir (€)<input id="allocMontant" type="number" inputmode="decimal" step="any" min="1" placeholder="ex. 5000"></label></div>
       <div class="frow"><label>Mode d'investissement<select id="allocMode">
         <option value="une fois">En une fois (lump sum)</option>
@@ -334,7 +334,7 @@
       <div id="allocOut"></div>
     </div>
 
-    <div class="footnote">Outil indicatif — pas un conseil en investissement. Ta stratégie reste maîtresse : 1 000 €/mois tout compris (800 € DCAM + 200 € réserve tactique), paliers −5/−10/−15/−20 % (25 % de la réserve chacun, une fois par épisode), jamais vendre sur baisse. Un supplément quand tu veux reste possible (simulateur ci-dessus).</div>
+    <div class="footnote">Outil indicatif — pas un conseil en investissement. Ta stratégie reste maîtresse : 1 475 €/mois tout compris en versements automatiques (PEA le 07 : 1 000 € DCAM + 200 € TotalEnergies · Trade Republic : 125 € de Sparpläne · Louve Infinity : 150 €), paliers −5/−10/−15/−20 % (25 % de la réserve chacun, une fois par épisode), jamais vendre sur baisse. Un supplément quand tu veux reste possible (simulateur ci-dessus).</div>
   </section>
 
   <!-- ============ DONNÉES ============ -->
@@ -1583,7 +1583,7 @@ function renderDecision(d, radar) {
   var heads = { deploy: "⚡ DÉPLOYER UN PALIER", normal: "✅ SOCLE NORMAL", suspendu: "⛔ PALIERS SUSPENDUS" };
   var cols = { deploy: "var(--mid)", normal: "var(--good)", suspendu: "var(--bad)" };
   elF.innerHTML =
-    "<b style=\"color:" + cols[f.etat] + "\">1 · Flux du mois (1 000 €/mois) — " + heads[f.etat] + "</b>" +
+    "<b style=\"color:" + cols[f.etat] + "\">1 · Flux du mois (PEA programmé : 1 000 € DCAM + 200 € TTE) — " + heads[f.etat] + "</b>" +
     '<ul style="margin:6px 0 0 16px">' + f.lines.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") + "</ul>" +
     f.warns.map(function (w) { return '<div class="warnbox">⚠️ ' + esc(w) + "</div>"; }).join("");
 
@@ -1681,7 +1681,7 @@ function renderAujourdhui(d, radar) {
     eA.innerHTML = head +
       (f.etat === "suspendu"
         ? '<div class="verdict" style="color:var(--bad)">⛔ Paliers suspendus (données incohérentes) — répare via l\'onglet Données.</div>'
-        : '<div class="verdict" style="color:var(--good)"><b>Rien de spécial : ton socle 1 000 €/mois coule (800 € DCAM + 200 € TR).</b>' +
+        : '<div class="verdict" style="color:var(--good)"><b>Rien de spécial : tes versements automatiques coulent — 1 475 €/mois (PEA le 07 : 1 000 € DCAM + 200 € TTE · TR : 125 € · Louve : 150 €).</b>' +
           (f.palier !== null ? ' Prochain déclencheur : −' + f.palier + ' % à ' + f.seuil + ' €' + (f.dist !== null ? ' (encore ' + f.dist + ' % de baisse)' : '') + '.' : '') + '</div>') +
       f.warns.map(function (w) { return '<div class="warnbox">⚠️ ' + esc(w) + '</div>'; }).join("");
   }
@@ -1722,9 +1722,23 @@ function renderAujourdhui(d, radar) {
   if (tete && totFull !== null && tot > 0 && totFull > tot + 0.5) {
     tete += ' <span class="mut">· dont ' + fmtEUR(tot) + ' pilotables + ' + fmtEUR(Math.round(totFull) - Math.round(tot)) + ' hors Radar (figés : crowdfunding, collection — jamais déployés ; liste dans la carte 👤, inventaire complet dans l\'onglet 💼)</span>';
   }
+  // v9.2 : versements automatiques importés avec le patrimoine (même fichier, clé « versements ») —
+  // stockés sur le téléphone (radar-versements), jamais exportés, jamais sur GitHub.
+  var vsStored = [];
+  try { vsStored = (typeof sanitizeVersements === "function") ? sanitizeVersements(JSON.parse(localStorage.getItem("radar-versements") || "null")) : []; } catch (e) { vsStored = []; }
+  var vsTot = (typeof versementsTotal === "function") ? versementsTotal(vsStored) : null;
+  var vsHtml = "";
+  if (vsTot !== null) {
+    vsHtml = '<div style="margin-top:8px"><div class="mut">🔄 Mes versements automatiques</div><div><b>' + fmtEUR(Math.round(vsTot)) + '/mois</b> tout compris — <details style="display:inline"><summary style="cursor:pointer;display:inline;color:var(--mut)">le détail des ' + vsStored.length + ' plan' + (vsStored.length > 1 ? "s" : "") + '</summary><div style="margin-top:6px">' +
+      vsStored.map(function (v) {
+        return '<div class="palrow"><span class="st" style="width:auto;min-width:150px">' + esc(v.label) + ' — ' + fmtEUR(Math.round(v.montant)) + '/mois</span><span class="th">' + esc(v.jour ? v.jour + (v.detail ? " · " + v.detail : "") : (v.detail || "")) + '</span></div>';
+      }).join("") +
+      '</div></details></div></div>';
+  }
   eD.innerHTML = '<div class="mut">📊 Mes montants</div><div>' +
     (tete ? tete + ' <button class="toggle" id="aujEditBtn" type="button">✏️ Modifier à la main</button>' : 'Aucun montant enregistré — importe ton fichier patrimoine (1 geste) ou saisis-les à la main.') +
-    '</div><div style="margin-top:6px"><button class="toggle" id="aujImportBtn" type="button">📥 Mettre à jour mes montants (fichier patrimoine .json)</button></div>';
+    '</div>' + vsHtml +
+    '<div style="margin-top:6px"><button class="toggle" id="aujImportBtn" type="button">📥 Mettre à jour mes montants (fichier patrimoine .json)</button></div>';
   var bi = $("aujImportBtn");
   if (bi) bi.addEventListener("click", aujImportGo);
   var be = $("aujEditBtn");
@@ -1737,6 +1751,7 @@ function renderAujourdhui(d, radar) {
 // v8.1 : import en UN geste — lit un fichier JSON patrimoine (export app 💼 ou artifact du 22/11),
 // remplace les données du conteneur « suivi-patrimoine-v4 » avec les MÊMES règles que l'onglet
 // 💼 (enveloppes obligatoires, snapshots conservés), rafraîchit tout, rien ne quitte le téléphone.
+// v9.2 : le fichier transporte AUSSI les versements automatiques (clé « versements », facultative).
 function aujImportGo() {
   var inp = $("aujImportFile");
   if (!inp) return;
@@ -1752,9 +1767,17 @@ function aujImportGo() {
         var payload = { envelopes: p.envelopes, snapshots: (Array.isArray(p.snapshots) ? p.snapshots : []) };
         if (typeof p.savedAt === "number") payload.savedAt = p.savedAt;   // le fichier du jour porte sa date : les cartes peuvent afficher « données du … »
         localStorage.setItem("suivi-patrimoine-v4", JSON.stringify(payload));
+        // v9.2 : le même fichier transporte la clé facultative « versements » (plans programmés
+        // actifs) — remplacés uniquement si présents dans CE fichier, sinon les anciens restent.
+        var nV = -1;
+        if (Array.isArray(p.versements) && typeof sanitizeVersements === "function") {
+          var vsImp = sanitizeVersements(p.versements);
+          localStorage.setItem("radar-versements", JSON.stringify(vsImp));
+          nV = vsImp.length;
+        }
         if (window.PatrimoineRender) { try { window.PatrimoineRender(); } catch (e) {} }   // l'onglet 💼 se recharge aussi
         renderRadar();
-        toast("✅ Patrimoine importé : " + p.envelopes.length + " enveloppe(s) — cartes à jour");
+        toast("✅ Patrimoine importé : " + p.envelopes.length + " enveloppe(s)" + (nV > 0 ? " + " + nV + " versement(s) auto" : "") + " — cartes à jour");
       } catch (err) {
         toast("❌ Import impossible : " + (err && err.message ? err.message : String(err)));
       }
@@ -1895,7 +1918,7 @@ function renderOppDetail(d, radar, opp, id) {
     if (!ligne) for (i = 0; i < pal.length; i++) if (!pal[i].atteint) { ligne = "Prochain palier −" + pal[i].p + " % à " + pal[i].seuil + " €" + (num(d.msci) !== null && pal[i].seuil > 0 ? ", soit encore " + r1((1 - pal[i].seuil / d.msci) * 100) + " % de baisse sous le cours actuel" : "") + "."; break; }
     html += ligne
       ? '<div class="verdict" style="opacity:.7;margin-top:6px">📈 ' + esc(ligne) + " Jamais vendre sur la baisse — les paliers achètent la faiblesse.</div>"
-      : '<div class="verdict" style="opacity:.7;margin-top:6px">📈 Paliers indisponibles (référence 52 sem. manquante ou incohérente) — le socle 800 €/mois DCAM continue.</div>';
+      : '<div class="verdict" style="opacity:.7;margin-top:6px">📈 Paliers indisponibles (référence 52 sem. manquante ou incohérente) — le socle 1 000 €/mois DCAM continue.</div>';
   }
   elD.innerHTML = html;
 }
@@ -2641,7 +2664,7 @@ var NOTIFY_OLD_KEY = "radar-telegram-v1"; // configs Telegram v5.1, lues et migr
     var univHors = univOk ? PATRIMOINE_HORS_RADAR.map(function (h) {
       return '<div class="palrow" style="opacity:.6"><span class="st" style="width:auto;min-width:86px">—</span><span class="th"><b>' + esc(h.nom) + "</b> <span class=\"mut\" style=\"font-size:11px\">— " + esc(h.reel) + "</span></span></div>";
     }).join("") : "";
-    var univBlock = univOk ? '<div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)"><b>👤 Concrètement chez toi</b> <span class="mut" style="font-size:11px">(ton univers réel, v5.11 — le socle des 1 000 €/mois reste PEA seul ; le private equity est affiché mais jamais alloué)</span>' + univRows + univHors + "</div>" : "";
+    var univBlock = univOk ? '<div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)"><b>👤 Concrètement chez toi</b> <span class="mut" style="font-size:11px">(ton univers réel, v5.11 — le socle PEA programmé (1 000 € DCAM + 200 € TTE) reste le moteur ; le private equity est affiché mais jamais alloué)</span>' + univRows + univHors + "</div>" : "";
     out.innerHTML =
       "<div class='mut' style='margin:8px 0'>" + modeTxt + " Posture appliquée : " + postureTxt + ".</div>" + rows +
       "<div class='palrow' style='border-top:1px solid var(--line)'><span class='st' style='width:auto;min-width:86px'>Total</span><span class='th'></span><span class='fl' style='font-weight:700'>" + fmtEUR(total) + "</span></div>" +
