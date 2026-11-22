@@ -207,7 +207,7 @@
 <header>
   <div class="hrow">
     <h1>📡 Radar <span>Conjoncture</span></h1>
-    <span class="badge">🔄 Maj auto quotidienne · <b>v7.8</b></span>
+    <span class="badge">🔄 Maj auto quotidienne · <b>v8.0</b></span>
   </div>
   <div class="hrow" style="margin-top:6px">
     <span class="chip" id="dataChip">—</span>
@@ -231,6 +231,13 @@
       <div id="decFlux" class="verdict" style="margin-top:8px">—</div>
       <div id="decSuppOut" style="margin-top:8px">—</div>
       <div id="decStock" style="margin-top:8px">—</div>
+    </div>
+
+    <div class="card" id="cascadeCard">
+      <h2>💧 Ton prochain euro</h2>
+      <div class="mut" style="margin-bottom:8px">La cascade officielle de tes versements, gravée le 22/11/2026 : à chaque ouverture, elle lit TON patrimoine réel (montants de la carte 👤, ✏️ + auto 💼) et le contexte du jour, et te dit où va le prochain euro — dans l'ordre : Livret A sacré (≥ 16 000 €) → palier de baisse franchi (déploiement DCAM) → poche sécurisée sous 24 % (fonds euro AV) → moteur DCAM en PEA. Les satellites (or 1–5 %, BTC ≤ 2 %, Small Cap Value ~5 %) se lisent à doses fixes, en dernier. La cascade désigne une DESTINATION, jamais un montant : la répartition exacte d'un apport se calcule dans le simulateur 🧮. Même moteur que 🎯/💼/🧮 (aucune contradiction possible le même jour) ; montants réels sur ton téléphone uniquement, jamais exportés, jamais sur GitHub.</div>
+      <div id="cascDest" style="margin-top:8px">—</div>
+      <div id="cascDet" style="margin-top:8px">—</div>
     </div>
 
     <div class="card">
@@ -431,7 +438,7 @@
 // (« suivi-patrimoine-v4 ») : les données saisies dans l'ancienne app 💼 sont là, automatiquement.
 // ---------- Constantes ----------
 var KEY = "suivi-patrimoine-v4";
-var APP_VERSION = "v11";
+var APP_VERSION = "v12";
 var ENVELOPE_TYPES = ["PEA","PEA-PME","Assurance-vie","Compte-titres","Livret / Épargne","Compte courant","Immobilier","Crypto","SCPI","Crowdfunding","Autre"];
 var CATEGORIES = ["Actions","ETF","Obligations","Fonds","Crypto","Immobilier","Liquidités","Métal","SCPI","Crowdfunding","Art","Défiscalisation","Autre"];
 var PALETTE = ["#38bdf8","#34d399","#fbbf24","#f472b6","#a78bfa","#fb7185","#4ade80","#f97316","#22d3ee","#e879f9"];
@@ -1582,6 +1589,52 @@ function renderDecision(d, radar) {
     elK.innerHTML = "<b>3 · Ton stock</b><div class=\"mut\" style=\"margin-top:4px\">" + esc(st.note) + "</div>";
   }
 }
+// ---- v8.0 : carte 💧 Ton prochain euro (cascade des versements) ----
+function renderCascade(d, radar) {
+  if (typeof cascadeOf !== "function") return;   // garde anti-skew (classe v5.12.1)
+  var elD = $("cascDest"), elX = $("cascDet");
+  if (!elD || !elX) return;
+  var cas = cascadeOf(d, radar, decMergedReels(), state.postureOverride);
+  if (!cas.dispo || !cas.destination) {
+    elD.innerHTML = "<b>Destination du prochain euro</b>";
+    elX.innerHTML = '<div class="mut" style="margin-top:4px">' + esc(cas.note) + "</div>";
+    return;
+  }
+  var coul = cas.destination.couleur || "var(--good)";
+  elD.innerHTML =
+    '<div class="verdict"><b style="color:' + coul + '">' + esc(cas.destination.titre) + "</b> — " + esc(cas.destination.enceinte) + "</div>" +
+    '<div style="margin-top:4px">' + esc(cas.destination.msg) + "</div>" +
+    (cas.verdictEntree
+      ? '<div class="verdict" style="margin-top:6px">Entrée : ' + esc(cas.verdictEntree.phrase) + " (" + cas.verdictEntree.pref + "/100) — <b>" + esc(cas.verdictEntree.recommande) + "</b> : " + esc(cas.verdictEntree.label || "") + " — même source que le conseil 💼, le simulateur 🧮 et la carte 🎯.</div>"
+      : "");
+  var lbls = { securise: "Sécurisé", actions: "Actions", immo: "Immo", pe: "PE", or: "Or", btc: "BTC" };
+  var chips = ["securise", "actions", "immo", "pe", "or", "btc"].map(function (k) {
+    return '<span class="badge" style="margin:2px 4px 2px 0">' + lbls[k] + " " + cas.poids[k] + " %</span>";
+  }).join("");
+  var sats = cas.satellites.map(function (s) {
+    return '<div class="palrow"><span class="st" style="width:auto;min-width:150px">' + esc(s.nom) + (s.poids !== null ? " · " + s.poids + " %" : "") + '</span><span class="th">' + esc(s.msg) + "</span></div>";
+  }).join("");
+  var inter = cas.interdits.map(function (x) {
+    return "<li><b>" + esc(x.q) + "</b> — " + esc(x.p) + "</li>";
+  }).join("");
+  var etapes = cas.etapes.map(function (e) {
+    return "<li>" + esc(e) + "</li>";
+  }).join("");
+  var warns = (cas.warns || []).map(function (w) {
+    return '<div class="warnbox">⚠️ ' + esc(w) + "</div>";
+  }).join("");
+  elX.innerHTML =
+    "<b>Ta structure — " + fmtEUR(cas.total) + " (7 lignes, private equity inclus)</b>" +
+    '<div style="margin-top:4px">' + chips + "</div>" +
+    '<div style="margin-top:8px"><b>Satellites à doses fixes</b></div>' +
+    '<div style="margin-top:4px">' + sats + "</div>" +
+    '<div style="margin-top:8px"><b>Interdits de la cascade</b></div>' +
+    '<ul style="margin:4px 0 0 16px">' + inter + "</ul>" +
+    '<details style="margin-top:8px"><summary>La hiérarchie complète (5 règles)</summary><ul style="margin:6px 0 0 16px">' + etapes + "</ul></details>" +
+    warns +
+    '<div class="mut" style="margin-top:8px">' + esc(cas.note) + "</div>";
+}
+
 // ---- v7.5 : carte 🏆 Meilleure opportunité — dropdown des actifs à avoir ----
 // Consolidation PURE d'opportuniteOf (logic.js) : le classement du jour par le conseil, la
 // meilleure opportunité en bandeau, et un menu déroulant des 6 actifs — chaque choix affiche
@@ -1787,6 +1840,7 @@ function renderRadar() {
 
   renderPatrimoine(radar);   // v5.12 : tes 7 actifs réels, toujours visibles (carte 👤)
   renderDecision(d, radar);   // v6.0 : carte 🎯 Ma décision — flux du mois, supplément, stock
+  renderCascade(d, radar);   // v8.0 : carte 💧 cascade — destination du prochain euro (re-rendue par renderRadar après toute saisie ✏️)
   renderOpp(d, radar);   // v7.5 : carte 🏆 — dropdown des actifs à avoir + meilleure opportunité du jour
 
   // Paliers & stratégie
