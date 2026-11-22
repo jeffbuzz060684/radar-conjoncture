@@ -365,6 +365,16 @@
 
   <!-- ============ SUIVI ============ -->
   <section id="view-suivi">
+    <!-- v9.0 : backbone monde — ton portefeuille réel vs un fantôme 100 % ETF monde, mêmes versements -->
+    <div class="card" id="backboneCard">
+      <h2>⚖️ Mon portefeuille vs backbone monde</h2>
+      <div class="mut" style="margin-bottom:8px">Le fantôme achète 100 % IWDA (ETF monde capitalisant, EUR) avec les <b>mêmes versements aux mêmes mois</b>, à la clôture mensuelle connue <b>avant</b> chaque versement (causalité stricte). Tonalité XIRR du réel vs du backbone : l'écart en points de %/an dit si tes choix ont battu la référence la plus bête du monde.</div>
+      <div class="frow"><label>Socle mensuel (€)<input id="bbSocle" type="number" min="1" step="1" inputmode="numeric" placeholder="ex. 1000"></label></div>
+      <div class="frow"><label>Premier versement (AAAA-MM)<input id="bbPremier" type="text" autocomplete="off" placeholder="ex. 2020-01"></label></div>
+      <div class="frow"><label>Valeur actuelle du portefeuille (€)<input id="bbValeur" type="number" min="0" step="1" inputmode="numeric" placeholder="ex. 42000"></label></div>
+      <div class="btnrow"><button class="btn" id="btnBbCalc" type="button">⚖️ Comparer</button></div>
+      <div id="bbOut"></div>
+    </div>
     <div class="card">
       <h2>Évolution du drawdown MSCI World</h2>
       <div id="sparkWrap"></div>
@@ -2125,6 +2135,7 @@ function renderRadar() {
 
 // ---- Rendu Suivi ----
 function renderSuivi() {
+  bbRender();   // v9.0 : carte ⚖️ backbone monde
   var hist = state.history;
   var t = $("histTable");
   if (!hist.length) { t.innerHTML = '<tr><td colspan="5" class="empty">Aucun snapshot pour l\'instant — les enregistrements de l\'onglet Données s\'accumulent ici.</td></tr>'; }
@@ -2153,6 +2164,66 @@ function renderSuivi() {
   renderScoresChart();
   renderEpisodes();
 }
+
+// ---- v9.0 : ⚖️ backbone monde — portefeuille réel vs fantôme 100 % ETF monde ----
+var BB_KEY = "radar-backbone";        // saisies {socle, premier, valeur}
+var BB_SERIE_KEY = "radar-serie-iwda"; // cache de data-serie.json (clôtures mensuelles IWDA)
+function bbSerieTryParse(raw) {
+  try { var j = JSON.parse(raw); return (j && Array.isArray(j.serie) && j.serie.length > 1) ? j.serie : null; }
+  catch (e) { return null; }
+}
+bbSerie = null;
+try { bbSerie = bbSerieTryParse(localStorage.getItem(BB_SERIE_KEY)); } catch (e) {}
+(function () {
+  fetch("data-serie.json").then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+    .then(function (j) {
+      if (!j || !Array.isArray(j.serie) || j.serie.length < 2) throw new Error("série vide");
+      bbSerie = j.serie;
+      try { localStorage.setItem(BB_SERIE_KEY, JSON.stringify(j)); } catch (e) {}
+      bbRender();
+    })
+    .catch(function () { /* réseau coupé → le cache radar-serie-iwda sert la série */ });
+})();
+function bbInputs() {
+  var o = null;
+  try { o = JSON.parse(localStorage.getItem(BB_KEY) || "null"); } catch (e) {}
+  return (o && typeof o === "object") ? o : {};
+}
+function bbSave() {
+  try { localStorage.setItem(BB_KEY, JSON.stringify({ socle: $("bbSocle").value, premier: $("bbPremier").value, valeur: $("bbValeur").value })); } catch (e) {}
+}
+function fmtEUR2(x) { return Math.round(x).toLocaleString("fr-FR") + " €"; }
+function bbRender() {
+  var card = $("backboneCard"); if (!card) return;
+  var o = bbInputs();
+  if (o.socle !== undefined) $("bbSocle").value = o.socle;
+  if (o.premier !== undefined) $("bbPremier").value = o.premier;
+  if (o.valeur !== undefined) $("bbValeur").value = o.valeur;
+  var out = $("bbOut");
+  if (!bbSerie) { out.innerHTML = '<div class="empty">Série mensuelle IWDA en attente — elle arrive dès le premier chargement en ligne (cache local ensuite).</div>'; return; }
+  var socle = parseFloat($("bbSocle").value), premier = $("bbPremier").value.trim(), valeur = parseFloat($("bbValeur").value);
+  if (!(socle > 0) || !(valeur >= 0) || !/^\d{4}-\d{2}$/.test(premier)) {
+    out.innerHTML = '<div class="empty">Renseigne les 3 champs : socle mensuel, premier versement (AAAA-MM), valeur actuelle du portefeuille.</div>';
+    return;
+  }
+  var dateF = bbSerie[bbSerie.length - 1].ym;
+  var r = (typeof perfVsWorld === "function") ? perfVsWorld({ socleMensuel: socle, premierMois: premier }, valeur, bbSerie, dateF) : null;
+  if (!r) { out.innerHTML = '<div class="empty">Entrées invalides ou hors série (premier versement avant 2009-09, date incohérente) — rien à comparer honnêtement.</div>'; return; }
+  var ans = r.mois / 12;
+  var warns = [];
+  warns.push("Cadre règles-basé, non garanti — le backbone reste la référence permanente.");
+  if (ans < 3) warns.push("< 3 ans d'historique : écart NON significatif (bruit de timing, pas de talent).");
+  if (r.horsSerie > 0) warns.push(r.horsSerie + " versement(s) antérieur(s) à la série IWDA (2009-09) : comptés à part, jamais valorisés.");
+  var ecartTxt = (r.ecart === null) ? "—" : (r.ecart > 0 ? "+" : "") + r1(r.ecart) + " pts de %/an";
+  out.innerHTML =
+    '<table class="hist" id="bbTable"><tr><th>' + esc(dateF + " (fin de mois)") + '</th><th>Moi (réel)</th><th>Backbone monde</th></tr>' +
+    '<tr><td>Versements investis</td><td><b>' + esc(fmtEUR2(r.investis)) + '</b></td><td>' + esc(fmtEUR2(r.investis)) + '</td></tr>' +
+    '<tr><td>Valeur finale</td><td><b>' + esc(fmtEUR2(valeur)) + '</b></td><td>' + esc(fmtEUR2(r.valeurGhost)) + '</td></tr>' +
+    '<tr><td>XIRR</td><td><b>' + (r.xirrReel === null ? "—" : r1(r.xirrReel) + " %/an") + '</b></td><td>' + (r.xirrMonde === null ? "—" : r1(r.xirrMonde) + " %/an") + '</td></tr>' +
+    '<tr><td>Écart</td><td colspan="2"><b>' + ecartTxt + '</b></td></tr></table>' +
+    '<div class="mut" style="margin-top:8px">' + warns.map(function (w) { return "⚠️ " + esc(w); }).join("<br>") + '</div>';
+}
+$("btnBbCalc").addEventListener("click", function () { bbSave(); bbRender(); });
 
 // ---- Courbe des 6 scores au fil des snapshots ----
 var SCORE_META = [

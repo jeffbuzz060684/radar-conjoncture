@@ -397,8 +397,8 @@ t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: VIX lissé utilisé dans le scoring (vixEff, désormais dans logic.js)", srcLogic.indexOf("der.vixEff") !== -1 && srcLogic.indexOf("vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v36", sw.indexOf('CACHE = "radar-v36"') !== -1 && sw.indexOf('CACHE = "radar-v35"') === -1 && sw.indexOf('CACHE = "radar-v34"') === -1);
-t("sw.js: anciens caches v34/v33/v32/v31/v30/v29/v28/v27/v26/v25/v24/v23/v22/v21/v20/v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4 absents (v3 omis : préfixe des caches v30+, comme v1/v2 l'ont été aux époques v10/v20)", ["radar-v34", "radar-v33", "radar-v32", "radar-v31", "radar-v30", "radar-v29", "radar-v28", "radar-v27", "radar-v26", "radar-v25", "radar-v24", "radar-v23", "radar-v22", "radar-v21", "radar-v20", "radar-v16", "radar-v15", "radar-v14", "radar-v13", "radar-v12", "radar-v11", "radar-v10", "radar-v9", "radar-v8", "radar-v7", "radar-v6", "radar-v5", "radar-v4"].every(function (c) { return sw.indexOf(c) === -1; }));
+t("sw.js: cache v37", sw.indexOf('CACHE = "radar-v37"') !== -1 && sw.indexOf('CACHE = "radar-v36"') === -1 && sw.indexOf('CACHE = "radar-v35"') === -1);
+t("sw.js: anciens caches v34/v33/v32/v31/v30/v29/v28/v27/v26/v25/v24/v23/v22/v21/v20/v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4 absents (v3 omis : préfixe des caches v30+, comme v1/v2 l'ont été aux époques v10/v20)", ["radar-v36", "radar-v34", "radar-v33", "radar-v32", "radar-v31", "radar-v30", "radar-v29", "radar-v28", "radar-v27", "radar-v26", "radar-v25", "radar-v24", "radar-v23", "radar-v22", "radar-v21", "radar-v20", "radar-v16", "radar-v15", "radar-v14", "radar-v13", "radar-v12", "radar-v11", "radar-v10", "radar-v9", "radar-v8", "radar-v7", "radar-v6", "radar-v5", "radar-v4"].every(function (c) { return sw.indexOf(c) === -1; }));
 t("sw.js: logic.js dans le shell", sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
 t("sw.js: shell réseau d'abord + repli cache (plus aucun skew HTML frais / JS périmé)",
@@ -1743,6 +1743,70 @@ t("v8.2: aucune règle ne change — totFull reste CONFINÉ à la zone 📊 de r
   "structurel");
 t("v8.2: le commentaire de conception est gravé dans le code (poids/pourcentages inchangés, total 💼 = info)",
   html.indexOf("le total pilotable reste la base des poids/pourcentages (aucune règle ne change)") !== -1);
+
+// ---------- v9.0 : backbone monde — XIRR bissection, fantôme causal, fichiers livrés ----------
+t("xirrOf: -100 € puis +110 € un an plus tard ≈ +10 %/an (bissection, retour en %)",
+  L.xirrOf([{ date: "2025-01-01", amount: -100 }, { date: "2026-01-01", amount: 110 }]) !== null &&
+  Math.abs(L.xirrOf([{ date: "2025-01-01", amount: -100 }, { date: "2026-01-01", amount: 110 }]) - 10) < 0.1);
+t("xirrOf: XIRR négatif rendu en % (≈ −10 %/an), signe respecté",
+  L.xirrOf([{ date: "2025-01-01", amount: -100 }, { date: "2026-01-01", amount: 90 }]) !== null &&
+  L.xirrOf([{ date: "2025-01-01", amount: -100 }, { date: "2026-01-01", amount: 90 }]) > -10.5 &&
+  L.xirrOf([{ date: "2025-01-01", amount: -100 }, { date: "2026-01-01", amount: 90 }]) < -9.5);
+t("xirrOf: sans changement de signe → null (indéterminable)",
+  L.xirrOf([{ date: "2025-01-01", amount: 100 }, { date: "2026-01-01", amount: 110 }]) === null);
+t("xirrOf: flux unique → null ; liste vide → null ; non-liste → null",
+  L.xirrOf([{ date: "2025-01-01", amount: -100 }]) === null && L.xirrOf([]) === null && L.xirrOf(null) === null);
+t("xirrOf: montant nul ou non fini → null ; date invalide → null",
+  L.xirrOf([{ date: "2025-01-01", amount: 0 }, { date: "2026-01-01", amount: 110 }]) === null &&
+  L.xirrOf([{ date: "2025-01-01", amount: "abc" }, { date: "2026-01-01", amount: 110 }]) === null &&
+  L.xirrOf([{ date: "32/13/2025", amount: -100 }, { date: "2026-01-01", amount: 110 }]) === null);
+t("xirrOf: borne haute 100000 %/an — un gain ×1e9/an (racine au-delà) → null, jamais de taux inventé",
+  L.xirrOf([{ date: "2025-01-01", amount: -1 }, { date: "2026-01-01", amount: 1e9 }]) === null &&
+  L.XIRR_BORNE_HAUTE === 100000);
+t("xirrOf: dates AAAA-MM acceptées (premier mois du flux)",
+  L.xirrOf([{ date: "2025-01", amount: -100 }, { date: "2026-01", amount: 110 }]) !== null);
+
+var SERIE_IWDA_TEST = [{ ym: "2009-09", close: 17 }, { ym: "2009-10", close: 18 }, { ym: "2009-11", close: 19 }, { ym: "2009-12", close: 21 }];
+t("perfVsWorld: causalité stricte — le fantôme achète à la dernière clôture mensuelle connue AVANT le mois du versement (2009-11 → prix d'octobre, pas de novembre)",
+  L.perfVsWorld({ socleMensuel: 100, premierMois: "2009-11" }, 0, SERIE_IWDA_TEST, "2009-12") !== null &&
+  Math.abs(L.perfVsWorld({ socleMensuel: 100, premierMois: "2009-11" }, 0, SERIE_IWDA_TEST, "2009-12").partsGhost - 100 / 18 - 100 / 19) < 1e-9);
+t("perfVsWorld: valorisation finale en fin de mois du mois de dateFinale (prix de 2009-12 = 21)",
+  Math.abs(L.perfVsWorld({ socleMensuel: 100, premierMois: "2009-10" }, 1000, SERIE_IWDA_TEST, "2009-12").valeurGhost - 100 / 17 * 21 - 100 / 18 * 21 - 100 / 19 * 21) < 1e-7);
+t("perfVsWorld: versements hors série signalés (avant la première clôture), JAMAIS valorisés ni inventés",
+  (function () { var r = L.perfVsWorld({ socleMensuel: 100, premierMois: "2009-08" }, 500, SERIE_IWDA_TEST, "2009-12"); return r !== null && r.horsSerie === 2 && r.investis === 300 && r.mois === 5; })());
+t("perfVsWorld: refus des entrées invalides → null (socle ≤ 0, premier mal formé, valeur négative, dateFinale < premier, série vide, série mal formée)",
+  L.perfVsWorld({ socleMensuel: 0, premierMois: "2009-10" }, 1000, SERIE_IWDA_TEST, "2009-12") === null &&
+  L.perfVsWorld({ socleMensuel: 100, premierMois: "2009/10" }, 1000, SERIE_IWDA_TEST, "2009-12") === null &&
+  L.perfVsWorld({ socleMensuel: 100, premierMois: "2009-10" }, -5, SERIE_IWDA_TEST, "2009-12") === null &&
+  L.perfVsWorld({ socleMensuel: 100, premierMois: "2009-10" }, 1000, SERIE_IWDA_TEST, "2009-09") === null &&
+  L.perfVsWorld({ socleMensuel: 100, premierMois: "2009-10" }, 1000, [], "2009-12") === null &&
+  L.perfVsWorld({ socleMensuel: 100, premierMois: "2009-10" }, 1000, [{ ym: "2009-09", close: 0 }, { ym: "2009-10", close: 18 }], "2009-12") === null &&
+  L.perfVsWorld(null, 1000, SERIE_IWDA_TEST, "2009-12") === null);
+t("perfVsWorld: écart = XIRR réel − XIRR backbone, en pts de %/an (même longueur de période, mêmes flux)",
+  (function () { var r = L.perfVsWorld({ socleMensuel: 100, premierMois: "2009-10" }, 350, SERIE_IWDA_TEST, "2009-12"); return r !== null && r.xirrReel !== null && r.xirrMonde !== null && Math.abs(r.ecart - (r.xirrReel - r.xirrMonde)) < 1e-9; })());
+t("perfVsWorld: valeur finale 0 € avec versements → XIRR réel plancher −99,99 % (null interdit, honnêteté du Coffin)",
+  (function () { var r = L.perfVsWorld({ socleMensuel: 100, premierMois: "2009-10" }, 0, SERIE_IWDA_TEST, "2009-12"); return r !== null && r.xirrReel === L.XIRR_BORNE_BASSE && r.xirrReel === -99.99; })());
+
+// fichiers livrés v9.0
+t("v9.0: data-serie.json livré — clôtures mensuelles IWDA depuis 2009-09, mois complets seulement",
+  (function () { var j = null; try { j = JSON.parse(fs.readFileSync(path.join(ROOT, "data-serie.json"), "utf8")); } catch (e) {}
+    return j && Array.isArray(j.serie) && j.serie.length > 200 && j.serie[0].ym === "2009-09" && /^\d{4}-\d{2}$/.test(j.serie[j.serie.length - 1].ym); })());
+t("v9.0: carte ⚖️ backbone dans l'onglet Suivi — localStorage radar-backbone (saisies) + radar-serie-iwda (cache série), avertissements cadres",
+  html.indexOf("backboneCard") !== -1 && html.indexOf("⚖️ Mon portefeuille vs backbone monde") !== -1 &&
+  html.indexOf('"radar-backbone"') !== -1 && html.indexOf('"radar-serie-iwda"') !== -1 &&
+  html.indexOf("le backbone reste la référence permanente") !== -1 && html.indexOf("< 3 ans") !== -1);
+t("v9.0: le fantôme appelle perfVsWorld (logic.js), jamais un moteur maison dérivé",
+  html.indexOf("perfVsWorld({ socleMensuel:") !== -1 && srcLogic.indexOf("function perfVsWorld") !== -1);
+t("v9.0: outils livrés — gen-serie-mensuelle.js (Yahoo, cache backtest-data/, --if-stale) et backtest-moteur.js multi-actifs",
+  fs.existsSync(path.join(ROOT, "tools", "gen-serie-mensuelle.js")) &&
+  fs.existsSync(path.join(ROOT, "tools", "backtest-moteur.js")) &&
+  (function (f) { var b = fs.readFileSync(path.join(ROOT, "tools", "backtest-moteur.js"), "utf8"); return ["IWDA.AS", "IEAG.AS", "XAD5.DE", "BTC-USD", "SPIVA"].every(function (x) { return b.indexOf(x) !== -1 }); })());
+t("v9.0: backtest-data/ gitignoré (cache + sorties CSV hors dépôt)",
+  fs.existsSync(path.join(ROOT, ".gitignore")) && fs.readFileSync(path.join(ROOT, ".gitignore"), "utf8").indexOf("backtest-data") !== -1);
+t("v9.0: workflow quotidien régénère data-serie.json (--if-stale) et le committe",
+  dailyWf.indexOf("gen-serie-mensuelle.js --if-stale") !== -1 && dailyWf.indexOf("git add data-daily.json data-serie.json") !== -1);
+t("v9.0: backtest-moteur réutilise xirrOf de logic.js (une seule implémentation de l'XIRR)",
+  fs.readFileSync(path.join(ROOT, "tools", "backtest-moteur.js"), "utf8").indexOf("logic.js") !== -1);
 
 // ---------- Bilan ----------
 var fail = results.filter(function (r) { return !r.ok; });
