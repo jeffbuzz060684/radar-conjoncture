@@ -370,8 +370,8 @@ t("fetch-daily: ne touche ni reserve ni paliersDone", fd.indexOf("reserve") === 
 // ---------- index.html, logic.js, sw.js, auto.js livrés ----------
 var html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 t("index.html: script auto.js référencé", html.indexOf('<script src="auto.js"></script>') !== -1);
-t("index.html: badge v8.2", html.indexOf("<b>v8.2</b>") !== -1 && html.indexOf("<b>v8.1</b>") === -1 && html.indexOf("<b>v8.0</b>") === -1);
-t("index.html: aucun ancien badge v8.0/v7.8/v7.7/v7.6/v7.5/v7.4/v7.3/v7.2/v7.1/v7.0/v6.3/v6.2/v6.1/v6.0/v5.13/v5.12.1/v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v8.0</b>", "<b>v7.8</b>", "<b>v7.7</b>", "<b>v7.6</b>", "<b>v7.5</b>", "<b>v7.4</b>", "<b>v7.3</b>", "<b>v7.2</b>", "<b>v7.1</b>", "<b>v7.0</b>", "<b>v6.3</b>", "<b>v6.2</b>", "<b>v6.1</b>", "<b>v6.0</b>", "<b>v5.13</b>", "<b>v5.12.1</b>", "<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
+t("index.html: badge v9.1", html.indexOf("<b>v9.1</b>") !== -1 && html.indexOf("<b>v8.2</b>") === -1 && html.indexOf("<b>v8.1</b>") === -1 && html.indexOf("<b>v8.0</b>") === -1);
+t("index.html: aucun ancien badge v8.2/v8.0/v7.8/v7.7/v7.6/v7.5/v7.4/v7.3/v7.2/v7.1/v7.0/v6.3/v6.2/v6.1/v6.0/v5.13/v5.12.1/v5.12/v5.11/v5.10/v5.9/v5.8/v5.7/v5.6/v5.5/v5.4/v5.3/v5.2/v5.1/v5/v4.2/v4.1/v4/v3/v2/v1", ["<b>v8.2</b>", "<b>v8.0</b>", "<b>v7.8</b>", "<b>v7.7</b>", "<b>v7.6</b>", "<b>v7.5</b>", "<b>v7.4</b>", "<b>v7.3</b>", "<b>v7.2</b>", "<b>v7.1</b>", "<b>v7.0</b>", "<b>v6.3</b>", "<b>v6.2</b>", "<b>v6.1</b>", "<b>v6.0</b>", "<b>v5.13</b>", "<b>v5.12.1</b>", "<b>v5.12</b>", "<b>v5.11</b>", "<b>v5.10</b>", "<b>v5.9</b>", "<b>v5.8</b>", "<b>v5.7</b>", "<b>v5.6</b>", "<b>v5.5</b>", "<b>v5.4</b>", "<b>v5.3</b>", "<b>v5.2</b>", "<b>v5.1</b>", "<b>v5</b>", "<b>v4.2</b>", "<b>v4.1</b>", "<b>v4</b>", "<b>v3</b>", "<b>v2</b>", "<b>v1</b>"].every(function (b) { return html.indexOf(b) === -1; }));
 t("index.html: badge « Maj auto quotidienne »", html.indexOf("Maj auto quotidienne") !== -1);
 t("index.html: logic.js chargé entre vehicles.js et le script UI inline",
   html.indexOf('<script src="vehicles.js"></script>') !== -1 &&
@@ -397,8 +397,8 @@ t("index.html: rendu des instruments (VEHICULES[a.id])", html.indexOf("VEHICULES
 t("index.html: encodage propre (pas de mojibake Ã)", html.indexOf("Ã") === -1);
 t("index.html: VIX lissé utilisé dans le scoring (vixEff, désormais dans logic.js)", srcLogic.indexOf("der.vixEff") !== -1 && srcLogic.indexOf("vixEff") !== -1);
 var sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
-t("sw.js: cache v37", sw.indexOf('CACHE = "radar-v37"') !== -1 && sw.indexOf('CACHE = "radar-v36"') === -1 && sw.indexOf('CACHE = "radar-v35"') === -1);
-t("sw.js: anciens caches v34/v33/v32/v31/v30/v29/v28/v27/v26/v25/v24/v23/v22/v21/v20/v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4 absents (v3 omis : préfixe des caches v30+, comme v1/v2 l'ont été aux époques v10/v20)", ["radar-v36", "radar-v34", "radar-v33", "radar-v32", "radar-v31", "radar-v30", "radar-v29", "radar-v28", "radar-v27", "radar-v26", "radar-v25", "radar-v24", "radar-v23", "radar-v22", "radar-v21", "radar-v20", "radar-v16", "radar-v15", "radar-v14", "radar-v13", "radar-v12", "radar-v11", "radar-v10", "radar-v9", "radar-v8", "radar-v7", "radar-v6", "radar-v5", "radar-v4"].every(function (c) { return sw.indexOf(c) === -1; }));
+t("sw.js: cache v38", sw.indexOf('CACHE = "radar-v38"') !== -1 && sw.indexOf('CACHE = "radar-v37"') === -1 && sw.indexOf('CACHE = "radar-v35"') === -1);
+t("sw.js: anciens caches v37/v36/v34/v33/v32/v31/v30/v29/v28/v27/v26/v25/v24/v23/v22/v21/v20/v16/v15/v14/v13/v12/v11/v10/v9/v8/v7/v6/v5/v4 absents (v3 omis : préfixe des caches v30+, comme v1/v2 l'ont été aux époques v10/v20)", ["radar-v37", "radar-v36", "radar-v34", "radar-v33", "radar-v32", "radar-v31", "radar-v30", "radar-v29", "radar-v28", "radar-v27", "radar-v26", "radar-v25", "radar-v24", "radar-v23", "radar-v22", "radar-v21", "radar-v20", "radar-v16", "radar-v15", "radar-v14", "radar-v13", "radar-v12", "radar-v11", "radar-v10", "radar-v9", "radar-v8", "radar-v7", "radar-v6", "radar-v5", "radar-v4"].every(function (c) { return sw.indexOf(c) === -1; }));
 t("sw.js: logic.js dans le shell", sw.indexOf('"./logic.js"') !== -1);
 t("sw.js: vehicles.js dans le shell", sw.indexOf('"./vehicles.js"') !== -1);
 t("sw.js: shell réseau d'abord + repli cache (plus aucun skew HTML frais / JS périmé)",
@@ -1584,8 +1584,9 @@ t("v7.7: index.html — onglet CAC 40 complet : bouton nav data-v=\"cac\", secti
   html.indexOf('<script src="cac.js"></script>') !== -1 &&
   html.indexOf('<script src="logic.js"></script>') < html.indexOf('<script src="cac.js"></script>') &&
   html.indexOf(".crow") !== -1 && html.indexOf(".cdet") !== -1 && html.indexOf('id="cacQ"') !== -1);
-t("v7.7: index.html — données same-origin du pipeline Sentinelle + garde anti-skew typeof CAC (cac.js périmé → onglet silencieux, jamais une page blanche)",
-  html.indexOf('CAC_URL = "/sentinelle--perso/quotes.json"') !== -1 &&
+t("v9.1: index.html — cotes LOCALES du dépôt (pipeline migré) : CAC_URL pointe vers /radar-conjoncture/quotes.json, plus AUCUNE référence au chemin de l'ancienne app",
+  html.indexOf('CAC_URL = "/radar-conjoncture/quotes.json"') !== -1 &&
+  html.indexOf("/sentinelle--perso/") === -1 &&
   html.indexOf('typeof CAC === "undefined" || !CAC.pipeline') !== -1 &&
   html.indexOf('if (b.dataset.v === "cac") loadCac();') !== -1);
 t("v7.7: index.html — pondérations affichées dans la méthode (qualité 40 % + valorisation 25 % + consensus 35 %), verdicts 🥇🥈🥉⏸, heuristique jamais validée, URW non éligible PEA",
@@ -1807,6 +1808,46 @@ t("v9.0: workflow quotidien régénère data-serie.json (--if-stale) et le commi
   dailyWf.indexOf("gen-serie-mensuelle.js --if-stale") !== -1 && dailyWf.indexOf("git add data-daily.json data-serie.json") !== -1);
 t("v9.0: backtest-moteur réutilise xirrOf de logic.js (une seule implémentation de l'XIRR)",
   fs.readFileSync(path.join(ROOT, "tools", "backtest-moteur.js"), "utf8").indexOf("logic.js") !== -1);
+
+// ---------- v9.1 : pipeline cotations CAC 40 MIGRÉ de sentinelle--perso (dépôt supprimé) ----------
+var quotesWf = fs.readFileSync(path.join(ROOT, ".github", "workflows", "quotes.yml"), "utf8");
+var sbfWf = fs.readFileSync(path.join(ROOT, ".github", "workflows", "sbf120.yml"), "utf8");
+t("v9.1: quotes.yml livré — cron 15 min en séance (7-16 UTC, lun-ven) + dispatch manuel",
+  quotesWf.indexOf('"*/15 7-16 * * 1-5"') !== -1 && quotesWf.indexOf("workflow_dispatch") !== -1);
+t("v9.1: quotes.yml — permissions PAR JOB (contents: write + actions: write), guards anti-doublon nulle part",
+  quotesWf.indexOf("contents: read") !== -1 && quotesWf.indexOf("contents: write") !== -1 && quotesWf.indexOf("actions: write") !== -1);
+t("v9.1: quotes.yml — lance fetch-quotes (objectifs 1x/12 h) + validate-quotes, commit si changé (porcelain), redéploie Pages, ops conservé en échec",
+  quotesWf.indexOf("tools/fetch-quotes.js --max-age-targets-min=720") !== -1 &&
+  quotesWf.indexOf("tools/validate-quotes.js") !== -1 &&
+  quotesWf.indexOf("git status --porcelain quotes.json ops.json") !== -1 &&
+  quotesWf.indexOf("gh workflow run pages.yml") !== -1);
+t("v9.1: sbf120.yml livré — recomposition mensuelle (cron 3 du mois) + déclencheur push .github/ping-compo (tâche planifiée Vibe) + garde 40/20/60 (build-sbf120 exit 1 sans écraser)",
+  sbfWf.indexOf('"37 4 3 * *"') !== -1 && sbfWf.indexOf(".github/ping-compo") !== -1 &&
+  sbfWf.indexOf("tools/build-sbf120.js") !== -1 && sbfWf.indexOf("tools/validate-quotes.js") !== -1);
+t("v9.1: pages.yml — secours cotations à chaque déploiement : fetch-quotes --max-age-min=20 + validate + commit quotes/ops si frais, contents: write",
+  pages.indexOf("tools/fetch-quotes.js --max-age-min=20") !== -1 &&
+  pages.indexOf("git config user.name \"radar-bot\"") !== -1 &&
+  pages.indexOf("contents: write") !== -1);
+t("v9.1: sbf120.json livré — 120 valeurs uniques, composition exacte 40/20/60 (semence copiée du dernier état vérifié de l'ancien pipeline)",
+  (function () { var sb = null, groups = {}, seenY = {};
+    try { sb = JSON.parse(fs.readFileSync(path.join(ROOT, "sbf120.json"), "utf8")); } catch (e) {}
+    if (!sb || !Array.isArray(sb.list) || sb.list.length !== 120) return false;
+    sb.list.forEach(function (r) { groups[r.g] = (groups[r.g] || 0) + 1; seenY[r.y] = 1; });
+    return groups.cac40 === 40 && groups.next20 === 20 && groups.mid60 === 60 && Object.keys(seenY).length === 120; })());
+t("v9.1: quotes.json semence livrée (relevé clôture du 21/11/2026 de l'ancien pipeline) — list non vide + indice chiffré, repris tel quel par les crons",
+  (function () { var q = null;
+    try { q = JSON.parse(fs.readFileSync(path.join(ROOT, "quotes.json"), "utf8")); } catch (e) {}
+    return !!(q && Array.isArray(q.list) && q.list.length > 100 && q.idx && isFinite(q.idx.px) && q.idx.px > 0); })());
+t("v9.1: fetch-quotes.js migré — dépend d'ops.js et du ntfy LOCAL (ntfy-quotes.js), JAMAIS du scraper d'initiés (aucun require vers fetch-insiders.js)",
+  (function () { var f = fs.readFileSync(path.join(ROOT, "tools", "fetch-quotes.js"), "utf8");
+    return f.indexOf('require("./ops.js")') !== -1 && f.indexOf('require("./ntfy-quotes.js")') !== -1 && f.indexOf('require("./fetch-insiders.js")') === -1; })());
+t("v9.1: ntfy-quotes.js — notifyNtfy autonome (2xx exigé, 5 messages max, jamais bloquant)",
+  fs.readFileSync(path.join(ROOT, "tools", "ntfy-quotes.js"), "utf8").indexOf("function notifyNtfy") !== -1);
+t("v9.1: build-sbf120.js migrant SANS la logic.js de l'ancienne app — helpers de parsing inlinés",
+  (function () { var b = fs.readFileSync(path.join(ROOT, "tools", "build-sbf120.js"), "utf8");
+    return b.indexOf('require("../logic.js")') === -1 && b.indexOf("function normName") !== -1 && b.indexOf("function decodeEntities") !== -1; })());
+t("v9.1: validate-quotes.js + ops.js livrés (les mêmes gardes que l'ancien pipeline : jamais de quotes.json sans indice, mémoire des pannes)",
+  fs.existsSync(path.join(ROOT, "tools", "validate-quotes.js")) && fs.existsSync(path.join(ROOT, "tools", "ops.js")));
 
 // ---------- Bilan ----------
 var fail = results.filter(function (r) { return !r.ok; });
